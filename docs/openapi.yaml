@@ -1,0 +1,362 @@
+openapi: 3.0.3
+info:
+  title: Almacen Principal
+  description: API para gestión de usuarios con autenticación por tokens (Laravel Sanctum). Respuestas JSON unificadas `{status, mensaje, data}`.
+  version: 1.0.0
+servers:
+  - url: https://almacen.alwaysdata.net
+    description: Producción (AlwaysData)
+  - url: http://localhost
+    description: Desarrollo local
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    StandardResponse:
+      type: object
+      properties:
+        status:
+          type: boolean
+          example: true
+        mensaje:
+          type: string
+          example: Operación exitosa.
+        data:
+          nullable: true
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: boolean
+          example: false
+        mensaje:
+          type: string
+          example: No autenticado. Token inválido o ausente.
+        data:
+          nullable: true
+          example: null
+    ValidationErrorResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              additionalProperties:
+                type: array
+                items:
+                  type: string
+              example:
+                email: ["El campo email es obligatorio."]
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        tipo:
+          type: string
+          example: natural
+        rol:
+          type: string
+          example: admin
+        nombre:
+          type: string
+          example: Ana
+        apellido:
+          type: string
+          example: García
+        cedula:
+          type: string
+          example: V-12345678
+        telefono:
+          type: string
+          nullable: true
+          example: 04140000000
+        direccion:
+          type: string
+          nullable: true
+          example: Caracas
+        email:
+          type: string
+          format: email
+          example: ana@example.com
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: admin@example.com
+        password:
+          type: string
+          example: password
+    LoginResponseData:
+      type: object
+      properties:
+        token:
+          type: string
+          example: 1|aVeryLongTokenString
+        user:
+          $ref: '#/components/schemas/User'
+    PaginatedUsers:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        current_page:
+          type: integer
+        last_page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
+security:
+  - bearerAuth: []
+paths:
+  /api/login:
+    post:
+      summary: Login y emisión de token
+      tags: [Autenticación]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login exitoso
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/LoginResponseData'
+        '401':
+          description: Credenciales inválidas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Errores de validación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+  /api/logout:
+    post:
+      summary: Cerrar sesión (revocar token)
+      tags: [Autenticación]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Sesión cerrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+        '401':
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/me:
+    get:
+      summary: Información del usuario autenticado
+      tags: [Autenticación]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+        '401':
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  /api/users:
+    get:
+      summary: Listar usuarios
+      tags: [Usuarios]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Listado paginado de usuarios
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedUsers'
+        '401':
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    post:
+      summary: Crear usuario
+      tags: [Usuarios]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '201':
+          description: Usuario creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+        '401':
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Errores de validación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+  /api/users/{id}:
+    get:
+      summary: Ver detalle de usuario
+      tags: [Usuarios]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detalle
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+        '401':
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      summary: Actualizar usuario
+      tags: [Usuarios]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '200':
+          description: Actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+        '401':
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '422':
+          description: Errores de validación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ValidationErrorResponse'
+    delete:
+      summary: Eliminar usuario
+      tags: [Usuarios]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Eliminado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+        '401':
+          description: No autenticado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: No encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'

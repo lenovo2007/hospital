@@ -28,6 +28,11 @@ components:
         mensaje:
           type: string
           example: Operación exitosa.
+        autenticacion:
+          type: integer
+          description: 0=autenticado/válido, 1=token inválido/ausente, 2=token expirado
+          enum: [0, 1, 2]
+          example: 0
         data:
           nullable: true
     ErrorResponse:
@@ -39,6 +44,11 @@ components:
         mensaje:
           type: string
           example: No autenticado. Token inválido o ausente.
+        autenticacion:
+          type: integer
+          description: 0=autenticado/válido, 1=token inválido/ausente, 2=token expirado
+          enum: [0, 1, 2]
+          example: 1
         data:
           nullable: true
           example: null

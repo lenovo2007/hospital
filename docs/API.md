@@ -1,7 +1,8 @@
 # Hospital API — Documentación de Rutas
 
 - Base URL (producción): `https://almacen.alwaysdata.net`
-- Todas las respuestas JSON siguen el formato: `{ "status": boolean, "mensaje": string, "data": any }`.
+- Todas las respuestas JSON siguen el formato: `{ "status": boolean, "mensaje": string, "autenticacion": 0|1|2, "data": any }`.
+  - `autenticacion`: 0=autenticado/válido, 1=token inválido o ausente, 2=token expirado.
 - Codificación: UTF-8 con acentos preservados.
 
 ## Autenticación

@@ -18,10 +18,14 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Alias de permisos CRUD
+        // Alias de permisos CRUD y estado de autenticación
         $middleware->alias([
             'crud.perms' => \App\Http\Middleware\CheckCrudPermissions::class,
+            'append.auth' => \App\Http\Middleware\AppendAuthStatus::class,
         ]);
+
+        // Aplicar a todas las rutas del grupo API
+        $middleware->appendToGroup('api', \App\Http\Middleware\AppendAuthStatus::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Errores de validación (422)

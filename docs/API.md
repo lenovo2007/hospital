@@ -132,7 +132,7 @@ Modelo con campos personalizados: `tipo`, `rol`, `nombre`, `apellido`, `cedula` 
 - Respuesta 200: usuario eliminado.
 
 ## Hospitales (protegido)
-Campos: `id`, `nombre`, `rif`, `ubicacion` (objeto: `{ lat:number, lon:number }`), `direccion` (opcional), `tipo`.
+Campos: `id`, `nombre`, `rif`, `lat` (nullable), `lon` (nullable), `direccion` (opcional), `tipo`.
 
 ### Listar hospitales
 - Método: GET
@@ -157,7 +157,8 @@ Campos: `id`, `nombre`, `rif`, `ubicacion` (objeto: `{ lat:number, lon:number }`
 {
   "nombre": "Hospital Central",
   "rif": "J-12345678-9",
-  "ubicacion": { "lat": 10.491, "lon": -66.903 },
+  "lat": 10.491,
+  "lon": -66.903,
   "direccion": "Caracas",
   "tipo": "publico"
 }
@@ -177,45 +178,49 @@ Campos: `id`, `nombre`, `rif`, `ubicacion` (objeto: `{ lat:number, lon:number }`
 - Headers: `Authorization: Bearer <TOKEN>`
 - Respuesta 200: hospital eliminado.
 
-## Almacenes (protegido)
-Campos: `id`, `nombre`.
+## Sedes (protegido)
+Campos: `id`, `nombre`, `tipo`, `hospital_id` (nullable).
 
-### Listar almacenes
+### Listar sedes
 - Método: GET
-- URL: `/api/almacenes`
+- URL: `/api/sedes`
 - Headers: `Authorization: Bearer <TOKEN>`
 - Respuesta 200:
 ```json
-{ "status": true, "mensaje": "Listado de almacenes.", "data": { /* paginación */ } }
+{ "status": true, "mensaje": "Listado de sedes.", "data": { /* paginación */ } }
 ```
 
-### Ver detalle de almacén
+### Ver detalle de sede
 - Método: GET
-- URL: `/api/almacenes/{id}`
+- URL: `/api/sedes/{id}`
 - Headers: `Authorization: Bearer <TOKEN>`
 
-### Crear almacén
+### Crear sede
 - Método: POST
-- URL: `/api/almacenes`
+- URL: `/api/sedes`
 - Headers: `Authorization: Bearer <TOKEN>`
 - Body (JSON) ejemplo:
 ```json
-{ "nombre": "Almacén Principal" }
+{
+  "nombre": "Sede 1",
+  "tipo": "almacen_principal",
+  "hospital_id": 2
+}
 ```
-- Respuesta 200: almacén creado.
+- Respuesta 200: sede creada.
 
-### Actualizar almacén
+### Actualizar sede
 - Método: PUT
-- URL: `/api/almacenes/{id}`
+- URL: `/api/sedes/{id}`
 - Headers: `Authorization: Bearer <TOKEN>`
 - Body: mismos campos (según validación).
-- Respuesta 200: almacén actualizado.
+- Respuesta 200: sede actualizada.
 
-### Eliminar almacén
+### Eliminar sede
 - Método: DELETE
-- URL: `/api/almacenes/{id}`
+- URL: `/api/sedes/{id}`
 - Headers: `Authorization: Bearer <TOKEN>`
-- Respuesta 200: almacén eliminado.
+- Respuesta 200: sede eliminada.
 
 ## Errores (siempre HTTP 200)
 - No autenticado: `{ "status": false, "mensaje": "No autenticado. Token inválido o ausente.", "data": null }`

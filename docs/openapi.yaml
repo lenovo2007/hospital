@@ -136,10 +136,13 @@ components:
         email:
           type: string
           format: email
-          example: admin@example.com
+          example: ana@example.com
         password:
           type: string
           example: password
+      example:
+        email: doctor@example.com
+        password: password
     LoginResponseData:
       type: object
       properties:

@@ -1005,6 +1005,35 @@ paths:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
 
+  /api/login:
+    post:
+      summary: Login
+      tags: [Autenticación]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              admin:
+                summary: Administrador
+                value:
+                  email: admin@example.com
+                  password: password
+              cliente:
+                summary: Cliente
+                value:
+                  email: doctor@example.com
+                  password: password
+      responses:
+        '200':
+          description: Login exitoso o error con status=false
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
   /api/hospitales:
     get:
       summary: Listar hospitales

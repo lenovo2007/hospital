@@ -5,6 +5,7 @@ info:
     API para gestión de usuarios con autenticación por tokens (Laravel Sanctum).
     Respuestas JSON unificadas `{status, mensaje, data}`.
     Importante: todos los resultados (éxito y error) devuelven HTTP 200. Los errores se indican con `status=false` y un `mensaje` descriptivo.
+    Nota: cuando un listado no tiene resultados o un recurso no existe, la API responde HTTP 200 con `status=true`, `data` vacío o `null` según aplique y `mensaje` "<modelo> no encontrado" (por ejemplo: "hospitales no encontrado").
   version: 1.0.0
 servers:
   - url: https://almacen.alwaysdata.net

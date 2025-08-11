@@ -134,6 +134,8 @@ Modelo con campos personalizados: `tipo`, `rol`, `nombre`, `apellido`, `cedula` 
 ## Hospitales (protegido)
 Campos: `id`, `nombre`, `rif`, `email` (opcional), `telefono` (opcional), `ubicacion` (opcional, objeto `{ lat:number, lng:number }`), `direccion` (opcional), `tipo`.
 
+Nota: cuando no hay resultados en el listado o el recurso solicitado no existe, se responde con HTTP 200, `status: true` y `mensaje: "hospitales no encontrado"`.
+
 ### Listar hospitales
 - Método: GET
 - URL: `/api/hospitales`
@@ -180,7 +182,9 @@ Campos: `id`, `nombre`, `rif`, `email` (opcional), `telefono` (opcional), `ubica
 - Respuesta 200: hospital eliminado.
 
 ## Sedes (protegido)
-Campos: `id`, `nombre`, `tipo`, `hospital_id` (nullable).
+Campos: `id`, `nombre`, `tipo`, `hospital_id` (FK hospitales.id, opcional).
+
+Nota: cuando no hay resultados o la sede no existe, se responde con HTTP 200, `status: true` y `mensaje: "sedes no encontrado"`.
 
 ### Listar sedes
 - Método: GET

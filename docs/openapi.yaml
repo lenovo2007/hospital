@@ -83,6 +83,14 @@ components:
           type: string
           nullable: true
           example: Caracas
+        hospital_id:
+          type: integer
+          nullable: true
+          example: 2
+        sede_id:
+          type: integer
+          nullable: true
+          example: 5
         email:
           type: string
           format: email
@@ -105,17 +113,16 @@ components:
         rif:
           type: string
           example: J-12345678-9
-        ubicacion:
-          type: object
-          properties:
-            lat:
-              type: number
-              format: double
-              example: 10.4910000
-            lon:
-              type: number
-              format: double
-              example: -66.9030000
+        lat:
+          type: number
+          format: double
+          nullable: true
+          example: 10.4910000
+        lon:
+          type: number
+          format: double
+          nullable: true
+          example: -66.9030000
         direccion:
           type: string
           nullable: true
@@ -181,28 +188,32 @@ components:
           type: integer
         total:
           type: integer
-    Almacen:
+    Sede:
       type: object
       properties:
         id:
           type: integer
           example: 1
-        nombre:
+        tipo:
           type: string
-          example: Almacén Principal
+          example: almacen_principal
+        hospital_id:
+          type: integer
+          nullable: true
+          example: 2
         created_at:
           type: string
           format: date-time
         updated_at:
           type: string
           format: date-time
-    PaginatedAlmacenes:
+    PaginatedSedes:
       type: object
       properties:
         data:
           type: array
           items:
-            $ref: '#/components/schemas/Almacen'
+            $ref: '#/components/schemas/Sede'
         current_page:
           type: integer
         last_page:
@@ -818,15 +829,15 @@ paths:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
 
-  /api/almacenes:
+  /api/sedes:
     get:
-      summary: Listar almacenes
-      tags: [Almacenes]
+      summary: Listar sedes
+      tags: [Sedes]
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: Listado de almacenes o error con `status=false`
+          description: Listado de sedes o error con `status=false`
           content:
             application/json:
               schema:
@@ -835,10 +846,10 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/PaginatedAlmacenes'
+                        $ref: '#/components/schemas/PaginatedSedes'
     post:
-      summary: Crear almacén
-      tags: [Almacenes]
+      summary: Crear sede
+      tags: [Sedes]
       security:
         - bearerAuth: []
       requestBody:
@@ -846,18 +857,18 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Almacen'
+              $ref: '#/components/schemas/Sede'
       responses:
         '200':
-          description: Almacén creado o error con `status=false`
+          description: Sede creada o error con `status=false`
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
-  /api/almacenes/{id}:
+  /api/sedes/{id}:
     get:
-      summary: Ver detalle de almacén
-      tags: [Almacenes]
+      summary: Ver detalle de sede
+      tags: [Sedes]
       security:
         - bearerAuth: []
       parameters:
@@ -868,7 +879,7 @@ paths:
             type: integer
       responses:
         '200':
-          description: Detalle de almacén o error con `status=false`
+          description: Detalle de sede o error con `status=false`
           content:
             application/json:
               schema:
@@ -877,10 +888,10 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/Almacen'
+                        $ref: '#/components/schemas/Sede'
     put:
-      summary: Actualizar almacén
-      tags: [Almacenes]
+      summary: Actualizar sede
+      tags: [Sedes]
       security:
         - bearerAuth: []
       parameters:
@@ -894,17 +905,17 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Almacen'
+              $ref: '#/components/schemas/Sede'
       responses:
         '200':
-          description: Almacén actualizado o error con `status=false`
+          description: Sede actualizada o error con `status=false`
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
     delete:
-      summary: Eliminar almacén
-      tags: [Almacenes]
+      summary: Eliminar sede
+      tags: [Sedes]
       security:
         - bearerAuth: []
       parameters:
@@ -915,7 +926,7 @@ paths:
             type: integer
       responses:
         '200':
-          description: Almacén eliminado o error con `status=false`
+          description: Sede eliminada o error con `status=false`
           content:
             application/json:
               schema:

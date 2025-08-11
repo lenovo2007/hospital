@@ -1,0 +1,75 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Sede;
+use Illuminate\Http\Request;
+
+class SedeController extends Controller
+{
+    // GET /api/sedes
+    public function index()
+    {
+        $items = Sede::latest()->paginate(15);
+        return response()->json([
+            'status' => true,
+            'mensaje' => 'Listado de sedes.',
+            'data' => $items,
+        ], 200, [], JSON_UNESCAPED_UNICODE);
+    }
+
+    // POST /api/sedes
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'tipo' => ['required','string','max:255'],
+            'hospital_id' => ['nullable','integer','exists:hospitales,id'],
+        ]);
+
+        $item = Sede::create($data);
+
+        return response()->json([
+            'status' => true,
+            'mensaje' => 'Sede creada.',
+            'data' => $item,
+        ], 200, [], JSON_UNESCAPED_UNICODE);
+    }
+
+    // GET /api/sedes/{sede}
+    public function show(Sede $sede)
+    {
+        return response()->json([
+            'status' => true,
+            'mensaje' => 'Detalle de sede.',
+            'data' => $sede,
+        ], 200, [], JSON_UNESCAPED_UNICODE);
+    }
+
+    // PUT /api/sedes/{sede}
+    public function update(Request $request, Sede $sede)
+    {
+        $data = $request->validate([
+            'tipo' => ['sometimes','required','string','max:255'],
+            'hospital_id' => ['nullable','integer','exists:hospitales,id'],
+        ]);
+
+        $sede->update($data);
+
+        return response()->json([
+            'status' => true,
+            'mensaje' => 'Sede actualizada.',
+            'data' => $sede,
+        ], 200, [], JSON_UNESCAPED_UNICODE);
+    }
+
+    // DELETE /api/sedes/{sede}
+    public function destroy(Sede $sede)
+    {
+        $sede->delete();
+        return response()->json([
+            'status' => true,
+            'mensaje' => 'Sede eliminada.',
+            'data' => null,
+        ], 200, [], JSON_UNESCAPED_UNICODE);
+    }
+}

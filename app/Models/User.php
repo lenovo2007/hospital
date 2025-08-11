@@ -63,7 +63,7 @@ class User extends Authenticatable
 
     public function sede()
     {
-        return $this->belongsTo(Almacen::class, 'sede_id'); // sedes table
+        return $this->belongsTo(Sede::class, 'sede_id'); // sedes table
     }
 }
 

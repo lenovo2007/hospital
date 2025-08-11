@@ -18,15 +18,14 @@ class HospitalController extends Controller
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }
 
-    // POST /api/hospitals
+    // POST /api/hospitales
     public function store(Request $request)
     {
         $data = $request->validate([
             'nombre' => ['required','string','max:255'],
             'rif' => ['required','string','max:255'],
-            'ubicacion' => ['required','array'],
-            'ubicacion.lat' => ['required','numeric','between:-90,90'],
-            'ubicacion.lon' => ['required','numeric','between:-180,180'],
+            'lat' => ['nullable','numeric','between:-90,90'],
+            'lon' => ['nullable','numeric','between:-180,180'],
             'direccion' => ['nullable','string','max:255'],
             'tipo' => ['required','string','max:255'],
         ]);
@@ -50,15 +49,14 @@ class HospitalController extends Controller
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }
 
-    // PUT /api/hospitals/{hospital}
+    // PUT /api/hospitales/{hospital}
     public function update(Request $request, Hospital $hospital)
     {
         $data = $request->validate([
             'nombre' => ['sometimes','required','string','max:255'],
             'rif' => ['sometimes','required','string','max:255'],
-            'ubicacion' => ['sometimes','required','array'],
-            'ubicacion.lat' => ['sometimes','required','numeric','between:-90,90'],
-            'ubicacion.lon' => ['sometimes','required','numeric','between:-180,180'],
+            'lat' => ['nullable','numeric','between:-90,90'],
+            'lon' => ['nullable','numeric','between:-180,180'],
             'direccion' => ['nullable','string','max:255'],
             'tipo' => ['sometimes','required','string','max:255'],
         ]);

@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\HospitalController;
-use App\Http\Controllers\AlmacenController;
+use App\Http\Controllers\SedeController;
 use App\Http\Controllers\FarmaciaController;
 use App\Http\Controllers\MiniAlmacenController;
 use App\Http\Controllers\AlmacenPrincipalController;
@@ -30,12 +30,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/hospitales/{hospital}', [HospitalController::class, 'update']);
     Route::delete('/hospitales/{hospital}', [HospitalController::class, 'destroy']);
 
-    // Almacenes CRUD
-    Route::get('/almacenes', [AlmacenController::class, 'index']);
-    Route::post('/almacenes', [AlmacenController::class, 'store']);
-    Route::get('/almacenes/{almacen}', [AlmacenController::class, 'show']);
-    Route::put('/almacenes/{almacen}', [AlmacenController::class, 'update']);
-    Route::delete('/almacenes/{almacen}', [AlmacenController::class, 'destroy']);
+    // Sedes CRUD
+    Route::get('/sedes', [SedeController::class, 'index']);
+    Route::post('/sedes', [SedeController::class, 'store']);
+    Route::get('/sedes/{sede}', [SedeController::class, 'show']);
+    Route::put('/sedes/{sede}', [SedeController::class, 'update']);
+    Route::delete('/sedes/{sede}', [SedeController::class, 'destroy']);
 
     // Farmacias CRUD
     Route::get('/farmacias', [FarmaciaController::class, 'index']);

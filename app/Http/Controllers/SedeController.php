@@ -22,6 +22,7 @@ class SedeController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
+            'nombre' => ['required','string','max:255'],
             'tipo' => ['required','string','max:255'],
             'hospital_id' => ['nullable','integer','exists:hospitales,id'],
         ]);
@@ -49,6 +50,7 @@ class SedeController extends Controller
     public function update(Request $request, Sede $sede)
     {
         $data = $request->validate([
+            'nombre' => ['sometimes','required','string','max:255'],
             'tipo' => ['sometimes','required','string','max:255'],
             'hospital_id' => ['nullable','integer','exists:hospitales,id'],
         ]);

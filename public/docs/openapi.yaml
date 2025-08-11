@@ -205,6 +205,126 @@ components:
           type: integer
         total:
           type: integer
+    Farmacia:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        nombre:
+          type: string
+          example: Farmacia Principal
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    PaginatedFarmacias:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Farmacia'
+        current_page:
+          type: integer
+        last_page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
+    MiniAlmacen:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        nombre:
+          type: string
+          example: Mini Almacén 1
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    PaginatedMiniAlmacenes:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/MiniAlmacen'
+        current_page:
+          type: integer
+        last_page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
+    AlmacenPrincipalSchema:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        nombre:
+          type: string
+          example: Almacén Principal A
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    PaginatedAlmacenesPrincipales:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AlmacenPrincipalSchema'
+        current_page:
+          type: integer
+        last_page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
+    AlmacenCentralSchema:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        nombre:
+          type: string
+          example: Almacén Central A
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    PaginatedAlmacenesCentrales:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AlmacenCentralSchema'
+        current_page:
+          type: integer
+        last_page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
 security:
   - bearerAuth: []
 paths:
@@ -239,6 +359,418 @@ paths:
       responses:
         '200':
           description: Sesión cerrada o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/farmacias:
+    get:
+      summary: Listar farmacias
+      tags: [Farmacias]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Listado de farmacias o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedFarmacias'
+    post:
+      summary: Crear farmacia
+      tags: [Farmacias]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Farmacia'
+      responses:
+        '200':
+          description: Farmacia creada o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+  /api/farmacias/{id}:
+    get:
+      summary: Ver detalle de farmacia
+      tags: [Farmacias]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detalle de farmacia o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Farmacia'
+    put:
+      summary: Actualizar farmacia
+      tags: [Farmacias]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Farmacia'
+      responses:
+        '200':
+          description: Farmacia actualizada o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+    delete:
+      summary: Eliminar farmacia
+      tags: [Farmacias]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Farmacia eliminada o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/mini_almacenes:
+    get:
+      summary: Listar mini almacenes
+      tags: [MiniAlmacenes]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Listado de mini almacenes o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedMiniAlmacenes'
+    post:
+      summary: Crear mini almacén
+      tags: [MiniAlmacenes]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MiniAlmacen'
+      responses:
+        '200':
+          description: Mini almacén creado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+  /api/mini_almacenes/{id}:
+    get:
+      summary: Ver detalle de mini almacén
+      tags: [MiniAlmacenes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detalle de mini almacén o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/MiniAlmacen'
+    put:
+      summary: Actualizar mini almacén
+      tags: [MiniAlmacenes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MiniAlmacen'
+      responses:
+        '200':
+          description: Mini almacén actualizado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+    delete:
+      summary: Eliminar mini almacén
+      tags: [MiniAlmacenes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Mini almacén eliminado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/almacenes_principales:
+    get:
+      summary: Listar almacenes principales
+      tags: [AlmacenesPrincipales]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Listado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedAlmacenesPrincipales'
+    post:
+      summary: Crear almacén principal
+      tags: [AlmacenesPrincipales]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlmacenPrincipalSchema'
+      responses:
+        '200':
+          description: Creado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+  /api/almacenes_principales/{id}:
+    get:
+      summary: Ver detalle de almacén principal
+      tags: [AlmacenesPrincipales]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detalle o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AlmacenPrincipalSchema'
+    put:
+      summary: Actualizar almacén principal
+      tags: [AlmacenesPrincipales]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlmacenPrincipalSchema'
+      responses:
+        '200':
+          description: Actualizado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+    delete:
+      summary: Eliminar almacén principal
+      tags: [AlmacenesPrincipales]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Eliminado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/almacenes_centrales:
+    get:
+      summary: Listar almacenes centrales
+      tags: [AlmacenesCentrales]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Listado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedAlmacenesCentrales'
+    post:
+      summary: Crear almacén central
+      tags: [AlmacenesCentrales]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlmacenCentralSchema'
+      responses:
+        '200':
+          description: Creado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+  /api/almacenes_centrales/{id}:
+    get:
+      summary: Ver detalle de almacén central
+      tags: [AlmacenesCentrales]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detalle o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AlmacenCentralSchema'
+    put:
+      summary: Actualizar almacén central
+      tags: [AlmacenesCentrales]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlmacenCentralSchema'
+      responses:
+        '200':
+          description: Actualizado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+    delete:
+      summary: Eliminar almacén central
+      tags: [AlmacenesCentrales]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Eliminado o error con `status=false`
           content:
             application/json:
               schema:

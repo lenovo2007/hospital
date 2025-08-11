@@ -24,8 +24,9 @@ class HospitalController extends Controller
         $data = $request->validate([
             'nombre' => ['required','string','max:255'],
             'rif' => ['required','string','max:255'],
-            'lat' => ['nullable','numeric','between:-90,90'],
-            'lon' => ['nullable','numeric','between:-180,180'],
+            'ubicacion' => ['nullable','array'],
+            'ubicacion.latt' => ['nullable','numeric','between:-90,90'],
+            'ubicacion.lon' => ['nullable','numeric','between:-180,180'],
             'direccion' => ['nullable','string','max:255'],
             'tipo' => ['required','string','max:255'],
         ]);
@@ -55,8 +56,9 @@ class HospitalController extends Controller
         $data = $request->validate([
             'nombre' => ['sometimes','required','string','max:255'],
             'rif' => ['sometimes','required','string','max:255'],
-            'lat' => ['nullable','numeric','between:-90,90'],
-            'lon' => ['nullable','numeric','between:-180,180'],
+            'ubicacion' => ['nullable','array'],
+            'ubicacion.latt' => ['nullable','numeric','between:-90,90'],
+            'ubicacion.lon' => ['nullable','numeric','between:-180,180'],
             'direccion' => ['nullable','string','max:255'],
             'tipo' => ['sometimes','required','string','max:255'],
         ]);

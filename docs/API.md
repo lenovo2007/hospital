@@ -34,6 +34,32 @@
 ```
 - Errores: HTTP 200 con `status=false` (validación o credenciales inválidas)
 
+Ejemplos de respuestas:
+
+- Admin
+```json
+{
+  "status": true,
+  "mensaje": "Login exitoso.",
+  "data": {
+    "token": "<TOKEN>",
+    "user": { "id": 1, "email": "admin@example.com", "nombre": "Admin", "apellido": "Principal" }
+  }
+}
+```
+
+- Cliente
+```json
+{
+  "status": true,
+  "mensaje": "Login exitoso.",
+  "data": {
+    "token": "<TOKEN>",
+    "user": { "id": 2, "email": "doctor@example.com", "nombre": "Doctor", "apellido": "Ejemplo" }
+  }
+}
+```
+
 #### Cuentas de ejemplo
 - __Administrador__: email `admin@example.com`, password `password`.
 - __Cliente__: email `doctor@example.com`, password `password`.

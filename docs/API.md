@@ -32,7 +32,7 @@
   }
 }
 ```
-- Errores: 422 (validación), 401 (credenciales inválidas)
+- Errores: HTTP 200 con `status=false` (validación o credenciales inválidas)
 
 ### Logout (protegido)
 - Método: POST
@@ -84,7 +84,7 @@ Modelo con campos personalizados: `tipo`, `rol`, `nombre`, `apellido`, `cedula` 
   "password": "secret123"
 }
 ```
-- Respuesta 201: usuario creado.
+- Respuesta 200: usuario creado.
 
 ### Actualizar usuario
 - Método: PUT
@@ -99,11 +99,11 @@ Modelo con campos personalizados: `tipo`, `rol`, `nombre`, `apellido`, `cedula` 
 - Headers: `Authorization: Bearer <TOKEN>`
 - Respuesta 200: usuario eliminado.
 
-## Errores y Códigos
-- 401 No autenticado: `{ "status": false, "mensaje": "No autenticado. Token inválido o ausente.", "data": null }`
-- 403 No autorizado: `{ "status": false, "mensaje": "No autorizado para realizar esta acción.", "data": null }`
-- 404 No encontrado: `{ "status": false, "mensaje": "Recurso no encontrado.", "data": null }`
-- 422 Validación: `{ "status": false, "mensaje": "Errores de validación.", "data": { "campo": ["mensaje"] } }`
+## Errores (siempre HTTP 200)
+- No autenticado: `{ "status": false, "mensaje": "No autenticado. Token inválido o ausente.", "data": null }`
+- No autorizado: `{ "status": false, "mensaje": "No autorizado para realizar esta acción.", "data": null }`
+- No encontrado: `{ "status": false, "mensaje": "Recurso no encontrado.", "data": null }`
+- Validación: `{ "status": false, "mensaje": "Errores de validación.", "data": { "campo": ["mensaje"] } }`
 
 ## Headers comunes
 - `Content-Type: application/json`

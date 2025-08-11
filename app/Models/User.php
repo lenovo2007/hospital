@@ -26,6 +26,8 @@ class User extends Authenticatable
         'cedula',
         'telefono',
         'direccion',
+        'hospital_id',
+        'sede_id',
         'email',
         'password',
     ];
@@ -51,6 +53,17 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
         ];
+    }
+
+    // Relaciones
+    public function hospital()
+    {
+        return $this->belongsTo(Hospital::class, 'hospital_id');
+    }
+
+    public function sede()
+    {
+        return $this->belongsTo(Almacen::class, 'sede_id'); // sedes table
     }
 }
 

@@ -12,8 +12,12 @@ class Almacen extends Model
     protected $table = 'sedes';
 
     protected $fillable = [
-        'nombre',
         'tipo',
         'hospital_id',
     ];
+
+    public function hospital()
+    {
+        return $this->belongsTo(Hospital::class, 'hospital_id');
+    }
 }

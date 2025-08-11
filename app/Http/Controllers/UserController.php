@@ -41,6 +41,8 @@ class UserController extends Controller
             'cedula' => ['required','string','max:255','unique:users,cedula'],
             'telefono' => ['nullable','string','max:255'],
             'direccion' => ['nullable','string','max:255'],
+            'hospital_id' => ['nullable','integer','exists:hospitales,id'],
+            'sede_id' => ['nullable','integer','exists:sedes,id'],
             'email' => ['required','string','email','max:255','unique:users,email'],
             'password' => ['required','string','min:8'],
         ]);
@@ -87,6 +89,8 @@ class UserController extends Controller
             'cedula' => ['sometimes','required','string','max:255', Rule::unique('users','cedula')->ignore($user->id)],
             'telefono' => ['nullable','string','max:255'],
             'direccion' => ['nullable','string','max:255'],
+            'hospital_id' => ['nullable','integer','exists:hospitales,id'],
+            'sede_id' => ['nullable','integer','exists:sedes,id'],
             'email' => ['sometimes','required','string','email','max:255', Rule::unique('users','email')->ignore($user->id)],
             'password' => ['nullable','string','min:8'],
         ]);

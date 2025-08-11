@@ -18,7 +18,10 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        //
+        // Alias de permisos CRUD
+        $middleware->alias([
+            'crud.perms' => \App\Http\Middleware\CheckCrudPermissions::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Errores de validación (422)

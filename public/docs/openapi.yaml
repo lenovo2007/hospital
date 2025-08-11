@@ -91,6 +91,18 @@ components:
           type: integer
           nullable: true
           example: 5
+        can_view:
+          type: boolean
+          example: true
+        can_create:
+          type: boolean
+          example: true
+        can_update:
+          type: boolean
+          example: true
+        can_delete:
+          type: boolean
+          example: true
         email:
           type: string
           format: email

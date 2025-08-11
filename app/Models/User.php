@@ -28,6 +28,10 @@ class User extends Authenticatable
         'direccion',
         'hospital_id',
         'sede_id',
+        'can_view',
+        'can_create',
+        'can_update',
+        'can_delete',
         'email',
         'password',
     ];

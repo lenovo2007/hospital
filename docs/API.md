@@ -104,7 +104,7 @@ Campos: `id`, `nombre`, `rif`, `ubicacion` (objeto: `{ lat:number, lon:number }`
 
 ### Listar hospitales
 - Método: GET
-- URL: `/api/hospitals`
+- URL: `/api/hospitales`
 - Headers: `Authorization: Bearer <TOKEN>`
 - Respuesta 200:
 ```json
@@ -113,12 +113,12 @@ Campos: `id`, `nombre`, `rif`, `ubicacion` (objeto: `{ lat:number, lon:number }`
 
 ### Ver detalle de hospital
 - Método: GET
-- URL: `/api/hospitals/{id}`
+- URL: `/api/hospitales/{id}`
 - Headers: `Authorization: Bearer <TOKEN>`
 
 ### Crear hospital
 - Método: POST
-- URL: `/api/hospitals`
+- URL: `/api/hospitales`
 - Headers: `Authorization: Bearer <TOKEN>`
 - Body (JSON) ejemplo:
 ```json
@@ -134,14 +134,14 @@ Campos: `id`, `nombre`, `rif`, `ubicacion` (objeto: `{ lat:number, lon:number }`
 
 ### Actualizar hospital
 - Método: PUT
-- URL: `/api/hospitals/{id}`
+- URL: `/api/hospitales/{id}`
 - Headers: `Authorization: Bearer <TOKEN>`
 - Body: mismos campos (según validación).
 - Respuesta 200: hospital actualizado.
 
 ### Eliminar hospital
 - Método: DELETE
-- URL: `/api/hospitals/{id}`
+- URL: `/api/hospitales/{id}`
 - Headers: `Authorization: Bearer <TOKEN>`
 - Respuesta 200: hospital eliminado.
 

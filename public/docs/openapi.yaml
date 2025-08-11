@@ -1002,7 +1002,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
 
-  /api/hospitals:
+  /api/hospitales:
     get:
       summary: Listar hospitales
       tags: [Hospitales]
@@ -1038,7 +1038,7 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
-  /api/hospitals/{id}:
+  /api/hospitales/{id}:
     get:
       summary: Ver detalle de hospital
       tags: [Hospitales]

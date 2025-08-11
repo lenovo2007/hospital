@@ -7,13 +7,14 @@ use Illuminate\Http\Request;
 
 class HospitalController extends Controller
 {
-    // GET /api/hospitals
+    // GET /api/hospitales
     public function index()
     {
         $items = Hospital::latest()->paginate(15);
+        $mensaje = $items->total() > 0 ? 'Listado de hospitales.' : 'hospitales no encontrado';
         return response()->json([
             'status' => true,
-            'mensaje' => 'Listado de hospitales.',
+            'mensaje' => $mensaje,
             'data' => $items,
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }
@@ -24,9 +25,11 @@ class HospitalController extends Controller
         $data = $request->validate([
             'nombre' => ['required','string','max:255'],
             'rif' => ['required','string','max:255'],
+            'email' => ['nullable','email','max:255'],
+            'telefono' => ['nullable','string','max:50'],
             'ubicacion' => ['nullable','array'],
-            'ubicacion.latt' => ['nullable','numeric','between:-90,90'],
-            'ubicacion.lon' => ['nullable','numeric','between:-180,180'],
+            'ubicacion.lat' => ['nullable','numeric','between:-90,90'],
+            'ubicacion.lng' => ['nullable','numeric','between:-180,180'],
             'direccion' => ['nullable','string','max:255'],
             'tipo' => ['required','string','max:255'],
         ]);
@@ -40,9 +43,17 @@ class HospitalController extends Controller
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }
 
-    // GET /api/hospitals/{hospital}
-    public function show(Hospital $hospital)
+    // GET /api/hospitales/{id}
+    public function show($id)
     {
+        $hospital = Hospital::find($id);
+        if (!$hospital) {
+            return response()->json([
+                'status' => true,
+                'mensaje' => 'hospitales no encontrado',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
         return response()->json([
             'status' => true,
             'mensaje' => 'Detalle de hospital.',
@@ -56,9 +67,11 @@ class HospitalController extends Controller
         $data = $request->validate([
             'nombre' => ['sometimes','required','string','max:255'],
             'rif' => ['sometimes','required','string','max:255'],
+            'email' => ['nullable','email','max:255'],
+            'telefono' => ['nullable','string','max:50'],
             'ubicacion' => ['nullable','array'],
-            'ubicacion.latt' => ['nullable','numeric','between:-90,90'],
-            'ubicacion.lon' => ['nullable','numeric','between:-180,180'],
+            'ubicacion.lat' => ['nullable','numeric','between:-90,90'],
+            'ubicacion.lng' => ['nullable','numeric','between:-180,180'],
             'direccion' => ['nullable','string','max:255'],
             'tipo' => ['sometimes','required','string','max:255'],
         ]);

@@ -132,7 +132,7 @@ Modelo con campos personalizados: `tipo`, `rol`, `nombre`, `apellido`, `cedula` 
 - Respuesta 200: usuario eliminado.
 
 ## Hospitales (protegido)
-Campos: `id`, `nombre`, `rif`, `ubicacion` (opcional, objeto `{ latt:number, lon:number }`), `direccion` (opcional), `tipo`.
+Campos: `id`, `nombre`, `rif`, `email` (opcional), `telefono` (opcional), `ubicacion` (opcional, objeto `{ lat:number, lng:number }`), `direccion` (opcional), `tipo`.
 
 ### Listar hospitales
 - Método: GET
@@ -157,7 +157,9 @@ Campos: `id`, `nombre`, `rif`, `ubicacion` (opcional, objeto `{ latt:number, lon
 {
   "nombre": "Hospital Central",
   "rif": "J-12345678-9",
-  "ubicacion": { "latt": 10.491, "lon": -66.903 },
+  "email": "contacto@hospital.test",
+  "telefono": "04141234567",
+  "ubicacion": { "lat": 10.491, "lng": -66.903 },
   "direccion": "Caracas",
   "tipo": "publico"
 }

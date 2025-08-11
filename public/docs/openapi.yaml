@@ -175,6 +175,36 @@ components:
           type: integer
         total:
           type: integer
+    Almacen:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        nombre:
+          type: string
+          example: Almacén Principal
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    PaginatedAlmacenes:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Almacen'
+        current_page:
+          type: integer
+        last_page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
 security:
   - bearerAuth: []
 paths:
@@ -209,6 +239,109 @@ paths:
       responses:
         '200':
           description: Sesión cerrada o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/almacenes:
+    get:
+      summary: Listar almacenes
+      tags: [Almacenes]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Listado de almacenes o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedAlmacenes'
+    post:
+      summary: Crear almacén
+      tags: [Almacenes]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Almacen'
+      responses:
+        '200':
+          description: Almacén creado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+  /api/almacenes/{id}:
+    get:
+      summary: Ver detalle de almacén
+      tags: [Almacenes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detalle de almacén o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Almacen'
+    put:
+      summary: Actualizar almacén
+      tags: [Almacenes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Almacen'
+      responses:
+        '200':
+          description: Almacén actualizado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+    delete:
+      summary: Eliminar almacén
+      tags: [Almacenes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Almacén eliminado o error con `status=false`
           content:
             application/json:
               schema:

@@ -146,6 +146,46 @@ Campos: `id`, `nombre`, `rif`, `lat` (decimal), `lon` (decimal), `direccion` (op
 - Headers: `Authorization: Bearer <TOKEN>`
 - Respuesta 200: hospital eliminado.
 
+## Almacenes (protegido)
+Campos: `id`, `nombre`.
+
+### Listar almacenes
+- Método: GET
+- URL: `/api/almacenes`
+- Headers: `Authorization: Bearer <TOKEN>`
+- Respuesta 200:
+```json
+{ "status": true, "mensaje": "Listado de almacenes.", "data": { /* paginación */ } }
+```
+
+### Ver detalle de almacén
+- Método: GET
+- URL: `/api/almacenes/{id}`
+- Headers: `Authorization: Bearer <TOKEN>`
+
+### Crear almacén
+- Método: POST
+- URL: `/api/almacenes`
+- Headers: `Authorization: Bearer <TOKEN>`
+- Body (JSON) ejemplo:
+```json
+{ "nombre": "Almacén Principal" }
+```
+- Respuesta 200: almacén creado.
+
+### Actualizar almacén
+- Método: PUT
+- URL: `/api/almacenes/{id}`
+- Headers: `Authorization: Bearer <TOKEN>`
+- Body: mismos campos (según validación).
+- Respuesta 200: almacén actualizado.
+
+### Eliminar almacén
+- Método: DELETE
+- URL: `/api/almacenes/{id}`
+- Headers: `Authorization: Bearer <TOKEN>`
+- Respuesta 200: almacén eliminado.
+
 ## Errores (siempre HTTP 200)
 - No autenticado: `{ "status": false, "mensaje": "No autenticado. Token inválido o ausente.", "data": null }`
 - No autorizado: `{ "status": false, "mensaje": "No autorizado para realizar esta acción.", "data": null }`

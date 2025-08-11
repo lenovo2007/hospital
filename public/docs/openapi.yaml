@@ -344,6 +344,17 @@ paths:
           application/json:
             schema:
               $ref: '#/components/schemas/LoginRequest'
+            examples:
+              admin:
+                summary: Administrador
+                value:
+                  email: admin@example.com
+                  password: password
+              cliente:
+                summary: Cliente
+                value:
+                  email: doctor@example.com
+                  password: password
       responses:
         '200':
           description: Login exitoso o error con `status=false`
@@ -356,6 +367,31 @@ paths:
                     properties:
                       data:
                         $ref: '#/components/schemas/LoginResponseData'
+              examples:
+                admin:
+                  summary: Respuesta exitosa (admin)
+                  value:
+                    status: true
+                    mensaje: Login exitoso.
+                    data:
+                      token: "<TOKEN>"
+                      user:
+                        id: 1
+                        email: admin@example.com
+                        nombre: Admin
+                        apellido: Principal
+                cliente:
+                  summary: Respuesta exitosa (cliente)
+                  value:
+                    status: true
+                    mensaje: Login exitoso.
+                    data:
+                      token: "<TOKEN>"
+                      user:
+                        id: 2
+                        email: doctor@example.com
+                        nombre: Doctor
+                        apellido: Ejemplo
   /api/logout:
     post:
       summary: Cerrar sesión (revocar token)
@@ -1004,60 +1040,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
-
-  /api/login:
-    post:
-      summary: Login
-      tags: [Autenticación]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/LoginRequest'
-            examples:
-              admin:
-                summary: Administrador
-                value:
-                  email: admin@example.com
-                  password: password
-              cliente:
-                summary: Cliente
-                value:
-                  email: doctor@example.com
-                  password: password
-      responses:
-        '200':
-          description: Login exitoso o error con status=false
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StandardResponse'
-              examples:
-                admin:
-                  summary: Respuesta exitosa (admin)
-                  value:
-                    status: true
-                    mensaje: Login exitoso.
-                    data:
-                      token: "<TOKEN>"
-                      user:
-                        id: 1
-                        email: admin@example.com
-                        nombre: Admin
-                        apellido: Principal
-                cliente:
-                  summary: Respuesta exitosa (cliente)
-                  value:
-                    status: true
-                    mensaje: Login exitoso.
-                    data:
-                      token: "<TOKEN>"
-                      user:
-                        id: 2
-                        email: doctor@example.com
-                        nombre: Doctor
-                        apellido: Ejemplo
 
   /api/hospitales:
     get:

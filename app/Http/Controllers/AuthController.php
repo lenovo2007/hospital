@@ -24,7 +24,7 @@ class AuthController extends Controller
                 'status' => false,
                 'mensaje' => 'Credenciales inválidas.',
                 'data' => null,
-            ], 401, [], JSON_UNESCAPED_UNICODE);
+            ], 200, [], JSON_UNESCAPED_UNICODE);
         }
 
         // Opcional: limitar dispositivos o nombrar el token

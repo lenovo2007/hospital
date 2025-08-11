@@ -9,12 +9,17 @@ class Hospital extends Model
 {
     use HasFactory;
 
+    protected $table = 'hospitales';
+
     protected $fillable = [
         'nombre',
         'rif',
-        'lat',
-        'lon',
+        'ubicacion',
         'direccion',
         'tipo',
+    ];
+
+    protected $casts = [
+        'ubicacion' => 'array',
     ];
 }

@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\HospitalController;
 
 // Autenticación con token
 Route::post('/login', [AuthController::class, 'login']);
@@ -16,4 +17,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/users', [UserController::class, 'store']);
     Route::put('/users/{user}', [UserController::class, 'update']);
     Route::delete('/users/{user}', [UserController::class, 'destroy']);
+
+    // Hospitals CRUD
+    Route::get('/hospitals', [HospitalController::class, 'index']);
+    Route::post('/hospitals', [HospitalController::class, 'store']);
+    Route::get('/hospitals/{hospital}', [HospitalController::class, 'show']);
+    Route::put('/hospitals/{hospital}', [HospitalController::class, 'update']);
+    Route::delete('/hospitals/{hospital}', [HospitalController::class, 'destroy']);
 });

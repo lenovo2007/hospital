@@ -22,6 +22,11 @@ class HospitalController extends Controller
     // POST /api/hospitales
     public function store(Request $request)
     {
+        \Log::info('HospitalController@store: request received', [
+            'headers' => $request->headers->all(),
+            'body' => $request->all(),
+            'user_id' => optional($request->user())->id,
+        ]);
         $data = $request->validate([
             'nombre' => ['required','string','max:255'],
             'rif' => ['required','string','max:255'],
@@ -34,8 +39,10 @@ class HospitalController extends Controller
             'tipo' => ['required','string','max:255'],
         ]);
 
+        \Log::info('HospitalController@store: data validated', $data);
         $item = Hospital::create($data);
 
+        \Log::info('HospitalController@store: hospital created', ['id' => $item->id]);
         return response()->json([
             'status' => true,
             'mensaje' => 'Hospital creado.',

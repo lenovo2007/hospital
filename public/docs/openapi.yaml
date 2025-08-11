@@ -93,6 +93,39 @@ components:
         updated_at:
           type: string
           format: date-time
+    Hospital:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        nombre:
+          type: string
+          example: Hospital Central
+        rif:
+          type: string
+          example: J-12345678-9
+        lat:
+          type: number
+          format: double
+          example: 10.4910000
+        lon:
+          type: number
+          format: double
+          example: -66.9030000
+        direccion:
+          type: string
+          nullable: true
+          example: Caracas
+        tipo:
+          type: string
+          example: publico
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
     LoginRequest:
       type: object
       required: [email, password]
@@ -119,6 +152,21 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/User'
+        current_page:
+          type: integer
+        last_page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
+    PaginatedHospitals:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Hospital'
         current_page:
           type: integer
         last_page:
@@ -281,6 +329,109 @@ paths:
       responses:
         '200':
           description: Eliminado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/hospitals:
+    get:
+      summary: Listar hospitales
+      tags: [Hospitales]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Listado de hospitales o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedHospitals'
+    post:
+      summary: Crear hospital
+      tags: [Hospitales]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Hospital'
+      responses:
+        '200':
+          description: Hospital creado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+  /api/hospitals/{id}:
+    get:
+      summary: Ver detalle de hospital
+      tags: [Hospitales]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detalle de hospital o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Hospital'
+    put:
+      summary: Actualizar hospital
+      tags: [Hospitales]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Hospital'
+      responses:
+        '200':
+          description: Hospital actualizado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+    delete:
+      summary: Eliminar hospital
+      tags: [Hospitales]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Hospital eliminado o error con `status=false`
           content:
             application/json:
               schema:

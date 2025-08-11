@@ -99,6 +99,53 @@ Modelo con campos personalizados: `tipo`, `rol`, `nombre`, `apellido`, `cedula` 
 - Headers: `Authorization: Bearer <TOKEN>`
 - Respuesta 200: usuario eliminado.
 
+## Hospitales (protegido)
+Campos: `id`, `nombre`, `rif`, `lat` (decimal), `lon` (decimal), `direccion` (opcional), `tipo`.
+
+### Listar hospitales
+- Método: GET
+- URL: `/api/hospitals`
+- Headers: `Authorization: Bearer <TOKEN>`
+- Respuesta 200:
+```json
+{ "status": true, "mensaje": "Listado de hospitales.", "data": { /* paginación */ } }
+```
+
+### Ver detalle de hospital
+- Método: GET
+- URL: `/api/hospitals/{id}`
+- Headers: `Authorization: Bearer <TOKEN>`
+
+### Crear hospital
+- Método: POST
+- URL: `/api/hospitals`
+- Headers: `Authorization: Bearer <TOKEN>`
+- Body (JSON) ejemplo:
+```json
+{
+  "nombre": "Hospital Central",
+  "rif": "J-12345678-9",
+  "lat": 10.491,
+  "lon": -66.903,
+  "direccion": "Caracas",
+  "tipo": "publico"
+}
+```
+- Respuesta 200: hospital creado.
+
+### Actualizar hospital
+- Método: PUT
+- URL: `/api/hospitals/{id}`
+- Headers: `Authorization: Bearer <TOKEN>`
+- Body: mismos campos (según validación).
+- Respuesta 200: hospital actualizado.
+
+### Eliminar hospital
+- Método: DELETE
+- URL: `/api/hospitals/{id}`
+- Headers: `Authorization: Bearer <TOKEN>`
+- Respuesta 200: hospital eliminado.
+
 ## Errores (siempre HTTP 200)
 - No autenticado: `{ "status": false, "mensaje": "No autenticado. Token inválido o ausente.", "data": null }`
 - No autorizado: `{ "status": false, "mensaje": "No autorizado para realizar esta acción.", "data": null }`

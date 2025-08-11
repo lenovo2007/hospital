@@ -9,9 +9,11 @@ class Almacen extends Model
 {
     use HasFactory;
 
-    protected $table = 'almacenes';
+    protected $table = 'sedes';
 
     protected $fillable = [
         'nombre',
+        'tipo',
+        'hospital_id',
     ];
 }

@@ -10,9 +10,10 @@ class FarmaciaController extends Controller
     public function index()
     {
         $items = Farmacia::latest()->paginate(15);
+        $mensaje = $items->total() > 0 ? 'Listado de farmacias.' : 'farmacias no encontrado';
         return response()->json([
             'status' => true,
-            'mensaje' => 'Listado de farmacias.',
+            'mensaje' => $mensaje,
             'data' => $items,
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }
@@ -30,8 +31,16 @@ class FarmaciaController extends Controller
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }
 
-    public function show(Farmacia $farmacia)
+    public function show($id)
     {
+        $farmacia = Farmacia::find($id);
+        if (!$farmacia) {
+            return response()->json([
+                'status' => true,
+                'mensaje' => 'farmacias no encontrado',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
         return response()->json([
             'status' => true,
             'mensaje' => 'Detalle de farmacia.',

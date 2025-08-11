@@ -10,9 +10,10 @@ class MiniAlmacenController extends Controller
     public function index()
     {
         $items = MiniAlmacen::latest()->paginate(15);
+        $mensaje = $items->total() > 0 ? 'Listado de mini almacenes.' : 'mini_almacenes no encontrado';
         return response()->json([
             'status' => true,
-            'mensaje' => 'Listado de mini almacenes.',
+            'mensaje' => $mensaje,
             'data' => $items,
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }
@@ -30,13 +31,20 @@ class MiniAlmacenController extends Controller
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }
 
-    public function show(MiniAlmacen $mini_almacene)
+    public function show($id)
     {
-        // Nota: Enlace de modelo: {mini_almacene} basado en nombre de tabla
+        $mini = MiniAlmacen::find($id);
+        if (!$mini) {
+            return response()->json([
+                'status' => true,
+                'mensaje' => 'mini_almacenes no encontrado',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
         return response()->json([
             'status' => true,
             'mensaje' => 'Detalle de mini almacén.',
-            'data' => $mini_almacene,
+            'data' => $mini,
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }
 

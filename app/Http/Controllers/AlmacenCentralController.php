@@ -10,9 +10,10 @@ class AlmacenCentralController extends Controller
     public function index()
     {
         $items = AlmacenCentral::latest()->paginate(15);
+        $mensaje = $items->total() > 0 ? 'Listado de almacenes centrales.' : 'almacenes_centrales no encontrado';
         return response()->json([
             'status' => true,
-            'mensaje' => 'Listado de almacenes centrales.',
+            'mensaje' => $mensaje,
             'data' => $items,
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }
@@ -30,12 +31,20 @@ class AlmacenCentralController extends Controller
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }
 
-    public function show(AlmacenCentral $almacenes_centrale)
+    public function show($id)
     {
+        $central = AlmacenCentral::find($id);
+        if (!$central) {
+            return response()->json([
+                'status' => true,
+                'mensaje' => 'almacenes_centrales no encontrado',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
         return response()->json([
             'status' => true,
             'mensaje' => 'Detalle de almacén central.',
-            'data' => $almacenes_centrale,
+            'data' => $central,
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }
 

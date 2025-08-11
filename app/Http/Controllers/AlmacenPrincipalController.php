@@ -10,9 +10,10 @@ class AlmacenPrincipalController extends Controller
     public function index()
     {
         $items = AlmacenPrincipal::latest()->paginate(15);
+        $mensaje = $items->total() > 0 ? 'Listado de almacenes principales.' : 'almacenes_principales no encontrado';
         return response()->json([
             'status' => true,
-            'mensaje' => 'Listado de almacenes principales.',
+            'mensaje' => $mensaje,
             'data' => $items,
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }
@@ -30,12 +31,20 @@ class AlmacenPrincipalController extends Controller
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }
 
-    public function show(AlmacenPrincipal $almacenes_principale)
+    public function show($id)
     {
+        $principal = AlmacenPrincipal::find($id);
+        if (!$principal) {
+            return response()->json([
+                'status' => true,
+                'mensaje' => 'almacenes_principales no encontrado',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
         return response()->json([
             'status' => true,
             'mensaje' => 'Detalle de almacén principal.',
-            'data' => $almacenes_principale,
+            'data' => $principal,
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }
 

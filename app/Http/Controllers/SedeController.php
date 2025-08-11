@@ -11,9 +11,10 @@ class SedeController extends Controller
     public function index()
     {
         $items = Sede::latest()->paginate(15);
+        $mensaje = $items->total() > 0 ? 'Listado de sedes.' : 'sedes no encontrado';
         return response()->json([
             'status' => true,
-            'mensaje' => 'Listado de sedes.',
+            'mensaje' => $mensaje,
             'data' => $items,
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }
@@ -36,9 +37,17 @@ class SedeController extends Controller
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }
 
-    // GET /api/sedes/{sede}
-    public function show(Sede $sede)
+    // GET /api/sedes/{id}
+    public function show($id)
     {
+        $sede = Sede::find($id);
+        if (!$sede) {
+            return response()->json([
+                'status' => true,
+                'mensaje' => 'sedes no encontrado',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
         return response()->json([
             'status' => true,
             'mensaje' => 'Detalle de sede.',

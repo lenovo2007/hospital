@@ -27,7 +27,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 'status' => false,
                 'mensaje' => 'Errores de validación.',
                 'data' => $e->errors(),
-            ], 422, [], JSON_UNESCAPED_UNICODE);
+            ], 200, [], JSON_UNESCAPED_UNICODE);
         });
         // Respuesta JSON uniforme cuando no está autenticado
         $exceptions->render(function (AuthenticationException $e, $request) {
@@ -35,7 +35,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 'status' => false,
                 'mensaje' => 'No autenticado. Token inválido o ausente.',
                 'data' => null,
-            ], 401, [], JSON_UNESCAPED_UNICODE);
+            ], 200, [], JSON_UNESCAPED_UNICODE);
         });
 
         // Falta de permisos
@@ -44,7 +44,7 @@ return Application::configure(basePath: dirname(__DIR__))
                 'status' => false,
                 'mensaje' => 'No autorizado para realizar esta acción.',
                 'data' => null,
-            ], 403, [], JSON_UNESCAPED_UNICODE);
+            ], 200, [], JSON_UNESCAPED_UNICODE);
         });
 
         // Recurso no encontrado (modelo o ruta)
@@ -55,13 +55,13 @@ return Application::configure(basePath: dirname(__DIR__))
                     'status' => false,
                     'mensaje' => 'No autenticado. Token inválido o ausente.',
                     'data' => null,
-                ], 401, [], JSON_UNESCAPED_UNICODE);
+                ], 200, [], JSON_UNESCAPED_UNICODE);
             }
 
             return response()->json([
                 'status' => false,
                 'mensaje' => 'Recurso no encontrado.',
                 'data' => null,
-            ], 404, [], JSON_UNESCAPED_UNICODE);
+            ], 200, [], JSON_UNESCAPED_UNICODE);
         });
     })->create();

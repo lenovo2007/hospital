@@ -78,6 +78,7 @@ class HospitalController extends Controller
         unset($data['rif']);
 
         $hospital->update($data);
+        $hospital->refresh();
 
         return response()->json([
             'status' => true,
@@ -125,9 +126,11 @@ class HospitalController extends Controller
             'ubicacion.lng' => ['nullable','numeric','between:-180,180'],
             'direccion' => ['nullable','string','max:255'],
             'tipo' => ['sometimes','required','string','max:255'],
+            'status' => ['nullable','in:activo,inactivo'],
         ]);
 
         $hospital->update($data);
+        $hospital->refresh();
 
         return response()->json([
             'status' => true,

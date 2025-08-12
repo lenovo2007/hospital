@@ -12,21 +12,6 @@
   </style>
 </head>
   <body>
-    <div style="max-width:1200px;margin:16px auto 0;padding:12px;background:#fff;border-radius:8px;border:1px solid #e5e7eb">
-      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-        <strong>Ruta rápida:</strong>
-        <label>Status
-          <select id="statusSel" style="padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px">
-            <option value="activo" selected>activo (default)</option>
-            <option value="inactivo">inactivo</option>
-            <option value="all">all</option>
-          </select>
-        </label>
-        <code id="builtText" style="padding:4px 6px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px">/api/hospitales</code>
-        <button id="copyBtn" title="Copiar" style="padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;background:#f1f5f9;cursor:pointer">Copiar</button>
-      </div>
-      <div style="margin-top:8px;font-size:12px;color:#334155">Consejo: "activo" es el valor por defecto; si seleccionas "activo" no se añade query param.</div>
-    </div>
     <div id="swagger-ui"></div>
     <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js" crossorigin></script>
     <script>
@@ -39,23 +24,86 @@
         layout: 'BaseLayout'
       });
 
-      // Helper para construir solo la ruta
-      function updateLink() {
-        const status = document.getElementById('statusSel').value;
-        const path = status === 'activo' ? '/api/hospitales' : `/api/hospitales?status=${encodeURIComponent(status)}`;
-        document.getElementById('builtText').textContent = path;
+      // Inserta widget dentro del opblock GET /api/hospitales
+      function buildWidget() {
+        const wrap = document.createElement('div');
+        wrap.style.margin = '8px 0 0 0';
+        wrap.style.padding = '8px';
+        wrap.style.background = '#f8fafc';
+        wrap.style.border = '1px solid #e2e8f0';
+        wrap.style.borderRadius = '6px';
+        wrap.innerHTML = `
+          <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+            <strong>Ruta rápida:</strong>
+            <label>Status
+              <select id="statusSelDocs" style="padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px">
+                <option value="activo" selected>activo (default)</option>
+                <option value="inactivo">inactivo</option>
+                <option value="all">all</option>
+              </select>
+            </label>
+            <code id="builtTextDocs" style="padding:4px 6px;background:#fff;border:1px solid #e2e8f0;border-radius:6px">/api/hospitales</code>
+            <button id="copyBtnDocs" title="Copiar" style="padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;background:#f1f5f9;cursor:pointer">Copiar</button>
+          </div>
+          <div style="margin-top:6px;font-size:12px;color:#334155">Consejo: "activo" es el valor por defecto; si seleccionas "activo" no se añade query param.</div>
+        `;
+        return wrap;
       }
-      document.getElementById('statusSel').addEventListener('change', updateLink);
-      document.getElementById('copyBtn').addEventListener('click', function(){
-        const text = document.getElementById('builtText').textContent;
-        navigator.clipboard.writeText(text).then(()=>{
-          const btn = document.getElementById('copyBtn');
-          const old = btn.textContent;
-          btn.textContent = 'Copiado';
-          setTimeout(()=> btn.textContent = old, 1200);
+
+      function updatePath() {
+        const sel = document.getElementById('statusSelDocs');
+        if (!sel) return;
+        const val = sel.value;
+        const path = val === 'activo' ? '/api/hospitales' : `/api/hospitales?status=${encodeURIComponent(val)}`;
+        const code = document.getElementById('builtTextDocs');
+        if (code) code.textContent = path;
+      }
+
+      function injectIntoHospitalsOp() {
+        const blocks = document.querySelectorAll('#swagger-ui .opblock');
+        for (const b of blocks) {
+          const methodEl = b.querySelector('.opblock-summary-method');
+          const pathEl = b.querySelector('.opblock-summary-path');
+          if (!methodEl || !pathEl) continue;
+          if (methodEl.textContent.trim().toUpperCase() === 'GET' && pathEl.textContent.trim() === '/api/hospitales') {
+            const body = b.querySelector('.opblock-body');
+            const container = body || b;
+            if (container && !container.querySelector('#statusSelDocs')) {
+              const widget = buildWidget();
+              container.prepend(widget);
+              // Eventos
+              container.querySelector('#statusSelDocs').addEventListener('change', updatePath);
+              container.querySelector('#copyBtnDocs').addEventListener('click', function(){
+                const txt = container.querySelector('#builtTextDocs').textContent;
+                navigator.clipboard.writeText(txt).then(()=>{
+                  const btn = container.querySelector('#copyBtnDocs');
+                  const old = btn.textContent;
+                  btn.textContent = 'Copiado';
+                  setTimeout(()=> btn.textContent = old, 1200);
+                });
+              });
+              updatePath();
+              return true;
+            }
+          }
+        }
+        return false;
+      }
+
+      // Intentar inyección tras render
+      const tryInject = () => {
+        if (injectIntoHospitalsOp()) return;
+        // Observar cambios para reintentar cuando Swagger expanda secciones
+        const root = document.getElementById('swagger-ui');
+        const obs = new MutationObserver(() => {
+          if (injectIntoHospitalsOp()) {
+            obs.disconnect();
+          }
         });
-      });
-      updateLink();
+        obs.observe(root, { childList: true, subtree: true });
+      };
+      // Dar un pequeño tiempo a la carga inicial
+      setTimeout(tryInject, 400);
     </script>
   </body>
 </html>

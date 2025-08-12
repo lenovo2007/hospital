@@ -186,6 +186,10 @@ components:
         updated_at:
           type: string
           format: date-time
+        status:
+          type: string
+          enum: [activo, inactivo]
+          example: activo
     LoginRequest:
       type: object
       required: [email, password]

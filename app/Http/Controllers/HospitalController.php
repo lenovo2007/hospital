@@ -11,7 +11,7 @@ class HospitalController extends Controller
     // GET /api/hospitales
     public function index()
     {
-        $items = Hospital::latest()->paginate(15);
+        $items = Hospital::where('status', 'activo')->latest()->paginate(15);
         $mensaje = $items->total() > 0 ? 'Listado de hospitales.' : 'hospitales no encontrado';
         return response()->json([
             'status' => true,
@@ -204,7 +204,7 @@ class HospitalController extends Controller
         $data = $request->validate([
             'nombre' => ['sometimes','required','string','max:255'],
             // rif no se actualiza aquí para mantener unicidad consistente por otro endpoint
-            'email' => ['nullable','email','max:255'],
+            'email' => ['nullable','email','max:255', Rule::unique('hospitales','email')->ignore($hospital->id)],
             'telefono' => ['nullable','string','max:50'],
             'ubicacion' => ['nullable','array'],
             'ubicacion.lat' => ['nullable','numeric','between:-90,90'],
@@ -212,9 +212,12 @@ class HospitalController extends Controller
             'direccion' => ['nullable','string','max:255'],
             'tipo' => ['sometimes','required','string','max:255'],
             'status' => ['nullable','in:activo,inactivo'],
+        ], [
+            'email.unique' => 'El email ya está registrado para otro hospital.',
         ]);
 
         $hospital->update($data);
+        $hospital->refresh();
 
         return response()->json([
             'status' => true,

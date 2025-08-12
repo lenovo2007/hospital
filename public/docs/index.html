@@ -14,10 +14,7 @@
   <body>
     <div style="max-width:1200px;margin:16px auto 0;padding:12px;background:#fff;border-radius:8px;border:1px solid #e5e7eb">
       <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-        <strong>Construir URL:</strong>
-        <label>Base URL
-          <input id="baseUrl" value="https://almacen.alwaysdata.net" style="padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px;width:320px"/>
-        </label>
+        <strong>Ruta rápida:</strong>
         <label>Status
           <select id="statusSel" style="padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px">
             <option value="activo" selected>activo (default)</option>
@@ -25,8 +22,8 @@
             <option value="all">all</option>
           </select>
         </label>
-        <a id="builtLink" href="#" target="_blank" style="color:#2563eb;text-decoration:underline">/api/hospitales</a>
-        <button id="openBtn" style="padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;background:#f1f5f9;cursor:pointer">Abrir</button>
+        <code id="builtText" style="padding:4px 6px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px">/api/hospitales</code>
+        <button id="copyBtn" title="Copiar" style="padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;background:#f1f5f9;cursor:pointer">Copiar</button>
       </div>
       <div style="margin-top:8px;font-size:12px;color:#334155">Consejo: "activo" es el valor por defecto; si seleccionas "activo" no se añade query param.</div>
     </div>
@@ -42,21 +39,21 @@
         layout: 'BaseLayout'
       });
 
-      // Helper para construir la URL
+      // Helper para construir solo la ruta
       function updateLink() {
-        const base = document.getElementById('baseUrl').value.replace(/\/$/, '');
         const status = document.getElementById('statusSel').value;
-        const path = '/api/hospitales';
-        const href = status === 'activo' ? `${base}${path}` : `${base}${path}?status=${encodeURIComponent(status)}`;
-        const a = document.getElementById('builtLink');
-        a.textContent = href;
-        a.href = href;
+        const path = status === 'activo' ? '/api/hospitales' : `/api/hospitales?status=${encodeURIComponent(status)}`;
+        document.getElementById('builtText').textContent = path;
       }
-      document.getElementById('baseUrl').addEventListener('input', updateLink);
       document.getElementById('statusSel').addEventListener('change', updateLink);
-      document.getElementById('openBtn').addEventListener('click', function(){
-        const a = document.getElementById('builtLink');
-        window.open(a.href, '_blank');
+      document.getElementById('copyBtn').addEventListener('click', function(){
+        const text = document.getElementById('builtText').textContent;
+        navigator.clipboard.writeText(text).then(()=>{
+          const btn = document.getElementById('copyBtn');
+          const old = btn.textContent;
+          btn.textContent = 'Copiado';
+          setTimeout(()=> btn.textContent = old, 1200);
+        });
       });
       updateLink();
     </script>

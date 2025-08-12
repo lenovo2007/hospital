@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Hospital;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class HospitalController extends Controller
 {
@@ -64,7 +65,7 @@ class HospitalController extends Controller
 
         $data = $request->validate([
             'nombre' => ['sometimes','required','string','max:255'],
-            'email' => ['nullable','email','max:255'],
+            'email' => ['nullable','email','max:255', Rule::unique('hospitales','email')->ignore($hospital->id)],
             'telefono' => ['nullable','string','max:50'],
             'ubicacion' => ['nullable','array'],
             'ubicacion.lat' => ['nullable','numeric','between:-90,90'],
@@ -72,6 +73,8 @@ class HospitalController extends Controller
             'direccion' => ['nullable','string','max:255'],
             'tipo' => ['sometimes','required','string','max:255'],
             'status' => ['nullable','in:activo,inactivo'],
+        ], [
+            'email.unique' => 'El email ya está registrado para otro hospital.',
         ]);
 
         // Evitar que cambien el RIF desde este endpoint
@@ -119,7 +122,7 @@ class HospitalController extends Controller
 
         $data = $request->validate([
             'nombre' => ['sometimes','required','string','max:255'],
-            'email' => ['nullable','email','max:255'],
+            'email' => ['nullable','email','max:255', Rule::unique('hospitales','email')->ignore($hospital->id)],
             'telefono' => ['nullable','string','max:50'],
             'ubicacion' => ['nullable','array'],
             'ubicacion.lat' => ['nullable','numeric','between:-90,90'],
@@ -127,6 +130,8 @@ class HospitalController extends Controller
             'direccion' => ['nullable','string','max:255'],
             'tipo' => ['sometimes','required','string','max:255'],
             'status' => ['nullable','in:activo,inactivo'],
+        ], [
+            'email.unique' => 'El email ya está registrado para otro hospital.',
         ]);
 
         $hospital->update($data);
@@ -150,7 +155,7 @@ class HospitalController extends Controller
         $data = $request->validate([
             'nombre' => ['required','string','max:255'],
             'rif' => ['required','string','max:255','unique:hospitales,rif'],
-            'email' => ['nullable','email','max:255'],
+            'email' => ['nullable','email','max:255','unique:hospitales,email'],
             'telefono' => ['nullable','string','max:50'],
             'ubicacion' => ['nullable','array'],
             'ubicacion.lat' => ['nullable','numeric','between:-90,90'],
@@ -158,6 +163,9 @@ class HospitalController extends Controller
             'direccion' => ['nullable','string','max:255'],
             'tipo' => ['required','string','max:255'],
             'status' => ['nullable','in:activo,inactivo'],
+        ], [
+            'rif.unique' => 'El hospital ya ha sido registrado anteriormente (RIF duplicado).',
+            'email.unique' => 'El email ya está registrado para otro hospital.',
         ]);
 
         \Log::info('HospitalController@store: data validated', $data);

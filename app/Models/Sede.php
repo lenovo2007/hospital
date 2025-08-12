@@ -15,6 +15,7 @@ class Sede extends Model
         'nombre',
         'tipo',
         'hospital_id',
+        'status',
     ];
 
     public function hospital()

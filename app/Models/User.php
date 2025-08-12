@@ -34,6 +34,7 @@ class User extends Authenticatable
         'can_delete',
         'email',
         'password',
+        'status',
     ];
 
     /**

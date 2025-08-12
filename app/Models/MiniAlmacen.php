@@ -13,5 +13,6 @@ class MiniAlmacen extends Model
 
     protected $fillable = [
         'nombre',
+        'status',
     ];
 }

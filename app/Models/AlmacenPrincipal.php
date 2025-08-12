@@ -13,5 +13,6 @@ class AlmacenPrincipal extends Model
 
     protected $fillable = [
         'nombre',
+        'status',
     ];
 }

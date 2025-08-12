@@ -128,18 +128,6 @@ components:
           type: string
           enum: [activo, inactivo]
           example: activo
-        status:
-          type: string
-          enum: [activo, inactivo]
-          example: activo
-        status:
-          type: string
-          enum: [activo, inactivo]
-          example: activo
-        status:
-          type: string
-          enum: [activo, inactivo]
-          example: activo
     Hospital:
       type: object
       properties:

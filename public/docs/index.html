@@ -67,16 +67,17 @@
           if (!methodEl || !pathEl) continue;
           if (methodEl.textContent.trim().toUpperCase() === 'GET' && pathEl.textContent.trim() === '/api/hospitales') {
             const body = b.querySelector('.opblock-body');
-            const container = body || b;
-            if (container && !container.querySelector('#statusSelDocs')) {
+            // Dentro del despliegue: contenido principal del body
+            const bodyContent = b.querySelector('.opblock-body .opblock-section .opblock-section-content') || body;
+            if (bodyContent && !bodyContent.querySelector('#statusSelDocs')) {
               const widget = buildWidget();
-              container.prepend(widget);
+              bodyContent.appendChild(widget);
               // Eventos
-              container.querySelector('#statusSelDocs').addEventListener('change', updatePath);
-              container.querySelector('#copyBtnDocs').addEventListener('click', function(){
-                const txt = container.querySelector('#builtTextDocs').textContent;
+              bodyContent.querySelector('#statusSelDocs').addEventListener('change', updatePath);
+              bodyContent.querySelector('#copyBtnDocs').addEventListener('click', function(){
+                const txt = bodyContent.querySelector('#builtTextDocs').textContent;
                 navigator.clipboard.writeText(txt).then(()=>{
-                  const btn = container.querySelector('#copyBtnDocs');
+                  const btn = bodyContent.querySelector('#copyBtnDocs');
                   const old = btn.textContent;
                   btn.textContent = 'Copiado';
                   setTimeout(()=> btn.textContent = old, 1200);
@@ -84,6 +85,14 @@
               });
               updatePath();
               return true;
+            }
+            // Si aún no hay body (no desplegado), añadir listener para inyectar tras el click
+            const summary = b.querySelector('.opblock-summary');
+            if (summary && !b.classList.contains('is-open')) {
+              summary.addEventListener('click', () => {
+                // esperar a que se renderice el body
+                setTimeout(() => injectIntoHospitalsOp(), 100);
+              }, { once: true });
             }
           }
         }

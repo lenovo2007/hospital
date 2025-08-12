@@ -1125,6 +1125,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
+  /api/hospitales/buscar_por_rif:
+    get:
+      summary: Buscar hospital por RIF
+      tags: [Hospitales]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: rif
+          in: query
+          required: true
+          schema:
+            type: string
+          example: J-12345678-9
+      responses:
+        '200':
+          description: Resultado de búsqueda por RIF o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Hospital'
   /api/hospitales/{id}:
     get:
       summary: Ver detalle de hospital

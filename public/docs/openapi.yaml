@@ -453,7 +453,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
-  /api/hospitales/actualizar_por_rif:
+  /api/hospitales/rif/{rif}:
+    get:
+      summary: Ver hospital por RIF
+      tags: [Hospitales]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: rif
+          in: path
+          required: true
+          schema:
+            type: string
+          example: J-12345678-9
+      responses:
+        '200':
+          description: Detalle por RIF o no encontrado con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Hospital'
     put:
       summary: Actualizar hospital por RIF
       tags: [Hospitales]
@@ -461,7 +485,7 @@ paths:
         - bearerAuth: []
       parameters:
         - name: rif
-          in: query
+          in: path
           required: true
           schema:
             type: string
@@ -1151,31 +1175,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
-  /api/hospitales/buscar_por_rif:
-    get:
-      summary: Buscar hospital por RIF
-      tags: [Hospitales]
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: rif
-          in: query
-          required: true
-          schema:
-            type: string
-          example: J-12345678-9
-      responses:
-        '200':
-          description: Resultado de búsqueda por RIF o error con `status=false`
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Hospital'
   /api/hospitales/{id}:
     get:
       summary: Ver detalle de hospital

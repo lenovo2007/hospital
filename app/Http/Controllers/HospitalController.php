@@ -85,6 +85,56 @@ class HospitalController extends Controller
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }
 
+    // GET /api/hospitales/rif/{rif}
+    public function showByRif(Request $request, string $rif)
+    {
+        $hospital = Hospital::where('rif', $rif)->first();
+        if (!$hospital) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Hospital no encontrado por ese RIF.',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
+        return response()->json([
+            'status' => true,
+            'mensaje' => 'Detalle de hospital por RIF.',
+            'data' => $hospital,
+        ], 200, [], JSON_UNESCAPED_UNICODE);
+    }
+
+    // PUT /api/hospitales/rif/{rif}
+    public function updateByRif(Request $request, string $rif)
+    {
+        $hospital = Hospital::where('rif', $rif)->first();
+        if (!$hospital) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Hospital no encontrado por ese RIF.',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
+
+        $data = $request->validate([
+            'nombre' => ['sometimes','required','string','max:255'],
+            'email' => ['nullable','email','max:255'],
+            'telefono' => ['nullable','string','max:50'],
+            'ubicacion' => ['nullable','array'],
+            'ubicacion.lat' => ['nullable','numeric','between:-90,90'],
+            'ubicacion.lng' => ['nullable','numeric','between:-180,180'],
+            'direccion' => ['nullable','string','max:255'],
+            'tipo' => ['sometimes','required','string','max:255'],
+        ]);
+
+        $hospital->update($data);
+
+        return response()->json([
+            'status' => true,
+            'mensaje' => 'Hospital actualizado por RIF.',
+            'data' => $hospital,
+        ], 200, [], JSON_UNESCAPED_UNICODE);
+    }
+
     // POST /api/hospitales
     public function store(Request $request)
     {
@@ -95,7 +145,7 @@ class HospitalController extends Controller
         ]);
         $data = $request->validate([
             'nombre' => ['required','string','max:255'],
-            'rif' => ['required','string','max:255'],
+            'rif' => ['required','string','max:255','unique:hospitales,rif'],
             'email' => ['nullable','email','max:255'],
             'telefono' => ['nullable','string','max:50'],
             'ubicacion' => ['nullable','array'],
@@ -139,7 +189,7 @@ class HospitalController extends Controller
     {
         $data = $request->validate([
             'nombre' => ['sometimes','required','string','max:255'],
-            'rif' => ['sometimes','required','string','max:255'],
+            // rif no se actualiza aquí para mantener unicidad consistente por otro endpoint
             'email' => ['nullable','email','max:255'],
             'telefono' => ['nullable','string','max:50'],
             'ubicacion' => ['nullable','array'],

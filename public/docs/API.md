@@ -151,19 +151,16 @@ Nota: cuando no hay resultados en el listado o el recurso solicitado no existe, 
 - URL: `/api/hospitales/{id}`
 - Headers: `Authorization: Bearer <TOKEN>`
 
-### Buscar hospital por RIF
+### Ver hospital por RIF
 - Método: GET
-- URL: `/api/hospitales/buscar_por_rif`
+- URL: `/api/hospitales/rif/{rif}`
 - Headers: `Authorization: Bearer <TOKEN>`
-- Query params:
-  - `rif` (string, requerido) Ej: `J-12345678-9`
 
 Ejemplo cURL:
 ```bash
-curl -G "https://almacen.alwaysdata.net/api/hospitales/buscar_por_rif" \
+curl "https://almacen.alwaysdata.net/api/hospitales/rif/J-12345678-9" \
   -H "Accept: application/json" \
-  -H "Authorization: Bearer <TOKEN>" \
-  --data-urlencode "rif=J-12345678-9"
+  -H "Authorization: Bearer <TOKEN>"
 ```
 
 Respuestas 200:
@@ -209,10 +206,8 @@ Respuestas 200:
 
 ### Actualizar hospital por RIF
 - Método: PUT
-- URL: `/api/hospitales/actualizar_por_rif`
+- URL: `/api/hospitales/rif/{rif}`
 - Headers: `Authorization: Bearer <TOKEN>`
-- Query params:
-  - `rif` (string, requerido) Ej: `J-12345678-9`
 - Body (JSON): mismos campos que update, opcionales según necesidad. Ejemplo:
 ```json
 {
@@ -227,7 +222,7 @@ Respuestas 200:
 
 Ejemplo cURL:
 ```bash
-curl -X PUT "https://almacen.alwaysdata.net/api/hospitales/actualizar_por_rif?rif=J-12345678-9" \
+curl -X PUT "https://almacen.alwaysdata.net/api/hospitales/rif/J-12345678-9" \
   -H "Accept: application/json" \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <TOKEN>" \

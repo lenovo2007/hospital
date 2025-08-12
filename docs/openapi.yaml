@@ -453,7 +453,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
-  /api/hospitales/actualizar_por_rif:
+  /api/hospitales/rif/{rif}:
+    get:
+      summary: Ver hospital por RIF
+      tags: [Hospitales]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: rif
+          in: path
+          required: true
+          schema:
+            type: string
+          example: J-12345678-9
+      responses:
+        '200':
+          description: Detalle por RIF o no encontrado con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Hospital'
     put:
       summary: Actualizar hospital por RIF
       tags: [Hospitales]
@@ -461,7 +485,7 @@ paths:
         - bearerAuth: []
       parameters:
         - name: rif
-          in: query
+          in: path
           required: true
           schema:
             type: string

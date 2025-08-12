@@ -11,18 +11,54 @@
     #swagger-ui { max-width: 1200px; margin: 0 auto; }
   </style>
 </head>
-<body>
-  <div id="swagger-ui"></div>
-  <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js" crossorigin></script>
-  <script>
-    const specUrl = './openapi.yaml?v=' + (new Date()).getTime();
-    window.ui = SwaggerUIBundle({
-      url: specUrl,
-      dom_id: '#swagger-ui',
-      deepLinking: true,
-      presets: [SwaggerUIBundle.presets.apis],
-      layout: 'BaseLayout'
-    });
-  </script>
-</body>
+  <body>
+    <div style="max-width:1200px;margin:16px auto 0;padding:12px;background:#fff;border-radius:8px;border:1px solid #e5e7eb">
+      <div style="display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+        <strong>Construir URL:</strong>
+        <label>Base URL
+          <input id="baseUrl" value="https://almacen.alwaysdata.net" style="padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px;width:320px"/>
+        </label>
+        <label>Status
+          <select id="statusSel" style="padding:6px 8px;border:1px solid #cbd5e1;border-radius:6px">
+            <option value="activo" selected>activo (default)</option>
+            <option value="inactivo">inactivo</option>
+            <option value="all">all</option>
+          </select>
+        </label>
+        <a id="builtLink" href="#" target="_blank" style="color:#2563eb;text-decoration:underline">/api/hospitales</a>
+        <button id="openBtn" style="padding:6px 10px;border:1px solid #cbd5e1;border-radius:6px;background:#f1f5f9;cursor:pointer">Abrir</button>
+      </div>
+      <div style="margin-top:8px;font-size:12px;color:#334155">Consejo: "activo" es el valor por defecto; si seleccionas "activo" no se añade query param.</div>
+    </div>
+    <div id="swagger-ui"></div>
+    <script src="https://unpkg.com/swagger-ui-dist@5/swagger-ui-bundle.js" crossorigin></script>
+    <script>
+      const specUrl = './openapi.yaml?v=' + (new Date()).getTime();
+      window.ui = SwaggerUIBundle({
+        url: specUrl,
+        dom_id: '#swagger-ui',
+        deepLinking: true,
+        presets: [SwaggerUIBundle.presets.apis],
+        layout: 'BaseLayout'
+      });
+
+      // Helper para construir la URL
+      function updateLink() {
+        const base = document.getElementById('baseUrl').value.replace(/\/$/, '');
+        const status = document.getElementById('statusSel').value;
+        const path = '/api/hospitales';
+        const href = status === 'activo' ? `${base}${path}` : `${base}${path}?status=${encodeURIComponent(status)}`;
+        const a = document.getElementById('builtLink');
+        a.textContent = href;
+        a.href = href;
+      }
+      document.getElementById('baseUrl').addEventListener('input', updateLink);
+      document.getElementById('statusSel').addEventListener('change', updateLink);
+      document.getElementById('openBtn').addEventListener('click', function(){
+        const a = document.getElementById('builtLink');
+        window.open(a.href, '_blank');
+      });
+      updateLink();
+    </script>
+  </body>
 </html>

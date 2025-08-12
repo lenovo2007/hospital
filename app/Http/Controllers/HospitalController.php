@@ -19,6 +19,32 @@ class HospitalController extends Controller
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }
 
+    // GET /api/hospitales/buscar_por_rif?rif=J-12345678-9
+    public function buscarPorRif(Request $request)
+    {
+        $data = $request->validate([
+            'rif' => ['required','string','max:255'],
+        ]);
+
+        $rif = $data['rif'];
+
+        $hospital = Hospital::where('rif', $rif)->first();
+
+        if (!$hospital) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Hospital no encontrado por ese RIF.',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
+
+        return response()->json([
+            'status' => true,
+            'mensaje' => 'Hospital encontrado.',
+            'data' => $hospital,
+        ], 200, [], JSON_UNESCAPED_UNICODE);
+    }
+
     // POST /api/hospitales
     public function store(Request $request)
     {

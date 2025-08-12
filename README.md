@@ -59,3 +59,63 @@ If you discover a security vulnerability within Laravel, please send an e-mail t
 ## License
 
 The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+
+## API - Hospitales
+
+### Buscar hospital por RIF
+
+- **Método**: `GET`
+- **URL**: `/api/hospitales/buscar_por_rif`
+- **Auth**: Requiere token Bearer (Sanctum)
+- **Query params**:
+  - `rif` (string, requerido). Ej: `J-12345678-9`
+
+#### Ejemplo (cURL)
+
+```bash
+curl -X GET "https://almacen.alwaysdata.net/api/hospitales/buscar_por_rif?rif=J-12345678-9" \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+#### Respuesta 200 (Encontrado)
+
+```json
+{
+  "status": true,
+  "mensaje": "Hospital encontrado.",
+  "data": {
+    "id": 1,
+    "nombre": "Hospital X",
+    "rif": "J-12345678-9",
+    "email": "info@hospitalx.com",
+    "telefono": "000-0000000",
+    "ubicacion": {"lat": 10.5, "lng": -66.9},
+    "direccion": "Av. Principal",
+    "tipo": "publico",
+    "created_at": "2025-08-11T00:00:00.000000Z",
+    "updated_at": "2025-08-11T00:00:00.000000Z"
+  }
+}
+```
+
+#### Respuesta 200 (No encontrado)
+
+```json
+{
+  "status": false,
+  "mensaje": "Hospital no encontrado por ese RIF.",
+  "data": null
+}
+```
+
+#### Respuesta 422 (Validación)
+
+```json
+{
+  "message": "The given data was invalid.",
+  "errors": {
+    "rif": ["The rif field is required."]
+  }
+}
+```

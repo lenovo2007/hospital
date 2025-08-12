@@ -24,6 +24,7 @@ Route::middleware(['auth:sanctum','crud.perms'])->group(function () {
     Route::delete('/users/{user}', [UserController::class, 'destroy']);
 
     // Hospitales CRUD
+    Route::get('/hospitales/buscar_por_rif', [HospitalController::class, 'buscarPorRif']);
     Route::get('/hospitales', [HospitalController::class, 'index']);
     Route::post('/hospitales', [HospitalController::class, 'store']);
     Route::get('/hospitales/{hospital}', [HospitalController::class, 'show']);

@@ -151,6 +151,31 @@ Nota: cuando no hay resultados en el listado o el recurso solicitado no existe, 
 - URL: `/api/hospitales/{id}`
 - Headers: `Authorization: Bearer <TOKEN>`
 
+### Buscar hospital por RIF
+- Método: GET
+- URL: `/api/hospitales/buscar_por_rif`
+- Headers: `Authorization: Bearer <TOKEN>`
+- Query params:
+  - `rif` (string, requerido) Ej: `J-12345678-9`
+
+Ejemplo cURL:
+```bash
+curl -G "https://almacen.alwaysdata.net/api/hospitales/buscar_por_rif" \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer <TOKEN>" \
+  --data-urlencode "rif=J-12345678-9"
+```
+
+Respuestas 200:
+- Encontrado
+```json
+{ "status": true, "mensaje": "Hospital encontrado.", "data": { /* Hospital */ } }
+```
+- No encontrado
+```json
+{ "status": false, "mensaje": "Hospital no encontrado por ese RIF.", "data": null }
+```
+
 ### Crear hospital
 - Método: POST
 - URL: `/api/hospitales`

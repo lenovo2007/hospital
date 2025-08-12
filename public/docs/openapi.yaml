@@ -453,6 +453,32 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
+  /api/hospitales/actualizar_por_rif:
+    put:
+      summary: Actualizar hospital por RIF
+      tags: [Hospitales]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: rif
+          in: query
+          required: true
+          schema:
+            type: string
+          example: J-12345678-9
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Hospital'
+      responses:
+        '200':
+          description: Hospital actualizado por RIF o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
 
   /api/farmacias:
     get:

@@ -151,6 +151,31 @@ Nota: cuando no hay resultados en el listado o el recurso solicitado no existe, 
 - URL: `/api/hospitales/{id}`
 - Headers: `Authorization: Bearer <TOKEN>`
 
+### Buscar hospital por RIF
+- Método: GET
+- URL: `/api/hospitales/buscar_por_rif`
+- Headers: `Authorization: Bearer <TOKEN>`
+- Query params:
+  - `rif` (string, requerido) Ej: `J-12345678-9`
+
+Ejemplo cURL:
+```bash
+curl -G "https://almacen.alwaysdata.net/api/hospitales/buscar_por_rif" \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer <TOKEN>" \
+  --data-urlencode "rif=J-12345678-9"
+```
+
+Respuestas 200:
+- Encontrado
+```json
+{ "status": true, "mensaje": "Hospital encontrado.", "data": { /* Hospital */ } }
+```
+- No encontrado
+```json
+{ "status": false, "mensaje": "Hospital no encontrado por ese RIF.", "data": null }
+```
+
 ### Crear hospital
 - Método: POST
 - URL: `/api/hospitales`
@@ -181,6 +206,45 @@ Nota: cuando no hay resultados en el listado o el recurso solicitado no existe, 
 - URL: `/api/hospitales/{id}`
 - Headers: `Authorization: Bearer <TOKEN>`
 - Respuesta 200: hospital eliminado.
+
+### Actualizar hospital por RIF
+- Método: PUT
+- URL: `/api/hospitales/actualizar_por_rif`
+- Headers: `Authorization: Bearer <TOKEN>`
+- Query params:
+  - `rif` (string, requerido) Ej: `J-12345678-9`
+- Body (JSON): mismos campos que update, opcionales según necesidad. Ejemplo:
+```json
+{
+  "nombre": "Hospital Central Actualizado",
+  "email": "nuevo@hospital.test",
+  "telefono": "04140000000",
+  "ubicacion": { "lat": 10.49, "lng": -66.90 },
+  "direccion": "Nueva dirección",
+  "tipo": "privado"
+}
+```
+
+Ejemplo cURL:
+```bash
+curl -X PUT "https://almacen.alwaysdata.net/api/hospitales/actualizar_por_rif?rif=J-12345678-9" \
+  -H "Accept: application/json" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -d '{
+    "nombre":"Hospital Central Actualizado"
+  }'
+```
+
+Respuestas 200:
+- Actualizado
+```json
+{ "status": true, "mensaje": "Hospital actualizado por RIF.", "data": { /* Hospital */ } }
+```
+- No encontrado
+```json
+{ "status": false, "mensaje": "Hospital no encontrado por ese RIF.", "data": null }
+```
 
 ## Sedes (protegido)
 Campos: `id`, `nombre`, `tipo`, `hospital_id` (FK hospitales.id, opcional).

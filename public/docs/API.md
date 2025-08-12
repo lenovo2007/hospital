@@ -245,7 +245,9 @@ Respuestas 200:
 ```
 
 ## Sedes (protegido)
-Campos: `id`, `nombre`, `tipo`, `hospital_id` (FK hospitales.id, opcional).
+Campos: `id`, `nombre`, `tipo`, `hospital_id` (FK hospitales.id, opcional), `status` (`activo`|`inactivo`).
+
+Nota: `status` por defecto es `activo`. Puede enviarse en creación/actualización.
 
 Nota: cuando no hay resultados o la sede no existe, se responde con HTTP 200, `status: true` y `mensaje: "sedes no encontrado"`.
 

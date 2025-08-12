@@ -132,6 +132,14 @@ components:
           type: string
           enum: [activo, inactivo]
           example: activo
+        status:
+          type: string
+          enum: [activo, inactivo]
+          example: activo
+        status:
+          type: string
+          enum: [activo, inactivo]
+          example: activo
     Hospital:
       type: object
       properties:
@@ -252,6 +260,10 @@ components:
         updated_at:
           type: string
           format: date-time
+        status:
+          type: string
+          enum: [activo, inactivo]
+          example: activo
     PaginatedSedes:
       type: object
       properties:
@@ -282,6 +294,10 @@ components:
         updated_at:
           type: string
           format: date-time
+        status:
+          type: string
+          enum: [activo, inactivo]
+          example: activo
     PaginatedFarmacias:
       type: object
       properties:
@@ -312,6 +328,10 @@ components:
         updated_at:
           type: string
           format: date-time
+        status:
+          type: string
+          enum: [activo, inactivo]
+          example: activo
     PaginatedMiniAlmacenes:
       type: object
       properties:
@@ -342,6 +362,10 @@ components:
         updated_at:
           type: string
           format: date-time
+        status:
+          type: string
+          enum: [activo, inactivo]
+          example: activo
     PaginatedAlmacenesPrincipales:
       type: object
       properties:
@@ -372,6 +396,10 @@ components:
         updated_at:
           type: string
           format: date-time
+        status:
+          type: string
+          enum: [activo, inactivo]
+          example: activo
     PaginatedAlmacenesCentrales:
       type: object
       properties:

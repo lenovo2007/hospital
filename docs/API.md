@@ -133,7 +133,9 @@ Modelo con campos personalizados: `tipo`, `rol`, `nombre`, `apellido`, `cedula` 
 - Respuesta 200: usuario eliminado.
 
 ## Hospitales (protegido)
-Campos: `id`, `nombre`, `rif`, `email` (opcional), `telefono` (opcional), `ubicacion` (opcional, objeto `{ lat:number, lng:number }`), `direccion` (opcional), `tipo`.
+Campos: `id`, `nombre`, `rif`, `email` (opcional), `telefono` (opcional), `ubicacion` (JSON opcional con `lat`,`lng`), `direccion` (opcional), `tipo` (publico/privado), `created_at`, `updated_at`, `status` (`activo`|`inactivo`).
+
+Nota: ahora todos los recursos principales incluyen el campo `status` (`activo`|`inactivo`). Por defecto `activo`. Puede enviarse en creación/actualización.
 
 Nota: cuando no hay resultados en el listado o el recurso solicitado no existe, se responde con HTTP 200, `status: true` y `mensaje: "hospitales no encontrado"`.
 
@@ -216,7 +218,8 @@ Respuestas 200:
   "telefono": "04140000000",
   "ubicacion": { "lat": 10.49, "lng": -66.90 },
   "direccion": "Nueva dirección",
-  "tipo": "privado"
+  "tipo": "privado",
+  "status": "activo"
 }
 ```
 
@@ -242,7 +245,9 @@ Respuestas 200:
 ```
 
 ## Sedes (protegido)
-Campos: `id`, `nombre`, `tipo`, `hospital_id` (FK hospitales.id, opcional).
+Campos: `id`, `nombre`, `tipo`, `hospital_id` (FK hospitales.id, opcional), `status` (`activo`|`inactivo`).
+
+Nota: `status` por defecto es `activo`. Puede enviarse en creación/actualización.
 
 Nota: cuando no hay resultados o la sede no existe, se responde con HTTP 200, `status: true` y `mensaje: "sedes no encontrado"`.
 

@@ -19,6 +19,7 @@ class Hospital extends Model
         'ubicacion',
         'direccion',
         'tipo',
+        'status',
     ];
 
     protected $casts = [

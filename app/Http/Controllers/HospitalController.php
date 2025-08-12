@@ -71,6 +71,7 @@ class HospitalController extends Controller
             'ubicacion.lng' => ['nullable','numeric','between:-180,180'],
             'direccion' => ['nullable','string','max:255'],
             'tipo' => ['sometimes','required','string','max:255'],
+            'status' => ['nullable','in:activo,inactivo'],
         ]);
 
         // Evitar que cambien el RIF desde este endpoint
@@ -153,9 +154,11 @@ class HospitalController extends Controller
             'ubicacion.lng' => ['nullable','numeric','between:-180,180'],
             'direccion' => ['nullable','string','max:255'],
             'tipo' => ['required','string','max:255'],
+            'status' => ['nullable','in:activo,inactivo'],
         ]);
 
         \Log::info('HospitalController@store: data validated', $data);
+        if (!isset($data['status'])) { $data['status'] = 'activo'; }
         $item = Hospital::create($data);
 
         \Log::info('HospitalController@store: hospital created', ['id' => $item->id]);
@@ -197,6 +200,7 @@ class HospitalController extends Controller
             'ubicacion.lng' => ['nullable','numeric','between:-180,180'],
             'direccion' => ['nullable','string','max:255'],
             'tipo' => ['sometimes','required','string','max:255'],
+            'status' => ['nullable','in:activo,inactivo'],
         ]);
 
         $hospital->update($data);

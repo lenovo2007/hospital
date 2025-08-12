@@ -145,9 +145,37 @@ Nota: cuando no hay resultados en el listado o el recurso solicitado no existe, 
 - Método: GET
 - URL: `/api/hospitales`
 - Headers: `Authorization: Bearer <TOKEN>`
+ - Parámetros de query opcionales:
+   - `status`: `activo` | `inactivo` | `all` (por defecto `activo`).
+     - `activo`: lista solo hospitales activos (comportamiento por defecto).
+     - `inactivo`: lista solo hospitales inactivos.
+     - `all`: lista todos (activos e inactivos).
 - Respuesta 200:
 ```json
 { "status": true, "mensaje": "Listado de hospitales.", "data": { /* paginación */ } }
+```
+
+Ejemplos cURL:
+
+- Solo activos (por defecto)
+```bash
+curl "https://almacen.alwaysdata.net/api/hospitales" \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+- Inactivos
+```bash
+curl "https://almacen.alwaysdata.net/api/hospitales?status=inactivo" \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+- Todos
+```bash
+curl "https://almacen.alwaysdata.net/api/hospitales?status=all" \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer <TOKEN>"
 ```
 
 ### Ver detalle de hospital

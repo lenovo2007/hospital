@@ -9,9 +9,18 @@ use Illuminate\Validation\Rule;
 class HospitalController extends Controller
 {
     // GET /api/hospitales
-    public function index()
+    public function index(Request $request)
     {
-        $items = Hospital::where('status', 'activo')->latest()->paginate(15);
+        $status = $request->query('status', 'activo');
+        if (!in_array($status, ['activo', 'inactivo', 'all'], true)) {
+            $status = 'activo';
+        }
+
+        $query = Hospital::query();
+        if ($status !== 'all') {
+            $query->where('status', $status);
+        }
+        $items = $query->latest()->paginate(15);
         $mensaje = $items->total() > 0 ? 'Listado de hospitales.' : 'hospitales no encontrado';
         return response()->json([
             'status' => true,

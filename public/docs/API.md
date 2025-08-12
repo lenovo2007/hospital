@@ -83,7 +83,9 @@ Puedes probar el login con cualquiera de las dos cuentas para obtener un token y
 - Respuesta 200: datos del usuario autenticado.
 
 ## Usuarios (protegido)
-Modelo con campos personalizados: `tipo`, `rol`, `nombre`, `apellido`, `cedula` (único), `telefono` (opcional), `direccion` (opcional), `email`, `password`.
+Modelo con campos personalizados: `tipo`, `rol`, `nombre`, `apellido`, `cedula` (único), `telefono` (opcional), `direccion` (opcional), `email`, `password`, `status` (`activo`|`inactivo`).
+
+Nota: `status` por defecto es `activo`. Puede enviarse en creación/actualización.
 
 ### Listar usuarios
 - Método: GET
@@ -291,6 +293,26 @@ Nota: cuando no hay resultados o la sede no existe, se responde con HTTP 200, `s
 - URL: `/api/sedes/{id}`
 - Headers: `Authorization: Bearer <TOKEN>`
 - Respuesta 200: sede eliminada.
+
+## Farmacias (protegido)
+Campos: `id`, `nombre`, `status` (`activo`|`inactivo`).
+
+Nota: `status` por defecto es `activo`. Puede enviarse en creación/actualización.
+
+## Mini Almacenes (protegido)
+Campos: `id`, `nombre`, `status` (`activo`|`inactivo`).
+
+Nota: `status` por defecto es `activo`. Puede enviarse en creación/actualización.
+
+## Almacenes Principales (protegido)
+Campos: `id`, `nombre`, `status` (`activo`|`inactivo`).
+
+Nota: `status` por defecto es `activo`. Puede enviarse en creación/actualización.
+
+## Almacenes Centrales (protegido)
+Campos: `id`, `nombre`, `status` (`activo`|`inactivo`).
+
+Nota: `status` por defecto es `activo`. Puede enviarse en creación/actualización.
 
 ## Errores (siempre HTTP 200)
 - No autenticado: `{ "status": false, "mensaje": "No autenticado. Token inválido o ausente.", "data": null }`

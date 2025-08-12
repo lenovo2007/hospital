@@ -45,9 +45,11 @@ class UserController extends Controller
             'sede_id' => ['nullable','integer','exists:sedes,id'],
             'email' => ['required','string','email','max:255','unique:users,email'],
             'password' => ['required','string','min:8'],
+            'status' => ['nullable','in:activo,inactivo'],
         ]);
 
         $data['password'] = Hash::make($data['password']);
+        if (!isset($data['status'])) { $data['status'] = 'activo'; }
 
         $user = User::create($data);
 
@@ -93,6 +95,7 @@ class UserController extends Controller
             'sede_id' => ['nullable','integer','exists:sedes,id'],
             'email' => ['sometimes','required','string','email','max:255', Rule::unique('users','email')->ignore($user->id)],
             'password' => ['nullable','string','min:8'],
+            'status' => ['nullable','in:activo,inactivo'],
         ]);
 
         if (!empty($data['password'])) {

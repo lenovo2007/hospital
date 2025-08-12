@@ -26,8 +26,9 @@ class SedeController extends Controller
             'nombre' => ['required','string','max:255'],
             'tipo' => ['required','string','max:255'],
             'hospital_id' => ['nullable','integer','exists:hospitales,id'],
+            'status' => ['nullable','in:activo,inactivo'],
         ]);
-
+        if (!isset($data['status'])) { $data['status'] = 'activo'; }
         $item = Sede::create($data);
 
         return response()->json([
@@ -62,6 +63,7 @@ class SedeController extends Controller
             'nombre' => ['sometimes','required','string','max:255'],
             'tipo' => ['sometimes','required','string','max:255'],
             'hospital_id' => ['nullable','integer','exists:hospitales,id'],
+            'status' => ['nullable','in:activo,inactivo'],
         ]);
 
         $sede->update($data);

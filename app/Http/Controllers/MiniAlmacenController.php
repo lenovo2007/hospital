@@ -22,7 +22,9 @@ class MiniAlmacenController extends Controller
     {
         $data = $request->validate([
             'nombre' => ['required','string','max:255'],
+            'status' => ['nullable','in:activo,inactivo'],
         ]);
+        if (!isset($data['status'])) { $data['status'] = 'activo'; }
         $item = MiniAlmacen::create($data);
         return response()->json([
             'status' => true,
@@ -52,6 +54,7 @@ class MiniAlmacenController extends Controller
     {
         $data = $request->validate([
             'nombre' => ['sometimes','required','string','max:255'],
+            'status' => ['nullable','in:activo,inactivo'],
         ]);
         $mini_almacene->update($data);
         return response()->json([

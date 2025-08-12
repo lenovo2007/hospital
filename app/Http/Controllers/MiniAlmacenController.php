@@ -57,6 +57,7 @@ class MiniAlmacenController extends Controller
             'status' => ['nullable','in:activo,inactivo'],
         ]);
         $mini_almacene->update($data);
+        $mini_almacene->refresh();
         return response()->json([
             'status' => true,
             'mensaje' => 'Mini almacén actualizado.',

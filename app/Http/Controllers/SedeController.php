@@ -67,6 +67,7 @@ class SedeController extends Controller
         ]);
 
         $sede->update($data);
+        $sede->refresh();
 
         return response()->json([
             'status' => true,

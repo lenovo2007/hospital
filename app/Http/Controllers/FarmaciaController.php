@@ -57,6 +57,7 @@ class FarmaciaController extends Controller
             'status' => ['nullable','in:activo,inactivo'],
         ]);
         $farmacia->update($data);
+        $farmacia->refresh();
         return response()->json([
             'status' => true,
             'mensaje' => 'Farmacia actualizada.',

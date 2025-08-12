@@ -105,6 +105,7 @@ class UserController extends Controller
         }
 
         $user->update($data);
+        $user->refresh();
 
         return response()->json([
             'status' => true,

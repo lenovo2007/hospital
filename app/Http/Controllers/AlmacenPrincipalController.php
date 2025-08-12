@@ -57,6 +57,7 @@ class AlmacenPrincipalController extends Controller
             'status' => ['nullable','in:activo,inactivo'],
         ]);
         $almacenes_principale->update($data);
+        $almacenes_principale->refresh();
         return response()->json([
             'status' => true,
             'mensaje' => 'Almacén principal actualizado.',

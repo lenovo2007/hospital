@@ -57,6 +57,7 @@ class AlmacenCentralController extends Controller
             'status' => ['nullable','in:activo,inactivo'],
         ]);
         $almacenes_centrale->update($data);
+        $almacenes_centrale->refresh();
         return response()->json([
             'status' => true,
             'mensaje' => 'Almacén central actualizado.',

@@ -342,6 +342,86 @@ Campos: `id`, `nombre`, `status` (`activo`|`inactivo`).
 
 Nota: `status` por defecto es `activo`. Puede enviarse en creación/actualización.
 
+## Insumos (protegido)
+Campos: `id`, `codigo` (único), `nombre`, `tipo`, `unidad_medida`, `cantidad_por_paquete` (entero ≥ 0), `descripcion` (opcional), `status` (`activo`|`inactivo`).
+
+Notas:
+- `status` por defecto es `activo`. Puede enviarse en creación/actualización.
+- El listado soporta filtro opcional por `status` igual que hospitales.
+
+### Listar insumos
+- Método: GET
+- URL: `/api/insumos`
+- Headers: `Authorization: Bearer <TOKEN>`
+- Parámetros de query opcionales:
+  - `status`: `activo` | `inactivo` | `all` (por defecto `activo`).
+    - `activo`: lista solo insumos activos (comportamiento por defecto).
+    - `inactivo`: lista solo insumos inactivos.
+    - `all`: lista todos (activos e inactivos).
+- Respuesta 200:
+```json
+{ "status": true, "mensaje": "Listado de insumos.", "data": { /* paginación */ } }
+```
+
+Ejemplos cURL:
+
+- Solo activos (por defecto)
+```bash
+curl "https://almacen.alwaysdata.net/api/insumos" \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+- Inactivos
+```bash
+curl "https://almacen.alwaysdata.net/api/insumos?status=inactivo" \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+- Todos
+```bash
+curl "https://almacen.alwaysdata.net/api/insumos?status=all" \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+### Ver detalle de insumo
+- Método: GET
+- URL: `/api/insumos/{id}`
+- Headers: `Authorization: Bearer <TOKEN>`
+
+### Crear insumo
+- Método: POST
+- URL: `/api/insumos`
+- Headers: `Authorization: Bearer <TOKEN>`
+- Body (JSON) ejemplo:
+```json
+{
+  "codigo": "INS-001",
+  "nombre": "Guantes Quirúrgicos",
+  "tipo": "descartable",
+  "unidad_medida": "caja",
+  "cantidad_por_paquete": 100,
+  "descripcion": "Guantes de látex talla M",
+  "status": "activo"
+}
+```
+- Respuesta 200: insumo creado.
+
+### Actualizar insumo
+- Método: PUT
+- URL: `/api/insumos/{id}`
+- Headers: `Authorization: Bearer <TOKEN>`
+- Body: mismos campos (según validación). `codigo` debe ser único.
+- Respuesta 200: insumo actualizado.
+
+### Eliminar insumo
+- Método: DELETE
+- URL: `/api/insumos/{id}`
+- Headers: `Authorization: Bearer <TOKEN>`
+- Respuesta 200: insumo eliminado.
+
 ## Errores (siempre HTTP 200)
 - No autenticado: `{ "status": false, "mensaje": "No autenticado. Token inválido o ausente.", "data": null }`
 - No autorizado: `{ "status": false, "mensaje": "No autorizado para realizar esta acción.", "data": null }`

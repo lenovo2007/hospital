@@ -9,6 +9,7 @@ use App\Http\Controllers\FarmaciaController;
 use App\Http\Controllers\MiniAlmacenController;
 use App\Http\Controllers\AlmacenPrincipalController;
 use App\Http\Controllers\AlmacenCentralController;
+use App\Http\Controllers\InsumoController;
 
 // Autenticación con token
 Route::post('/login', [AuthController::class, 'login']);
@@ -67,5 +68,11 @@ Route::middleware(['auth:sanctum','crud.perms'])->group(function () {
     Route::get('/almacenes_centrales/{almacenes_centrale}', [AlmacenCentralController::class, 'show']);
     Route::put('/almacenes_centrales/{almacenes_centrale}', [AlmacenCentralController::class, 'update']);
     Route::delete('/almacenes_centrales/{almacenes_centrale}', [AlmacenCentralController::class, 'destroy']);
-});
 
+    // Insumos CRUD
+    Route::get('/insumos', [InsumoController::class, 'index']);
+    Route::post('/insumos', [InsumoController::class, 'store']);
+    Route::get('/insumos/{insumo}', [InsumoController::class, 'show']);
+    Route::put('/insumos/{insumo}', [InsumoController::class, 'update']);
+    Route::delete('/insumos/{insumo}', [InsumoController::class, 'destroy']);
+});

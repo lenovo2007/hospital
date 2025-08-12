@@ -407,9 +407,193 @@ components:
           type: integer
         total:
           type: integer
+    Insumo:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        codigo:
+          type: string
+          example: INS-001
+        nombre:
+          type: string
+          example: Guantes Quirúrgicos
+        tipo:
+          type: string
+          example: descartable
+        unidad_medida:
+          type: string
+          example: caja
+        cantidad_por_paquete:
+          type: integer
+          example: 100
+        descripcion:
+          type: string
+          nullable: true
+          example: Guantes de látex talla M
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [activo, inactivo]
+          example: activo
+    PaginatedInsumos:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Insumo'
+        current_page:
+          type: integer
+        last_page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
 security:
   - bearerAuth: []
 paths:
+  /api/insumos:
+    get:
+      summary: Listar insumos
+      tags: [Insumos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          schema:
+            type: string
+            enum: [activo, inactivo, all]
+            default: activo
+          description: Filtra insumos por status. Por defecto "activo". Usa "all" para incluir todos.
+      responses:
+        '200':
+          description: Listado de insumos (paginado)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedInsumos'
+    post:
+      summary: Crear insumo
+      tags: [Insumos]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [codigo, nombre, tipo, unidad_medida, cantidad_por_paquete]
+              properties:
+                codigo: { type: string }
+                nombre: { type: string }
+                tipo: { type: string }
+                unidad_medida: { type: string }
+                cantidad_por_paquete: { type: integer, minimum: 0 }
+                descripcion: { type: string, nullable: true }
+                status: { type: string, enum: [activo, inactivo] }
+      responses:
+        '200':
+          description: Insumo creado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Insumo'
+  /api/insumos/{id}:
+    get:
+      summary: Ver detalle de insumo
+      tags: [Insumos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Detalle de insumo
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Insumo'
+    put:
+      summary: Actualizar insumo
+      tags: [Insumos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                codigo: { type: string }
+                nombre: { type: string }
+                tipo: { type: string }
+                unidad_medida: { type: string }
+                cantidad_por_paquete: { type: integer, minimum: 0 }
+                descripcion: { type: string, nullable: true }
+                status: { type: string, enum: [activo, inactivo] }
+      responses:
+        '200':
+          description: Insumo actualizado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Insumo'
+    delete:
+      summary: Eliminar insumo
+      tags: [Insumos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Insumo eliminado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
   /api/login:
     post:
       summary: Login y emisión de token

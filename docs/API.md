@@ -354,21 +354,6 @@ Notas:
 - URL: `/api/insumos`
 - Headers: `Authorization: Bearer <TOKEN>`
 
-Ruta rápida:
-
-- Status
-  - activo (default)
-  - inactivo
-  - all
-- Ruta base: `/api/insumos`
-- Consejo: "activo" es el valor por defecto; si seleccionas "activo" no se añade query param.
-
-Copiar:
-
-```
-/api/insumos
-```
-
 - Respuesta 200:
 ```json
 { "status": true, "mensaje": "Listado de insumos.", "data": { /* paginación */ } }

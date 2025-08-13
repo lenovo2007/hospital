@@ -518,7 +518,6 @@ paths:
                     properties:
                       data:
                         $ref: '#/components/schemas/Insumo'
-  /api/insumos/{id}:
   /api/insumos/codigo/{codigo}:
     get:
       summary: Ver insumo por código
@@ -577,6 +576,7 @@ paths:
                     properties:
                       data:
                         $ref: '#/components/schemas/Insumo'
+  /api/insumos/{id}:
     get:
       summary: Ver detalle de insumo
       tags: [Insumos]

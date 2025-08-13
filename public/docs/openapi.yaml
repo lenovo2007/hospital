@@ -470,7 +470,7 @@ paths:
         - name: status
           in: query
           required: false
-          description: "Filtrar por estado: activo, inactivo o todos (todos). Por defecto activo."
+          description: Filtrar por estado: activo, inactivo o todos. Por defecto activo.
           schema:
             type: string
             enum: [activo, inactivo, todos]

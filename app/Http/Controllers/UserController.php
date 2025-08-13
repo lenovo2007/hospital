@@ -342,6 +342,8 @@ class UserController extends Controller
 
         $token = Str::random(60);
         $user->remember_token = $token;
+        // Expiración de token en 60 minutos
+        $user->password_reset_expires_at = now()->addMinutes(60);
         $user->save();
 
         // Envío de token por correo si el usuario posee email
@@ -376,13 +378,25 @@ class UserController extends Controller
         if (!$user) {
             return response()->json([
                 'status' => false,
-                'mensaje' => 'Token inválido o expirado.',
+                'mensaje' => 'Token inválido.',
                 'data' => null,
-            ], 200, [], JSON_UNESCAPED_UNICODE);
+                'autenticacion' => 1,
+            ]);
+        }
+
+        // Validar expiración del token
+        if (!empty($user->password_reset_expires_at) && $user->password_reset_expires_at->isPast()) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'El token ha expirado. Solicita uno nuevo.',
+                'data' => null,
+                'autenticacion' => 1,
+            ]);
         }
 
         $user->password = Hash::make($data['password']);
         $user->remember_token = null;
+        $user->password_reset_expires_at = null;
         $user->save();
 
         return response()->json([

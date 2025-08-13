@@ -1407,15 +1407,6 @@ paths:
       tags: [Hospitales]
       security:
         - bearerAuth: []
-      parameters:
-        - name: status
-          in: query
-          required: false
-          description: "Filtrar por estado: activo, inactivo o all (todos). Por defecto activo."
-          schema:
-            type: string
-            enum: [activo, inactivo, all]
-            default: activo
       responses:
         '200':
           description: Listado de hospitales o error con `status=false`

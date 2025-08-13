@@ -13,12 +13,22 @@ use App\Http\Controllers\InsumoController;
 
 // Autenticación con token
 Route::post('/login', [AuthController::class, 'login']);
+// Recuperación de contraseña (público)
+Route::post('/users/password/forgot', [UserController::class, 'forgotPassword']);
+Route::post('/users/password/reset', [UserController::class, 'resetPassword']);
 
 
 Route::middleware(['auth:sanctum','crud.perms'])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
     Route::get('/users', [UserController::class, 'index']);
+    // Identificación por EMAIL y CÉDULA (claridad de rutas)
+    Route::get('/users/email/{email}', [UserController::class, 'showByEmail']);
+    Route::put('/users/email/{email}', [UserController::class, 'updateByEmail']);
+    Route::put('/users/email/{email}/password', [UserController::class, 'passwordByEmail']);
+    Route::get('/users/cedula/{cedula}', [UserController::class, 'showByCedula']);
+    Route::put('/users/cedula/{cedula}', [UserController::class, 'updateByCedula']);
+    Route::put('/users/cedula/{cedula}/password', [UserController::class, 'passwordByCedula']);
     Route::get('/users/{user}', [UserController::class, 'show']);
     Route::post('/users', [UserController::class, 'store']);
     Route::put('/users/{user}', [UserController::class, 'update']);

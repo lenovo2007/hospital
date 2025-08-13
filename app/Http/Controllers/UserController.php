@@ -5,7 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Str;
+use App\Mail\PasswordResetTokenMail;
 
 class UserController extends Controller
 {
@@ -22,6 +25,178 @@ class UserController extends Controller
             'status' => true,
             'mensaje' => 'Listado de usuarios.',
             'data' => $users,
+        ], 200, [], JSON_UNESCAPED_UNICODE);
+    }
+
+    // GET /api/users/email/{email}
+    public function showByEmail(Request $request, string $email)
+    {
+        $user = User::where('email', $email)->first();
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Usuario no encontrado por ese email.',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
+        return response()->json([
+            'status' => true,
+            'mensaje' => 'Usuario encontrado por email.',
+            'data' => $user,
+        ], 200, [], JSON_UNESCAPED_UNICODE);
+    }
+
+    // PUT /api/users/email/{email}
+    public function updateByEmail(Request $request, string $email)
+    {
+        $user = User::where('email', $email)->first();
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Usuario no encontrado por ese email.',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
+
+        $data = $request->validate([
+            'tipo' => ['sometimes','required','string','max:255'],
+            'rol' => ['sometimes','required','string','max:255'],
+            'nombre' => ['sometimes','required','string','max:255'],
+            'apellido' => ['sometimes','required','string','max:255'],
+            'cedula' => ['sometimes','required','string','max:255', Rule::unique('users','cedula')->ignore($user->id)],
+            'telefono' => ['nullable','string','max:255'],
+            'direccion' => ['nullable','string','max:255'],
+            'hospital_id' => ['nullable','integer','exists:hospitales,id'],
+            'sede_id' => ['nullable','integer','exists:sedes,id'],
+            'email' => ['sometimes','required','string','email','max:255', Rule::unique('users','email')->ignore($user->id)],
+            'password' => ['nullable','string','min:8'],
+            'status' => ['nullable','in:activo,inactivo'],
+        ], [
+            'email.unique' => 'El correo electrónico ya ha sido registrado para otro usuario.',
+            'cedula.unique' => 'La cédula ya ha sido registrada para otro usuario.',
+        ]);
+
+        if (!empty($data['password'])) { $data['password'] = Hash::make($data['password']); } else { unset($data['password']); }
+
+        $user->update($data);
+        $user->refresh();
+        return response()->json([
+            'status' => true,
+            'mensaje' => 'Usuario actualizado por email.',
+            'data' => $user,
+        ], 200, [], JSON_UNESCAPED_UNICODE);
+    }
+
+    // GET /api/users/cedula/{cedula}
+    public function showByCedula(Request $request, string $cedula)
+    {
+        $user = User::where('cedula', $cedula)->first();
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Usuario no encontrado por esa cédula.',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
+        return response()->json([
+            'status' => true,
+            'mensaje' => 'Usuario encontrado por cédula.',
+            'data' => $user,
+        ], 200, [], JSON_UNESCAPED_UNICODE);
+    }
+
+    // PUT /api/users/cedula/{cedula}
+    public function updateByCedula(Request $request, string $cedula)
+    {
+        $user = User::where('cedula', $cedula)->first();
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Usuario no encontrado por esa cédula.',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
+
+        $data = $request->validate([
+            'tipo' => ['sometimes','required','string','max:255'],
+            'rol' => ['sometimes','required','string','max:255'],
+            'nombre' => ['sometimes','required','string','max:255'],
+            'apellido' => ['sometimes','required','string','max:255'],
+            'cedula' => ['sometimes','required','string','max:255', Rule::unique('users','cedula')->ignore($user->id)],
+            'telefono' => ['nullable','string','max:255'],
+            'direccion' => ['nullable','string','max:255'],
+            'hospital_id' => ['nullable','integer','exists:hospitales,id'],
+            'sede_id' => ['nullable','integer','exists:sedes,id'],
+            'email' => ['sometimes','required','string','email','max:255', Rule::unique('users','email')->ignore($user->id)],
+            'password' => ['nullable','string','min:8'],
+            'status' => ['nullable','in:activo,inactivo'],
+        ], [
+            'email.unique' => 'El correo electrónico ya ha sido registrado para otro usuario.',
+            'cedula.unique' => 'La cédula ya ha sido registrada para otro usuario.',
+        ]);
+
+        if (!empty($data['password'])) { $data['password'] = Hash::make($data['password']); } else { unset($data['password']); }
+
+        $user->update($data);
+        $user->refresh();
+        return response()->json([
+            'status' => true,
+            'mensaje' => 'Usuario actualizado por cédula.',
+            'data' => $user,
+        ], 200, [], JSON_UNESCAPED_UNICODE);
+    }
+
+    // PUT /api/users/email/{email}/password
+    public function passwordByEmail(Request $request, string $email)
+    {
+        $user = User::where('email', $email)->first();
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Usuario no encontrado por ese email.',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
+
+        $data = $request->validate([
+            'password' => ['required','string','min:8'],
+        ]);
+
+        $user->password = Hash::make($data['password']);
+        $user->save();
+        $user->refresh();
+
+        return response()->json([
+            'status' => true,
+            'mensaje' => 'Contraseña actualizada por email.',
+            'data' => $user,
+        ], 200, [], JSON_UNESCAPED_UNICODE);
+    }
+
+    // PUT /api/users/cedula/{cedula}/password
+    public function passwordByCedula(Request $request, string $cedula)
+    {
+        $user = User::where('cedula', $cedula)->first();
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Usuario no encontrado por esa cédula.',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
+
+        $data = $request->validate([
+            'password' => ['required','string','min:8'],
+        ]);
+
+        $user->password = Hash::make($data['password']);
+        $user->save();
+        $user->refresh();
+
+        return response()->json([
+            'status' => true,
+            'mensaje' => 'Contraseña actualizada por cédula.',
+            'data' => $user,
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }
 
@@ -51,6 +226,9 @@ class UserController extends Controller
             'email' => ['required','string','email','max:255','unique:users,email'],
             'password' => ['required','string','min:8'],
             'status' => ['nullable','in:activo,inactivo'],
+        ], [
+            'email.unique' => 'El correo electrónico ya ha sido registrado previamente.',
+            'cedula.unique' => 'La cédula ya ha sido registrada previamente.',
         ]);
 
         $data['password'] = Hash::make($data['password']);
@@ -101,6 +279,9 @@ class UserController extends Controller
             'email' => ['sometimes','required','string','email','max:255', Rule::unique('users','email')->ignore($user->id)],
             'password' => ['nullable','string','min:8'],
             'status' => ['nullable','in:activo,inactivo'],
+        ], [
+            'email.unique' => 'El correo electrónico ya ha sido registrado para otro usuario.',
+            'cedula.unique' => 'La cédula ya ha sido registrada para otro usuario.',
         ]);
 
         if (!empty($data['password'])) {
@@ -127,6 +308,87 @@ class UserController extends Controller
             'status' => true,
             'mensaje' => 'Usuario eliminado.',
             'data' => null,
+        ], 200, [], JSON_UNESCAPED_UNICODE);
+    }
+
+    // POST /api/users/password/forgot (público)
+    public function forgotPassword(Request $request)
+    {
+        $data = $request->validate([
+            'email' => ['nullable','string','email'],
+            'cedula' => ['nullable','string'],
+        ]);
+
+        if (empty($data['email']) && empty($data['cedula'])) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Debe proporcionar email o cédula.',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
+
+        $query = User::query();
+        if (!empty($data['email'])) { $query->where('email', $data['email']); }
+        if (!empty($data['cedula'])) { $query->orWhere('cedula', $data['cedula']); }
+        $user = $query->first();
+
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Usuario no encontrado.',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
+
+        $token = Str::random(60);
+        $user->remember_token = $token;
+        $user->save();
+
+        // Envío de token por correo si el usuario posee email
+        if (!empty($user->email)) {
+            try {
+                Mail::to($user->email)->queue(new PasswordResetTokenMail($user, $token));
+            } catch (\Throwable $e) {
+                // No interrumpir el flujo por fallos de correo; puede revisarse el log
+            }
+        }
+        return response()->json([
+            'status' => true,
+            'mensaje' => 'Token de restablecimiento generado.',
+            'data' => [
+                'token' => $token,
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'cedula' => $user->cedula,
+            ],
+        ], 200, [], JSON_UNESCAPED_UNICODE);
+    }
+
+    // POST /api/users/password/reset (público)
+    public function resetPassword(Request $request)
+    {
+        $data = $request->validate([
+            'token' => ['required','string'],
+            'password' => ['required','string','min:8'],
+        ]);
+
+        $user = User::where('remember_token', $data['token'])->first();
+        if (!$user) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Token inválido o expirado.',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
+
+        $user->password = Hash::make($data['password']);
+        $user->remember_token = null;
+        $user->save();
+
+        return response()->json([
+            'status' => true,
+            'mensaje' => 'Contraseña restablecida correctamente.',
+            'data' => $user,
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }
 }

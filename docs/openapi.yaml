@@ -466,6 +466,21 @@ paths:
       tags: [Insumos]
       security:
         - bearerAuth: []
+      description: |
+        Ruta rápida:
+
+        Status
+        - activo (default)
+        - inactivo
+        - all
+
+        Ruta base:
+        /api/insumos
+
+        Copiar
+        /api/insumos
+
+        Consejo: "activo" es el valor por defecto; si seleccionas "activo" no se añade query param.
       parameters:
         - in: query
           name: status

@@ -466,29 +466,30 @@ paths:
       tags: [Insumos]
       security:
         - bearerAuth: []
-      description: |
-        Ruta rápida:
-
-        Status
-        - activo (default)
-        - inactivo
-        - all
-
-        Ruta base:
-        /api/insumos
-
-        Copiar
-        /api/insumos
-
-        Consejo: "activo" es el valor por defecto; si seleccionas "activo" no se añade query param.
       parameters:
         - in: query
           name: status
-          description: "Filtrar por estado: activo, inactivo o all (todos). Por defecto activo."
+          description: |
+            Filtrar por estado: activo, inactivo o all (todos). Por defecto activo.
+
+            Ruta rápida:
+            Status
+            - activo (default)
+            - inactivo
+            - all
+
+            Ruta base:
+            /api/insumos
+
+            Copiar
+            /api/insumos
+
+            Consejo: "activo" es el valor por defecto; si seleccionas "activo" no se añade query param.
           schema:
             type: string
             enum: [activo, inactivo, all]
             default: activo
+          example: activo
       responses:
         '200':
           description: Listado de insumos (paginado)

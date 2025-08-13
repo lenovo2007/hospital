@@ -28,6 +28,24 @@ class InsumoController extends Controller
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }
 
+    // GET /api/insumos/codigo/{codigo}
+    public function showByCodigo(Request $request, string $codigo)
+    {
+        $insumo = Insumo::where('codigo', $codigo)->first();
+        if (!$insumo) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Insumo no encontrado por ese código.',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
+        return response()->json([
+            'status' => true,
+            'mensaje' => 'Detalle de insumo por código.',
+            'data' => $insumo,
+        ], 200, [], JSON_UNESCAPED_UNICODE);
+    }
+
     // GET /api/insumos/{insumo}
     public function show(Insumo $insumo)
     {
@@ -83,6 +101,38 @@ class InsumoController extends Controller
         return response()->json([
             'status' => true,
             'mensaje' => 'Insumo actualizado.',
+            'data' => $insumo,
+        ], 200, [], JSON_UNESCAPED_UNICODE);
+    }
+
+    // PUT /api/insumos/codigo/{codigo}
+    public function updateByCodigo(Request $request, string $codigo)
+    {
+        $insumo = Insumo::where('codigo', $codigo)->first();
+        if (!$insumo) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Insumo no encontrado por ese código.',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
+
+        $data = $request->validate([
+            // No permitir cambiar el código desde este endpoint
+            'nombre' => ['sometimes','required','string','max:255'],
+            'tipo' => ['sometimes','required','string','max:100'],
+            'unidad_medida' => ['sometimes','required','string','max:100'],
+            'cantidad_por_paquete' => ['sometimes','required','integer','min:0'],
+            'descripcion' => ['nullable','string'],
+            'status' => ['nullable','in:activo,inactivo'],
+        ]);
+
+        $insumo->update($data);
+        $insumo->refresh();
+
+        return response()->json([
+            'status' => true,
+            'mensaje' => 'Insumo actualizado por código.',
             'data' => $insumo,
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }

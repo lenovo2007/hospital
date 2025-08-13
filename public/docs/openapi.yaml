@@ -519,6 +519,64 @@ paths:
                       data:
                         $ref: '#/components/schemas/Insumo'
   /api/insumos/{id}:
+  /api/insumos/codigo/{codigo}:
+    get:
+      summary: Ver insumo por código
+      tags: [Insumos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: codigo
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Detalle de insumo por código
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Insumo'
+    put:
+      summary: Actualizar insumo por código
+      tags: [Insumos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: codigo
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nombre: { type: string }
+                tipo: { type: string }
+                unidad_medida: { type: string }
+                cantidad_por_paquete: { type: integer, minimum: 0 }
+                descripcion: { type: string, nullable: true }
+                status: { type: string, enum: [activo, inactivo] }
+      responses:
+        '200':
+          description: Insumo actualizado por código
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Insumo'
     get:
       summary: Ver detalle de insumo
       tags: [Insumos]

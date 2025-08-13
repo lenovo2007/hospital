@@ -391,6 +391,44 @@ curl "https://almacen.alwaysdata.net/api/insumos?status=all" \
 - URL: `/api/insumos/{id}`
 - Headers: `Authorization: Bearer <TOKEN>`
 
+### Ver por código
+- Método: GET
+- URL: `/api/insumos/codigo/{codigo}`
+- Headers: `Authorization: Bearer <TOKEN>`
+- Ejemplo cURL:
+```bash
+curl "https://almacen.alwaysdata.net/api/insumos/codigo/INS-001" \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer <TOKEN>"
+```
+
+### Actualizar por código
+- Método: PUT
+- URL: `/api/insumos/codigo/{codigo}`
+- Headers: `Authorization: Bearer <TOKEN>`
+- Body (JSON) ejemplo:
+```json
+{
+  "nombre": "Guantes Quirúrgicos Nitrilo",
+  "tipo": "descartable",
+  "unidad_medida": "caja",
+  "cantidad_por_paquete": 200,
+  "descripcion": "Talla M",
+  "status": "activo"
+}
+```
+- Ejemplo cURL:
+```bash
+curl -X PUT "https://almacen.alwaysdata.net/api/insumos/codigo/INS-001" \
+  -H "Accept: application/json" \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <TOKEN>" \
+  -d '{
+    "nombre": "Guantes Quirúrgicos Nitrilo",
+    "cantidad_por_paquete": 200
+  }'
+```
+
 ### Crear insumo
 - Método: POST
 - URL: `/api/insumos`

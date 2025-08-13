@@ -70,6 +70,9 @@ Route::middleware(['auth:sanctum','crud.perms'])->group(function () {
     Route::delete('/almacenes_centrales/{almacenes_centrale}', [AlmacenCentralController::class, 'destroy']);
 
     // Insumos CRUD
+    // Identificación por CÓDIGO (claridad de rutas)
+    Route::get('/insumos/codigo/{codigo}', [InsumoController::class, 'showByCodigo']);
+    Route::put('/insumos/codigo/{codigo}', [InsumoController::class, 'updateByCodigo']);
     Route::get('/insumos', [InsumoController::class, 'index']);
     Route::post('/insumos', [InsumoController::class, 'store']);
     Route::get('/insumos/{insumo}', [InsumoController::class, 'show']);

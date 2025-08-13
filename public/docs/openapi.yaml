@@ -466,14 +466,6 @@ paths:
       tags: [Insumos]
       security:
         - bearerAuth: []
-      parameters:
-        - in: query
-          name: status
-          schema:
-            type: string
-            enum: [activo, inactivo, all]
-            default: activo
-          description: Filtra insumos por status. Por defecto "activo". Usa "all" para incluir todos.
       responses:
         '200':
           description: Listado de insumos (paginado)

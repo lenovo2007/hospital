@@ -7,9 +7,14 @@ use Illuminate\Http\Request;
 
 class AlmacenCentralController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $items = AlmacenCentral::latest()->paginate(15);
+        $status = $request->query('status', 'activo');
+        if ($status === 'todos') { $status = 'all'; }
+        if (!in_array($status, ['activo', 'inactivo', 'all'], true)) { $status = 'activo'; }
+        $query = AlmacenCentral::query();
+        if ($status !== 'all') { $query->where('status', $status); }
+        $items = $query->latest()->paginate(15);
         $mensaje = $items->total() > 0 ? 'Listado de almacenes centrales.' : 'almacenes_centrales no encontrado';
         return response()->json([
             'status' => true,

@@ -12,6 +12,7 @@ class InsumoController extends Controller
     public function index(Request $request)
     {
         $status = $request->query('status', 'activo');
+        if ($status === 'todos') { $status = 'all'; }
         if (!in_array($status, ['activo', 'inactivo', 'all'], true)) {
             $status = 'activo';
         }

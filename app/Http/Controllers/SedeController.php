@@ -8,9 +8,14 @@ use Illuminate\Http\Request;
 class SedeController extends Controller
 {
     // GET /api/sedes
-    public function index()
+    public function index(Request $request)
     {
-        $items = Sede::latest()->paginate(15);
+        $status = $request->query('status', 'activo');
+        if ($status === 'todos') { $status = 'all'; }
+        if (!in_array($status, ['activo', 'inactivo', 'all'], true)) { $status = 'activo'; }
+        $query = Sede::query();
+        if ($status !== 'all') { $query->where('status', $status); }
+        $items = $query->latest()->paginate(15);
         $mensaje = $items->total() > 0 ? 'Listado de sedes.' : 'sedes no encontrado';
         return response()->json([
             'status' => true,

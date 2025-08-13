@@ -10,9 +10,14 @@ use Illuminate\Validation\Rule;
 class UserController extends Controller
 {
     // Listado de usuarios
-    public function index()
+    public function index(Request $request)
     {
-        $users = User::latest()->paginate(15);
+        $status = $request->query('status', 'activo');
+        if ($status === 'todos') { $status = 'all'; }
+        if (!in_array($status, ['activo', 'inactivo', 'all'], true)) { $status = 'activo'; }
+        $query = User::query();
+        if ($status !== 'all') { $query->where('status', $status); }
+        $users = $query->latest()->paginate(15);
         return response()->json([
             'status' => true,
             'mensaje' => 'Listado de usuarios.',

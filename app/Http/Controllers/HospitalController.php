@@ -12,6 +12,8 @@ class HospitalController extends Controller
     public function index(Request $request)
     {
         $status = $request->query('status', 'activo');
+        // Mapear 'todos' a 'all' y validar
+        if ($status === 'todos') { $status = 'all'; }
         if (!in_array($status, ['activo', 'inactivo', 'all'], true)) {
             $status = 'activo';
         }

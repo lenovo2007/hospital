@@ -219,8 +219,11 @@ class UserController extends Controller
             if (is_string($v) && trim($v) === '') { $v = null; }
         });
 
-        // Validación permisiva: la mayoría de campos son opcionales/nullable
-        $data = validator($payload, [
+        // Determinar si password viene vacío/nulo/no enviado
+        $passwordMissing = !array_key_exists('password', $payload) || empty($payload['password']);
+
+        // Reglas base
+        $rules = [
             'tipo' => ['sometimes','nullable','string','max:255'],
             'rol' => ['sometimes','nullable','string','max:255'],
             'nombre' => ['sometimes','nullable','string','max:255'],
@@ -231,11 +234,23 @@ class UserController extends Controller
             'hospital_id' => ['sometimes','nullable','integer','exists:hospitales,id'],
             'sede_id' => ['sometimes','nullable','integer','exists:sedes,id'],
             'email' => ['sometimes','nullable','string','email','max:255','unique:users,email'],
-            'password' => ['sometimes','nullable','string','min:8'],
             'status' => ['sometimes','nullable','in:activo,inactivo'],
-        ], [
+        ];
+
+        // Validación condicional
+        if ($passwordMissing) {
+            // Si no viene password, exigir cédula y no exigir regla min de password
+            $rules['cedula'] = ['required','string','max:255','unique:users,cedula'];
+            $rules['password'] = ['sometimes','nullable','string'];
+        } else {
+            // Si viene password, validar longitud mínima
+            $rules['password'] = ['sometimes','required','string','min:8'];
+        }
+
+        $data = validator($payload, $rules, [
             'email.unique' => 'El correo electrónico ya ha sido registrado previamente.',
             'cedula.unique' => 'La cédula ya ha sido registrada previamente.',
+            'cedula.required' => 'La cédula es obligatoria cuando no se proporciona la contraseña.',
         ])->validate();
 
         // Valores por defecto si no vienen
@@ -243,12 +258,13 @@ class UserController extends Controller
         $data['tipo'] = $data['tipo'] ?? 'cliente';
         $data['status'] = $data['status'] ?? 'activo';
 
-        // Si no se envía password, generar una temporal segura
+        // Contraseña: si no se envió, usar la cédula como password por defecto
         $tempPassword = null;
-        if (empty($data['password'])) {
-            $tempPassword = Str::random(12);
+        if ($passwordMissing) {
+            $tempPassword = $data['cedula'];
             $data['password'] = $tempPassword;
         }
+        // Si viene password en $data, ya pasa validación; si no, quedó asignada desde cédula
         $data['password'] = Hash::make($data['password']);
 
         $user = User::create($data);

@@ -464,8 +464,9 @@ paths:
     post:
       summary: Crear usuario
       description: |
-        Crea un usuario. Todos los campos son opcionales. Si no se envía `password`,
-        el sistema genera una contraseña temporal y la devuelve en la respuesta dentro de `data.password`.
+        Crea un usuario. La mayoría de los campos son opcionales. Si no se envía `password`,
+        la `cedula` pasa a ser obligatoria y se usará como contraseña por defecto.
+        En ese caso, la contraseña utilizada se devuelve en la respuesta dentro de `data.password`.
       tags: [Usuarios]
       security:
         - bearerAuth: []
@@ -486,18 +487,20 @@ paths:
                 hospital_id: { type: integer, nullable: true }
                 sede_id: { type: integer, nullable: true }
                 email: { type: string, format: email, nullable: true }
-                password: { type: string, minLength: 8, nullable: true }
+                password: { type: string, minLength: 8, nullable: true, description: "Si no se envía, se requiere 'cedula' y se usará como contraseña por defecto" }
                 status: { type: string, enum: [activo, inactivo], nullable: true }
             examples:
-              minimos:
-                summary: Envío vacío (se generan defaults y password temporal)
-                value: {}
+              sinPasswordConCedula:
+                summary: Sin password (usa cedula como contraseña)
+                value:
+                  cedula: "V-12345678"
               conDatos:
                 summary: Con algunos campos
                 value:
                   nombre: "Joseph"
                   apellido: "García"
                   email: "joseph@example.com"
+                  cedula: "V-12345678"
       responses:
         '200':
           description: Usuario creado o error con `status=false`
@@ -515,10 +518,10 @@ paths:
                             properties:
                               password:
                                 type: string
-                                description: Contraseña temporal generada cuando no se envía `password` en la petición.
+                                description: Contraseña utilizada. Si no se envió `password`, es igual a la `cedula` enviada.
               examples:
-                creadoConPasswordTemporal:
-                  summary: Creado sin enviar password (devuelve password temporal)
+                creadoSinPasswordUsandoCedula:
+                  summary: Creado sin enviar password (usa cedula y la devuelve)
                   value:
                     status: true
                     mensaje: Usuario creado.
@@ -528,7 +531,8 @@ paths:
                       nombre: Joseph
                       apellido: García
                       status: activo
-                      password: "AbC123xyz789"
+                      cedula: "V-12345678"
+                      password: "V-12345678"
   /api/insumos:
     get:
       summary: Listar insumos

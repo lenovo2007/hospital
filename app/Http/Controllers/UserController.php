@@ -21,9 +21,10 @@ class UserController extends Controller
         $query = User::query();
         if ($status !== 'all') { $query->where('status', $status); }
         $users = $query->latest()->paginate(15);
+        $mensaje = $users->total() > 0 ? 'Listado de usuarios.' : 'usuario no encontrado';
         return response()->json([
             'status' => true,
-            'mensaje' => 'Listado de usuarios.',
+            'mensaje' => $mensaje,
             'data' => $users,
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }
@@ -34,8 +35,8 @@ class UserController extends Controller
         $user = User::where('email', $email)->first();
         if (!$user) {
             return response()->json([
-                'status' => false,
-                'mensaje' => 'Usuario no encontrado por ese email.',
+                'status' => true,
+                'mensaje' => 'usuario no encontrado',
                 'data' => null,
             ], 200, [], JSON_UNESCAPED_UNICODE);
         }
@@ -52,8 +53,8 @@ class UserController extends Controller
         $user = User::where('email', $email)->first();
         if (!$user) {
             return response()->json([
-                'status' => false,
-                'mensaje' => 'Usuario no encontrado por ese email.',
+                'status' => true,
+                'mensaje' => 'usuario no encontrado',
                 'data' => null,
             ], 200, [], JSON_UNESCAPED_UNICODE);
         }
@@ -93,8 +94,8 @@ class UserController extends Controller
         $user = User::where('cedula', $cedula)->first();
         if (!$user) {
             return response()->json([
-                'status' => false,
-                'mensaje' => 'Usuario no encontrado por esa cédula.',
+                'status' => true,
+                'mensaje' => 'usuario no encontrado',
                 'data' => null,
             ], 200, [], JSON_UNESCAPED_UNICODE);
         }
@@ -111,8 +112,8 @@ class UserController extends Controller
         $user = User::where('cedula', $cedula)->first();
         if (!$user) {
             return response()->json([
-                'status' => false,
-                'mensaje' => 'Usuario no encontrado por esa cédula.',
+                'status' => true,
+                'mensaje' => 'usuario no encontrado',
                 'data' => null,
             ], 200, [], JSON_UNESCAPED_UNICODE);
         }
@@ -152,8 +153,8 @@ class UserController extends Controller
         $user = User::where('email', $email)->first();
         if (!$user) {
             return response()->json([
-                'status' => false,
-                'mensaje' => 'Usuario no encontrado por ese email.',
+                'status' => true,
+                'mensaje' => 'usuario no encontrado',
                 'data' => null,
             ], 200, [], JSON_UNESCAPED_UNICODE);
         }
@@ -179,8 +180,8 @@ class UserController extends Controller
         $user = User::where('cedula', $cedula)->first();
         if (!$user) {
             return response()->json([
-                'status' => false,
-                'mensaje' => 'Usuario no encontrado por esa cédula.',
+                'status' => true,
+                'mensaje' => 'usuario no encontrado',
                 'data' => null,
             ], 200, [], JSON_UNESCAPED_UNICODE);
         }
@@ -373,8 +374,8 @@ class UserController extends Controller
 
         if (!$user) {
             return response()->json([
-                'status' => false,
-                'mensaje' => 'Usuario no encontrado.',
+                'status' => true,
+                'mensaje' => 'usuario no encontrado',
                 'data' => null,
             ], 200, [], JSON_UNESCAPED_UNICODE);
         }

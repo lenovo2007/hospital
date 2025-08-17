@@ -533,6 +533,32 @@ paths:
                       status: activo
                       cedula: "V-12345678"
                       password: "V-12345678"
+    get:
+      summary: Listar usuarios
+      tags: [Usuarios]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: "Filtrar por estado: activo, inactivo o todos. Por defecto activo."
+          schema:
+            type: string
+            enum: [activo, inactivo, todos]
+            default: activo
+      responses:
+        '200':
+          description: Listado paginado de usuarios o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedUsers'
   /api/insumos:
     get:
       summary: Listar insumos
@@ -1570,51 +1596,7 @@ paths:
                     properties:
                       data:
                         $ref: '#/components/schemas/User'
-  /api/users:
-    get:
-      summary: Listar usuarios
-      tags: [Usuarios]
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: status
-          in: query
-          required: false
-          description: "Filtrar por estado: activo, inactivo o todos. Por defecto activo."
-          schema:
-            type: string
-            enum: [activo, inactivo, todos]
-            default: activo
-      responses:
-        '200':
-          description: Listado paginado de usuarios o error con `status=false`
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/PaginatedUsers'
-    post:
-      summary: Crear usuario
-      tags: [Usuarios]
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/User'
-      responses:
-        '200':
-          description: Usuario creado o error con `status=false`
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StandardResponse'
+  
   /api/users/{id}:
     get:
       summary: Ver detalle de usuario

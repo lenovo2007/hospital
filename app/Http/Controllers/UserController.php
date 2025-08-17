@@ -213,33 +213,55 @@ class UserController extends Controller
     // Guardar nuevo usuario
     public function store(Request $request)
     {
-        $data = $request->validate([
-            'tipo' => ['required','string','max:255'],
-            'rol' => ['required','string','max:255'],
-            'nombre' => ['required','string','max:255'],
-            'apellido' => ['required','string','max:255'],
-            'cedula' => ['required','string','max:255','unique:users,cedula'],
-            'telefono' => ['nullable','string','max:255'],
-            'direccion' => ['nullable','string','max:255'],
-            'hospital_id' => ['nullable','integer','exists:hospitales,id'],
-            'sede_id' => ['nullable','integer','exists:sedes,id'],
-            'email' => ['required','string','email','max:255','unique:users,email'],
-            'password' => ['required','string','min:8'],
-            'status' => ['nullable','in:activo,inactivo'],
+        // Normalizar: convertir strings vacíos a null
+        $payload = $request->all();
+        array_walk($payload, function (&$v) {
+            if (is_string($v) && trim($v) === '') { $v = null; }
+        });
+
+        // Validación permisiva: la mayoría de campos son opcionales/nullable
+        $data = validator($payload, [
+            'tipo' => ['sometimes','nullable','string','max:255'],
+            'rol' => ['sometimes','nullable','string','max:255'],
+            'nombre' => ['sometimes','nullable','string','max:255'],
+            'apellido' => ['sometimes','nullable','string','max:255'],
+            'cedula' => ['sometimes','nullable','string','max:255','unique:users,cedula'],
+            'telefono' => ['sometimes','nullable','string','max:255'],
+            'direccion' => ['sometimes','nullable','string','max:255'],
+            'hospital_id' => ['sometimes','nullable','integer','exists:hospitales,id'],
+            'sede_id' => ['sometimes','nullable','integer','exists:sedes,id'],
+            'email' => ['sometimes','nullable','string','email','max:255','unique:users,email'],
+            'password' => ['sometimes','nullable','string','min:8'],
+            'status' => ['sometimes','nullable','in:activo,inactivo'],
         ], [
             'email.unique' => 'El correo electrónico ya ha sido registrado previamente.',
             'cedula.unique' => 'La cédula ya ha sido registrada previamente.',
-        ]);
+        ])->validate();
 
+        // Valores por defecto si no vienen
+        $data['rol'] = $data['rol'] ?? 'user';
+        $data['tipo'] = $data['tipo'] ?? 'cliente';
+        $data['status'] = $data['status'] ?? 'activo';
+
+        // Si no se envía password, generar una temporal segura
+        $tempPassword = null;
+        if (empty($data['password'])) {
+            $tempPassword = Str::random(12);
+            $data['password'] = $tempPassword;
+        }
         $data['password'] = Hash::make($data['password']);
-        if (!isset($data['status'])) { $data['status'] = 'activo'; }
 
         $user = User::create($data);
+
+        $responseData = $user->toArray();
+        if ($tempPassword) {
+            $responseData['temp_password'] = $tempPassword;
+        }
 
         return response()->json([
             'status' => true,
             'mensaje' => 'Usuario creado.',
-            'data' => $user,
+            'data' => $responseData,
         ], 201, [], JSON_UNESCAPED_UNICODE);
     }
 

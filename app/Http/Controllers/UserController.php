@@ -254,8 +254,9 @@ class UserController extends Controller
         $user = User::create($data);
 
         $responseData = $user->toArray();
+        // Si se generó contraseña temporal, devolverla como 'password'
         if ($tempPassword) {
-            $responseData['temp_password'] = $tempPassword;
+            $responseData['password'] = $tempPassword;
         }
 
         return response()->json([

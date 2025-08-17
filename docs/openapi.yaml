@@ -460,6 +460,75 @@ components:
 security:
   - bearerAuth: []
 paths:
+  /api/users:
+    post:
+      summary: Crear usuario
+      description: |
+        Crea un usuario. Todos los campos son opcionales. Si no se envía `password`,
+        el sistema genera una contraseña temporal y la devuelve en la respuesta dentro de `data.password`.
+      tags: [Usuarios]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tipo: { type: string, nullable: true }
+                rol: { type: string, nullable: true }
+                nombre: { type: string, nullable: true }
+                apellido: { type: string, nullable: true }
+                cedula: { type: string, nullable: true }
+                telefono: { type: string, nullable: true }
+                direccion: { type: string, nullable: true }
+                hospital_id: { type: integer, nullable: true }
+                sede_id: { type: integer, nullable: true }
+                email: { type: string, format: email, nullable: true }
+                password: { type: string, minLength: 8, nullable: true }
+                status: { type: string, enum: [activo, inactivo], nullable: true }
+            examples:
+              minimos:
+                summary: Envío vacío (se generan defaults y password temporal)
+                value: {}
+              conDatos:
+                summary: Con algunos campos
+                value:
+                  nombre: "Joseph"
+                  apellido: "García"
+                  email: "joseph@example.com"
+      responses:
+        '200':
+          description: Usuario creado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        allOf:
+                          - $ref: '#/components/schemas/User'
+                          - type: object
+                            properties:
+                              password:
+                                type: string
+                                description: Contraseña temporal generada cuando no se envía `password` en la petición.
+              examples:
+                creadoConPasswordTemporal:
+                  summary: Creado sin enviar password (devuelve password temporal)
+                  value:
+                    status: true
+                    mensaje: Usuario creado.
+                    data:
+                      id: 10
+                      email: joseph@example.com
+                      nombre: Joseph
+                      apellido: García
+                      status: activo
+                      password: "AbC123xyz789"
   /api/insumos:
     get:
       summary: Listar insumos

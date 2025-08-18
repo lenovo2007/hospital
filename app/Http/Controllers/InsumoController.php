@@ -35,7 +35,7 @@ class InsumoController extends Controller
         $insumo = Insumo::where('codigo', $codigo)->first();
         if (!$insumo) {
             return response()->json([
-                'status' => false,
+                'status' => true,
                 'mensaje' => 'Insumo no encontrado por ese código.',
                 'data' => null,
             ], 200, [], JSON_UNESCAPED_UNICODE);
@@ -112,7 +112,7 @@ class InsumoController extends Controller
         $insumo = Insumo::where('codigo', $codigo)->first();
         if (!$insumo) {
             return response()->json([
-                'status' => false,
+                'status' => true,
                 'mensaje' => 'Insumo no encontrado por ese código.',
                 'data' => null,
             ], 200, [], JSON_UNESCAPED_UNICODE);

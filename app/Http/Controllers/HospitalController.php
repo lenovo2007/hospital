@@ -44,7 +44,7 @@ class HospitalController extends Controller
 
         if (!$hospital) {
             return response()->json([
-                'status' => false,
+                'status' => true,
                 'mensaje' => 'Hospital no encontrado por ese RIF.',
                 'data' => null,
             ], 200, [], JSON_UNESCAPED_UNICODE);
@@ -68,7 +68,7 @@ class HospitalController extends Controller
 
         if (!$hospital) {
             return response()->json([
-                'status' => false,
+                'status' => true,
                 'mensaje' => 'Hospital no encontrado por ese RIF.',
                 'data' => null,
             ], 200, [], JSON_UNESCAPED_UNICODE);
@@ -107,7 +107,7 @@ class HospitalController extends Controller
         $hospital = Hospital::where('rif', $rif)->first();
         if (!$hospital) {
             return response()->json([
-                'status' => false,
+                'status' => true,
                 'mensaje' => 'Hospital no encontrado por ese RIF.',
                 'data' => null,
             ], 200, [], JSON_UNESCAPED_UNICODE);
@@ -125,7 +125,7 @@ class HospitalController extends Controller
         $hospital = Hospital::where('rif', $rif)->first();
         if (!$hospital) {
             return response()->json([
-                'status' => false,
+                'status' => true,
                 'mensaje' => 'Hospital no encontrado por ese RIF.',
                 'data' => null,
             ], 200, [], JSON_UNESCAPED_UNICODE);

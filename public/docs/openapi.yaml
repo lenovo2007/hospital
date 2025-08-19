@@ -246,6 +246,10 @@ components:
           type: integer
           nullable: true
           example: 2
+        hospital:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Hospital'
         created_at:
           type: string
           format: date-time

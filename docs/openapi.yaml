@@ -534,12 +534,24 @@ paths:
                     status: true
                     mensaje: Usuario creado.
                     data:
-                      id: 10
-                      email: joseph@example.com
-                      nombre: Joseph
+                      id: 1
+                      tipo: natural
+                      rol: admin
+                      nombre: Ana
                       apellido: García
-                      status: activo
                       cedula: "V-12345678"
+                      telefono: "4140000000"
+                      direccion: Caracas
+                      hospital_id: 2
+                      sede_id: 5
+                      can_view: true
+                      can_create: true
+                      can_update: true
+                      can_delete: true
+                      email: ana@example.com
+                      created_at: "2025-09-03T23:56:34.222Z"
+                      updated_at: "2025-09-03T23:56:34.222Z"
+                      status: activo
                       password: "V-12345678"
     get:
       summary: Listar usuarios

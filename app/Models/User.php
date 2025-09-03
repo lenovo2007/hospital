@@ -58,6 +58,10 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'password_reset_expires_at' => 'datetime',
+            'can_view' => 'boolean',
+            'can_create' => 'boolean',
+            'can_update' => 'boolean',
+            'can_delete' => 'boolean',
         ];
     }
 

@@ -273,6 +273,8 @@ class UserController extends Controller
         $data['password'] = Hash::make($data['password']);
 
         $user = User::create($data);
+        // Refrescar para garantizar casts y timestamps actualizados
+        $user->refresh();
 
         $responseData = $user->toArray();
         // Si se generó contraseña temporal, devolverla como 'password'

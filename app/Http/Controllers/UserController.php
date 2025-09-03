@@ -234,6 +234,10 @@ class UserController extends Controller
             'direccion' => ['sometimes','nullable','string','max:255'],
             'hospital_id' => ['sometimes','nullable','integer','exists:hospitales,id'],
             'sede_id' => ['sometimes','nullable','integer','exists:sedes,id'],
+            'can_view' => ['sometimes','nullable','boolean'],
+            'can_create' => ['sometimes','nullable','boolean'],
+            'can_update' => ['sometimes','nullable','boolean'],
+            'can_delete' => ['sometimes','nullable','boolean'],
             'email' => ['sometimes','nullable','string','email','max:255','unique:users,email'],
             'status' => ['sometimes','nullable','in:activo,inactivo'],
         ];

@@ -490,6 +490,10 @@ paths:
                 direccion: { type: string, nullable: true }
                 hospital_id: { type: integer, nullable: true }
                 sede_id: { type: integer, nullable: true }
+                can_view: { type: boolean, nullable: true }
+                can_create: { type: boolean, nullable: true }
+                can_update: { type: boolean, nullable: true }
+                can_delete: { type: boolean, nullable: true }
                 email: { type: string, format: email, nullable: true }
                 password: { type: string, minLength: 8, nullable: true, description: "Si no se envía, se requiere 'cedula' y se usará como contraseña por defecto" }
                 status: { type: string, enum: [activo, inactivo], nullable: true }

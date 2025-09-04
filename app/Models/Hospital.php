@@ -13,9 +13,13 @@ class Hospital extends Model
 
     protected $fillable = [
         'nombre',
+        'nombre_completo',
         'rif',
+        'cod_sicm',
         'email',
+        'email_contacto',
         'telefono',
+        'nombre_contacto',
         'ubicacion',
         'direccion',
         'tipo',

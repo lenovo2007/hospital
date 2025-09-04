@@ -149,6 +149,23 @@ components:
           type: string
           nullable: true
           example: 04141234567
+        cod_sicm:
+          type: string
+          nullable: true
+          example: SICM-001
+        nombre_contacto:
+          type: string
+          nullable: true
+          example: Juan Pérez
+        nombre_completo:
+          type: string
+          nullable: true
+          example: Hospital Central de Caracas
+        email_contacto:
+          type: string
+          format: email
+          nullable: true
+          example: juan.perez@hospital.test
         ubicacion:
           type: object
           nullable: true
@@ -468,9 +485,8 @@ paths:
     post:
       summary: Crear usuario
       description: |
-        Crea un usuario. La mayoría de los campos son opcionales. Si no se envía `password` o viene `null`,
-        la `cedula` pasa a ser obligatoria y se usará como contraseña por defecto.
-        En ese caso, la contraseña utilizada se devuelve en la respuesta dentro de `data.password`.
+        Crea un usuario. La mayoría de los campos son opcionales.
+        La contraseña es obligatoria y debe cumplir complejidad: mínimo 8 caracteres, incluir mayúscula, minúscula, número y símbolo.
       tags: [Usuarios]
       security:
         - bearerAuth: []
@@ -546,52 +562,7 @@ paths:
                   - type: object
                     properties:
                       data:
-                        allOf:
-                          - $ref: '#/components/schemas/User'
-                          - type: object
-                            properties:
-                              password:
-                                type: string
-                                description: Contraseña utilizada. Si no se envió `password`, es igual a la `cedula` enviada.
-              examples:
-                creadoSinPasswordUsandoCedula:
-                  summary: Creado sin enviar password (usa cedula y la devuelve)
-                  value:
-                    status: true
-                    mensaje: Usuario creado.
-                    data:
-                      id: 1
-                      tipo: natural
-                      rol: admin
-                      nombre: Ana
-                      apellido: García
-                      cedula: "V-12345678"
-                      telefono: "4140000000"
-                      direccion: Caracas
-                      hospital_id: 2
-                      sede_id: 5
-                      can_view: true
-                      can_create: true
-                      can_update: true
-                      can_delete: true
-                      email: ana@example.com
-                      created_at: "2025-09-03T23:56:34.222Z"
-                      updated_at: "2025-09-03T23:56:34.222Z"
-                      status: activo
-                      password: "V-12345678"
-                creadoPasswordNullUsandoCedula:
-                  summary: Creado con password=null (usa cedula y la devuelve)
-                  value:
-                    status: true
-                    mensaje: Usuario creado.
-                    data:
-                      id: 2
-                      nombre: Luis
-                      apellido: Pérez
-                      cedula: "V-87654321"
-                      email: luis@example.com
-                      status: activo
-                      password: "V-87654321"
+                        $ref: '#/components/schemas/User'
     get:
       summary: Listar usuarios
       tags: [Usuarios]

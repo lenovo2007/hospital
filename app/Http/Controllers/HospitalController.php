@@ -76,8 +76,12 @@ class HospitalController extends Controller
 
         $data = $request->validate([
             'nombre' => ['sometimes','required','string','max:255'],
+            'nombre_completo' => ['nullable','string','max:255'],
             'email' => ['nullable','email','max:255', Rule::unique('hospitales','email')->ignore($hospital->id)],
+            'email_contacto' => ['nullable','email','max:255'],
             'telefono' => ['nullable','string','max:50'],
+            'nombre_contacto' => ['nullable','string','max:255'],
+            'cod_sicm' => ['nullable','string','max:100', Rule::unique('hospitales','cod_sicm')->ignore($hospital->id)],
             'ubicacion' => ['nullable','array'],
             'ubicacion.lat' => ['nullable','numeric','between:-90,90'],
             'ubicacion.lng' => ['nullable','numeric','between:-180,180'],
@@ -86,6 +90,7 @@ class HospitalController extends Controller
             'status' => ['nullable','in:activo,inactivo'],
         ], [
             'email.unique' => 'El email ya está registrado para otro hospital.',
+            'cod_sicm.unique' => 'El cod_sicm ya está registrado para otro hospital.',
         ]);
 
         // Evitar que cambien el RIF desde este endpoint
@@ -133,8 +138,12 @@ class HospitalController extends Controller
 
         $data = $request->validate([
             'nombre' => ['sometimes','required','string','max:255'],
+            'nombre_completo' => ['nullable','string','max:255'],
             'email' => ['nullable','email','max:255', Rule::unique('hospitales','email')->ignore($hospital->id)],
+            'email_contacto' => ['nullable','email','max:255'],
             'telefono' => ['nullable','string','max:50'],
+            'nombre_contacto' => ['nullable','string','max:255'],
+            'cod_sicm' => ['nullable','string','max:100', Rule::unique('hospitales','cod_sicm')->ignore($hospital->id)],
             'ubicacion' => ['nullable','array'],
             'ubicacion.lat' => ['nullable','numeric','between:-90,90'],
             'ubicacion.lng' => ['nullable','numeric','between:-180,180'],
@@ -143,6 +152,7 @@ class HospitalController extends Controller
             'status' => ['nullable','in:activo,inactivo'],
         ], [
             'email.unique' => 'El email ya está registrado para otro hospital.',
+            'cod_sicm.unique' => 'El cod_sicm ya está registrado para otro hospital.',
         ]);
 
         $hospital->update($data);
@@ -167,7 +177,11 @@ class HospitalController extends Controller
             'nombre' => ['required','string','max:255'],
             'rif' => ['required','string','max:255','unique:hospitales,rif'],
             'email' => ['nullable','email','max:255','unique:hospitales,email'],
+            'email_contacto' => ['nullable','email','max:255'],
             'telefono' => ['nullable','string','max:50'],
+            'nombre_contacto' => ['nullable','string','max:255'],
+            'cod_sicm' => ['nullable','string','max:100','unique:hospitales,cod_sicm'],
+            'nombre_completo' => ['nullable','string','max:255'],
             'ubicacion' => ['nullable','array'],
             'ubicacion.lat' => ['nullable','numeric','between:-90,90'],
             'ubicacion.lng' => ['nullable','numeric','between:-180,180'],
@@ -177,6 +191,7 @@ class HospitalController extends Controller
         ], [
             'rif.unique' => 'El hospital ya ha sido registrado anteriormente (RIF duplicado).',
             'email.unique' => 'El email ya está registrado para otro hospital.',
+            'cod_sicm.unique' => 'El cod_sicm ya está registrado para otro hospital.',
         ]);
 
         \Log::info('HospitalController@store: data validated', $data);
@@ -215,8 +230,12 @@ class HospitalController extends Controller
         $data = $request->validate([
             'nombre' => ['sometimes','required','string','max:255'],
             // rif no se actualiza aquí para mantener unicidad consistente por otro endpoint
+            'nombre_completo' => ['nullable','string','max:255'],
             'email' => ['nullable','email','max:255', Rule::unique('hospitales','email')->ignore($hospital->id)],
+            'email_contacto' => ['nullable','email','max:255'],
             'telefono' => ['nullable','string','max:50'],
+            'nombre_contacto' => ['nullable','string','max:255'],
+            'cod_sicm' => ['nullable','string','max:100', Rule::unique('hospitales','cod_sicm')->ignore($hospital->id)],
             'ubicacion' => ['nullable','array'],
             'ubicacion.lat' => ['nullable','numeric','between:-90,90'],
             'ubicacion.lng' => ['nullable','numeric','between:-180,180'],

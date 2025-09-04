@@ -137,18 +137,35 @@ components:
         nombre:
           type: string
           example: Hospital Central
+        nombre_completo:
+          type: string
+          nullable: true
+          example: Hospital Central de Caracas Dr. Vargas
         rif:
           type: string
           example: J-12345678-9
+        cod_sicm:
+          type: string
+          nullable: true
+          example: SICM-000123
         email:
           type: string
           format: email
           nullable: true
           example: contacto@hospital.test
+        email_contacto:
+          type: string
+          format: email
+          nullable: true
+          example: director@hospital.test
         telefono:
           type: string
           nullable: true
           example: 04141234567
+        nombre_contacto:
+          type: string
+          nullable: true
+          example: Dr. Juan Pérez
         ubicacion:
           type: object
           nullable: true

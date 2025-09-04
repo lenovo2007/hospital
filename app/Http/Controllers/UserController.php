@@ -275,9 +275,6 @@ class UserController extends Controller
             if (is_string($v) && trim($v) === '') { $v = null; }
         });
 
-        // Determinar si password viene vacío/nulo/no enviado
-        $passwordMissing = !array_key_exists('password', $payload) || empty($payload['password']);
-
         // Reglas base
         $rules = [
             'tipo' => ['sometimes','nullable','string','max:255'],
@@ -296,33 +293,22 @@ class UserController extends Controller
             'email' => ['sometimes','nullable','string','email','max:255','unique:users,email'],
             'status' => ['sometimes','nullable','in:activo,inactivo'],
         ];
-
-        // Validación condicional
-        if ($passwordMissing) {
-            // Si no viene password, exigir cédula y no exigir regla min de password
-            $rules['cedula'] = ['required','string','max:255','unique:users,cedula'];
-            $rules['password'] = ['sometimes','nullable','string'];
-        } else {
-            // Si viene password, validar longitud mínima
-            $rules['password'] = ['sometimes','required','string','min:8'];
-        }
+        // Password obligatorio con longitud mínima
+        $rules['password'] = ['required','string','min:8'];
 
         $v = validator($payload, $rules, [
             'email.unique' => 'El correo electrónico ya ha sido registrado previamente.',
             'cedula.unique' => 'La cédula ya ha sido registrada previamente.',
-            'cedula.required' => 'La cédula es obligatoria cuando no se proporciona la contraseña.',
+            'password.required' => 'La contraseña es obligatoria.',
             'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
         ]);
-        $v->after(function ($validator) use ($payload, $passwordMissing) {
-            // Solo validar complejidad si el password fue proporcionado por el cliente
-            if (!$passwordMissing) {
-                $pwd = $payload['password'] ?? null;
-                if (!empty($pwd)) {
-                    if (!preg_match('/[A-Z]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos una letra mayúscula.'); }
-                    if (!preg_match('/[a-z]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos una letra minúscula.'); }
-                    if (!preg_match('/[0-9]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos un número.'); }
-                    if (!preg_match('/[\\W_]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos un símbolo o carácter especial.'); }
-                }
+        $v->after(function ($validator) use ($payload) {
+            $pwd = $payload['password'] ?? null;
+            if (!empty($pwd)) {
+                if (!preg_match('/[A-Z]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos una letra mayúscula.'); }
+                if (!preg_match('/[a-z]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos una letra minúscula.'); }
+                if (!preg_match('/[0-9]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos un número.'); }
+                if (!preg_match('/[\\W_]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos un símbolo o carácter especial.'); }
             }
         });
         $data = $v->validate();
@@ -332,13 +318,7 @@ class UserController extends Controller
         $data['tipo'] = $data['tipo'] ?? 'cliente';
         $data['status'] = $data['status'] ?? 'activo';
 
-        // Contraseña: si no se envió, usar la cédula como password por defecto
-        $tempPassword = null;
-        if ($passwordMissing) {
-            $tempPassword = $data['cedula'];
-            $data['password'] = $tempPassword;
-        }
-        // Si viene password en $data, ya pasa validación; si no, quedó asignada desde cédula
+        // Hash de contraseña
         $data['password'] = Hash::make($data['password']);
 
         $user = User::create($data);
@@ -346,10 +326,6 @@ class UserController extends Controller
         $user->refresh();
 
         $responseData = $user->toArray();
-        // Si se generó contraseña temporal, devolverla como 'password'
-        if ($tempPassword) {
-            $responseData['password'] = $tempPassword;
-        }
 
         return response()->json([
             'status' => true,

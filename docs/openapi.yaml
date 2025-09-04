@@ -475,11 +475,12 @@ paths:
       security:
         - bearerAuth: []
       requestBody:
-        required: false
+        required: true
         content:
           application/json:
             schema:
               type: object
+              required: [password]
               properties:
                 tipo: { type: string, nullable: true }
                 rol: { type: string, nullable: true }
@@ -495,7 +496,7 @@ paths:
                 can_update: { type: boolean, nullable: true }
                 can_delete: { type: boolean, nullable: true }
                 email: { type: string, format: email, nullable: true }
-                password: { type: string, minLength: 8, nullable: true, description: "Si no se envía, se requiere 'cedula' y se usará como contraseña por defecto" }
+                password: { type: string, minLength: 8, description: "Obligatoria. Debe tener al menos 8 caracteres, incluir mayúscula, minúscula, número y símbolo." }
                 status: { type: string, enum: [activo, inactivo], nullable: true }
             example:
               tipo: natural
@@ -516,7 +517,7 @@ paths:
               status: activo
             examples:
               completo:
-                summary: Todos los campos soportados
+                summary: Todos los campos soportados (password obligatorio)
                 value:
                   tipo: natural
                   rol: admin
@@ -532,17 +533,8 @@ paths:
                   can_update: true
                   can_delete: true
                   email: "ana@example.com"
-                  password: "unPasswordSeguro"
+                  password: "Un4Segura!"
                   status: activo
-              sinPasswordConCedula:
-                summary: Sin password (usa cedula como contraseña)
-                value:
-                  cedula: "V-12345678"
-              passwordNullConCedula:
-                summary: Password null (usa cedula como contraseña)
-                value:
-                  cedula: "V-12345678"
-                  password: null
       responses:
         '200':
           description: Usuario creado o error con `status=false`

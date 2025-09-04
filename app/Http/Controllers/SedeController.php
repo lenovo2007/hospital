@@ -29,7 +29,7 @@ class SedeController extends Controller
     {
         $data = $request->validate([
             'nombre' => ['required','string','max:255'],
-            'tipo' => ['required','string','max:255'],
+            'tipo_almacen' => ['required','string','max:255'],
             'hospital_id' => ['nullable','integer','exists:hospitales,id'],
             'status' => ['nullable','in:activo,inactivo'],
         ]);
@@ -67,7 +67,7 @@ class SedeController extends Controller
     {
         $data = $request->validate([
             'nombre' => ['sometimes','required','string','max:255'],
-            'tipo' => ['sometimes','required','string','max:255'],
+            'tipo_almacen' => ['sometimes','required','string','max:255'],
             'hospital_id' => ['nullable','integer','exists:hospitales,id'],
             'status' => ['nullable','in:activo,inactivo'],
         ]);

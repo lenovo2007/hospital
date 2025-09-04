@@ -13,7 +13,7 @@ class Sede extends Model
 
     protected $fillable = [
         'nombre',
-        'tipo',
+        'tipo_almacen',
         'hospital_id',
         'status',
     ];

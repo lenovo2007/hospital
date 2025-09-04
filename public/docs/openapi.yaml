@@ -239,7 +239,7 @@ components:
         nombre:
           type: string
           example: Almacén Principal
-        tipo:
+        tipo_almacen:
           type: string
           example: almacen_principal
         hospital_id:
@@ -1525,10 +1525,10 @@ paths:
           application/json:
             schema:
               type: object
-              required: [nombre, tipo]
+              required: [nombre, tipo_almacen]
               properties:
                 nombre: { type: string }
-                tipo: { type: string }
+                tipo_almacen: { type: string }
                 hospital_id: { type: integer, nullable: true }
                 status: { type: string, enum: [activo, inactivo], nullable: true }
       responses:
@@ -1547,7 +1547,7 @@ paths:
                     data:
                       id: 1
                       nombre: Almacén Principal
-                      tipo: almacen_principal
+                      tipo_almacen: almacen_principal
                       hospital_id: 2
                       hospital:
                         id: 2
@@ -1609,7 +1609,7 @@ paths:
               type: object
               properties:
                 nombre: { type: string }
-                tipo: { type: string }
+                tipo_almacen: { type: string }
                 hospital_id: { type: integer, nullable: true }
                 status: { type: string, enum: [activo, inactivo], nullable: true }
       responses:

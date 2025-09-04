@@ -59,7 +59,7 @@ class UserController extends Controller
             ], 200, [], JSON_UNESCAPED_UNICODE);
         }
 
-        $data = $request->validate([
+        $baseRules = [
             'tipo' => ['sometimes','required','string','max:255'],
             'rol' => ['sometimes','required','string','max:255'],
             'nombre' => ['sometimes','required','string','max:255'],
@@ -72,10 +72,30 @@ class UserController extends Controller
             'email' => ['sometimes','required','string','email','max:255', Rule::unique('users','email')->ignore($user->id)],
             'password' => ['nullable','string','min:8'],
             'status' => ['nullable','in:activo,inactivo'],
-        ], [
+        ];
+        $v = validator($request->all(), $baseRules, [
             'email.unique' => 'El correo electrónico ya ha sido registrado para otro usuario.',
             'cedula.unique' => 'La cédula ya ha sido registrada para otro usuario.',
+            'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
         ]);
+        $v->after(function ($validator) use ($request) {
+            $pwd = $request->input('password');
+            if (!empty($pwd)) {
+                if (!preg_match('/[A-Z]/', $pwd)) {
+                    $validator->errors()->add('password', 'La contraseña debe contener al menos una letra mayúscula.');
+                }
+                if (!preg_match('/[a-z]/', $pwd)) {
+                    $validator->errors()->add('password', 'La contraseña debe contener al menos una letra minúscula.');
+                }
+                if (!preg_match('/[0-9]/', $pwd)) {
+                    $validator->errors()->add('password', 'La contraseña debe contener al menos un número.');
+                }
+                if (!preg_match('/[\W_]/', $pwd)) {
+                    $validator->errors()->add('password', 'La contraseña debe contener al menos un símbolo o carácter especial.');
+                }
+            }
+        });
+        $data = $v->validate();
 
         if (!empty($data['password'])) { $data['password'] = Hash::make($data['password']); } else { unset($data['password']); }
 
@@ -118,7 +138,7 @@ class UserController extends Controller
             ], 200, [], JSON_UNESCAPED_UNICODE);
         }
 
-        $data = $request->validate([
+        $v = validator($request->all(), [
             'tipo' => ['sometimes','required','string','max:255'],
             'rol' => ['sometimes','required','string','max:255'],
             'nombre' => ['sometimes','required','string','max:255'],
@@ -134,7 +154,18 @@ class UserController extends Controller
         ], [
             'email.unique' => 'El correo electrónico ya ha sido registrado para otro usuario.',
             'cedula.unique' => 'La cédula ya ha sido registrada para otro usuario.',
+            'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
         ]);
+        $v->after(function ($validator) use ($request) {
+            $pwd = $request->input('password');
+            if (!empty($pwd)) {
+                if (!preg_match('/[A-Z]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos una letra mayúscula.'); }
+                if (!preg_match('/[a-z]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos una letra minúscula.'); }
+                if (!preg_match('/[0-9]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos un número.'); }
+                if (!preg_match('/[\\W_]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos un símbolo o carácter especial.'); }
+            }
+        });
+        $data = $v->validate();
 
         if (!empty($data['password'])) { $data['password'] = Hash::make($data['password']); } else { unset($data['password']); }
 
@@ -159,9 +190,21 @@ class UserController extends Controller
             ], 200, [], JSON_UNESCAPED_UNICODE);
         }
 
-        $data = $request->validate([
+        $v = validator($request->all(), [
             'password' => ['required','string','min:8'],
+        ], [
+            'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
         ]);
+        $v->after(function ($validator) use ($request) {
+            $pwd = $request->input('password');
+            if (!empty($pwd)) {
+                if (!preg_match('/[A-Z]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos una letra mayúscula.'); }
+                if (!preg_match('/[a-z]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos una letra minúscula.'); }
+                if (!preg_match('/[0-9]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos un número.'); }
+                if (!preg_match('/[\W_]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos un símbolo o carácter especial.'); }
+            }
+        });
+        $data = $v->validate();
 
         $user->password = Hash::make($data['password']);
         $user->save();
@@ -186,9 +229,21 @@ class UserController extends Controller
             ], 200, [], JSON_UNESCAPED_UNICODE);
         }
 
-        $data = $request->validate([
+        $v = validator($request->all(), [
             'password' => ['required','string','min:8'],
+        ], [
+            'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
         ]);
+        $v->after(function ($validator) use ($request) {
+            $pwd = $request->input('password');
+            if (!empty($pwd)) {
+                if (!preg_match('/[A-Z]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos una letra mayúscula.'); }
+                if (!preg_match('/[a-z]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos una letra minúscula.'); }
+                if (!preg_match('/[0-9]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos un número.'); }
+                if (!preg_match('/[\\W_]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos un símbolo o carácter especial.'); }
+            }
+        });
+        $data = $v->validate();
 
         $user->password = Hash::make($data['password']);
         $user->save();
@@ -252,11 +307,25 @@ class UserController extends Controller
             $rules['password'] = ['sometimes','required','string','min:8'];
         }
 
-        $data = validator($payload, $rules, [
+        $v = validator($payload, $rules, [
             'email.unique' => 'El correo electrónico ya ha sido registrado previamente.',
             'cedula.unique' => 'La cédula ya ha sido registrada previamente.',
             'cedula.required' => 'La cédula es obligatoria cuando no se proporciona la contraseña.',
-        ])->validate();
+            'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
+        ]);
+        $v->after(function ($validator) use ($payload, $passwordMissing) {
+            // Solo validar complejidad si el password fue proporcionado por el cliente
+            if (!$passwordMissing) {
+                $pwd = $payload['password'] ?? null;
+                if (!empty($pwd)) {
+                    if (!preg_match('/[A-Z]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos una letra mayúscula.'); }
+                    if (!preg_match('/[a-z]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos una letra minúscula.'); }
+                    if (!preg_match('/[0-9]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos un número.'); }
+                    if (!preg_match('/[\\W_]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos un símbolo o carácter especial.'); }
+                }
+            }
+        });
+        $data = $v->validate();
 
         // Valores por defecto si no vienen
         $data['rol'] = $data['rol'] ?? 'user';
@@ -312,7 +381,7 @@ class UserController extends Controller
     // Actualizar usuario
     public function update(Request $request, User $user)
     {
-        $data = $request->validate([
+        $v = validator($request->all(), [
             'tipo' => ['sometimes','required','string','max:255'],
             'rol' => ['sometimes','required','string','max:255'],
             'nombre' => ['sometimes','required','string','max:255'],
@@ -328,7 +397,18 @@ class UserController extends Controller
         ], [
             'email.unique' => 'El correo electrónico ya ha sido registrado para otro usuario.',
             'cedula.unique' => 'La cédula ya ha sido registrada para otro usuario.',
+            'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
         ]);
+        $v->after(function ($validator) use ($request) {
+            $pwd = $request->input('password');
+            if (!empty($pwd)) {
+                if (!preg_match('/[A-Z]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos una letra mayúscula.'); }
+                if (!preg_match('/[a-z]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos una letra minúscula.'); }
+                if (!preg_match('/[0-9]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos un número.'); }
+                if (!preg_match('/[\\W_]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos un símbolo o carácter especial.'); }
+            }
+        });
+        $data = $v->validate();
 
         if (!empty($data['password'])) {
             $data['password'] = Hash::make($data['password']);
@@ -415,10 +495,22 @@ class UserController extends Controller
     // POST /api/users/password/reset (público)
     public function resetPassword(Request $request)
     {
-        $data = $request->validate([
+        $v = validator($request->all(), [
             'token' => ['required','string'],
             'password' => ['required','string','min:8'],
+        ], [
+            'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
         ]);
+        $v->after(function ($validator) use ($request) {
+            $pwd = $request->input('password');
+            if (!empty($pwd)) {
+                if (!preg_match('/[A-Z]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos una letra mayúscula.'); }
+                if (!preg_match('/[a-z]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos una letra minúscula.'); }
+                if (!preg_match('/[0-9]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos un número.'); }
+                if (!preg_match('/[\W_]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos un símbolo o carácter especial.'); }
+            }
+        });
+        $data = $v->validate();
 
         $user = User::where('remember_token', $data['token'])->first();
         if (!$user) {

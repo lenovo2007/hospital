@@ -1592,6 +1592,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
+              examples:
+                creado:
+                  summary: Respuesta al crear sede (solo campos del modelo)
+                  value:
+                    status: true
+                    mensaje: Sede creada.
+                    data:
+                      nombre: Almacén Principal
+                      tipo: almacen_principal
+                      hospital_id: 2
+                      status: activo
   /api/sedes/{id}:
     get:
       summary: Ver detalle de sede
@@ -1640,6 +1651,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
+              examples:
+                actualizado:
+                  summary: Respuesta al actualizar sede (solo campos del modelo)
+                  value:
+                    status: true
+                    mensaje: Sede actualizada.
+                    data:
+                      id: 1
+                      nombre: Almacén Principal
+                      tipo: almacen_principal
+                      hospital_id: 2
+                      status: activo
     delete:
       summary: Eliminar sede
       tags: [Sedes]

@@ -1600,14 +1600,31 @@ paths:
                 $ref: '#/components/schemas/StandardResponse'
               examples:
                 creado:
-                  summary: Respuesta al crear sede (solo campos del modelo)
+                  summary: Respuesta al crear sede (incluye hospital relacionado)
                   value:
                     status: true
                     mensaje: Sede creada.
                     data:
+                      id: 1
                       nombre: Almacén Principal
                       tipo: almacen_principal
                       hospital_id: 2
+                      hospital:
+                        id: 2
+                        nombre: Hospital Central
+                        rif: J-12345678-9
+                        email: contacto@hospital.test
+                        telefono: "4141234567"
+                        ubicacion:
+                          lat: 10.491
+                          lng: -66.903
+                        direccion: Caracas
+                        tipo: publico
+                        created_at: "2025-09-04T19:10:00.000Z"
+                        updated_at: "2025-09-04T19:10:00.000Z"
+                        status: activo
+                      created_at: "2025-09-04T19:10:00.000Z"
+                      updated_at: "2025-09-04T19:10:00.000Z"
                       status: activo
   /api/sedes/{id}:
     get:
@@ -1664,7 +1681,7 @@ paths:
                 $ref: '#/components/schemas/StandardResponse'
               examples:
                 actualizado:
-                  summary: Respuesta al actualizar sede (solo campos del modelo)
+                  summary: Respuesta al actualizar sede (incluye hospital relacionado)
                   value:
                     status: true
                     mensaje: Sede actualizada.
@@ -1673,6 +1690,22 @@ paths:
                       nombre: Almacén Principal
                       tipo: almacen_principal
                       hospital_id: 2
+                      hospital:
+                        id: 2
+                        nombre: Hospital Central
+                        rif: J-12345678-9
+                        email: contacto@hospital.test
+                        telefono: "4141234567"
+                        ubicacion:
+                          lat: 10.491
+                          lng: -66.903
+                        direccion: Caracas
+                        tipo: publico
+                        created_at: "2025-09-04T19:10:00.000Z"
+                        updated_at: "2025-09-04T19:10:00.000Z"
+                        status: activo
+                      created_at: "2025-09-04T19:10:00.000Z"
+                      updated_at: "2025-09-04T19:10:00.000Z"
                       status: activo
     delete:
       summary: Eliminar sede

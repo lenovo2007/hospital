@@ -35,6 +35,7 @@ class SedeController extends Controller
         ]);
         if (!isset($data['status'])) { $data['status'] = 'activo'; }
         $item = Sede::create($data);
+        $item->load('hospital');
 
         return response()->json([
             'status' => true,
@@ -46,7 +47,7 @@ class SedeController extends Controller
     // GET /api/sedes/{id}
     public function show($id)
     {
-        $sede = Sede::find($id);
+        $sede = Sede::with('hospital')->find($id);
         if (!$sede) {
             return response()->json([
                 'status' => true,
@@ -73,6 +74,7 @@ class SedeController extends Controller
 
         $sede->update($data);
         $sede->refresh();
+        $sede->load('hospital');
 
         return response()->json([
             'status' => true,

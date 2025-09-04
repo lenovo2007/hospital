@@ -468,7 +468,7 @@ paths:
     post:
       summary: Crear usuario
       description: |
-        Crea un usuario. La mayoría de los campos son opcionales. Si no se envía `password`,
+        Crea un usuario. La mayoría de los campos son opcionales. Si no se envía `password` o viene `null`,
         la `cedula` pasa a ser obligatoria y se usará como contraseña por defecto.
         En ese caso, la contraseña utilizada se devuelve en la respuesta dentro de `data.password`.
       tags: [Usuarios]
@@ -502,13 +502,30 @@ paths:
                 summary: Sin password (usa cedula como contraseña)
                 value:
                   cedula: "V-12345678"
-              conDatos:
-                summary: Con algunos campos
+              passwordNullConCedula:
+                summary: Password null (usa cedula como contraseña)
                 value:
+                  cedula: "V-12345678"
+                  password: null
+              completo:
+                summary: Todos los campos soportados
+                value:
+                  tipo: natural
+                  rol: admin
                   nombre: "Joseph"
                   apellido: "García"
-                  email: "joseph@example.com"
                   cedula: "V-12345678"
+                  telefono: "4140000000"
+                  direccion: "Caracas"
+                  hospital_id: 2
+                  sede_id: 5
+                  can_view: true
+                  can_create: true
+                  can_update: true
+                  can_delete: true
+                  email: "joseph@example.com"
+                  password: "unPasswordSeguro"
+                  status: activo
       responses:
         '200':
           description: Usuario creado o error con `status=false`
@@ -553,6 +570,19 @@ paths:
                       updated_at: "2025-09-03T23:56:34.222Z"
                       status: activo
                       password: "V-12345678"
+                creadoPasswordNullUsandoCedula:
+                  summary: Creado con password=null (usa cedula y la devuelve)
+                  value:
+                    status: true
+                    mensaje: Usuario creado.
+                    data:
+                      id: 2
+                      nombre: Luis
+                      apellido: Pérez
+                      cedula: "V-87654321"
+                      email: luis@example.com
+                      status: activo
+                      password: "V-87654321"
     get:
       summary: Listar usuarios
       tags: [Usuarios]

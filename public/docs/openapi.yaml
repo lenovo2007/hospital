@@ -497,22 +497,30 @@ paths:
                 email: { type: string, format: email, nullable: true }
                 password: { type: string, minLength: 8, nullable: true, description: "Si no se envía, se requiere 'cedula' y se usará como contraseña por defecto" }
                 status: { type: string, enum: [activo, inactivo], nullable: true }
+            example:
+              tipo: natural
+              rol: admin
+              nombre: "Ana"
+              apellido: "García"
+              cedula: "V-12345678"
+              telefono: "4140000000"
+              direccion: "Caracas"
+              hospital_id: 2
+              sede_id: 5
+              can_view: true
+              can_create: true
+              can_update: true
+              can_delete: true
+              email: "ana@example.com"
+              password: "unPasswordSeguro"
+              status: activo
             examples:
-              sinPasswordConCedula:
-                summary: Sin password (usa cedula como contraseña)
-                value:
-                  cedula: "V-12345678"
-              passwordNullConCedula:
-                summary: Password null (usa cedula como contraseña)
-                value:
-                  cedula: "V-12345678"
-                  password: null
               completo:
                 summary: Todos los campos soportados
                 value:
                   tipo: natural
                   rol: admin
-                  nombre: "Joseph"
+                  nombre: "Ana"
                   apellido: "García"
                   cedula: "V-12345678"
                   telefono: "4140000000"
@@ -523,9 +531,18 @@ paths:
                   can_create: true
                   can_update: true
                   can_delete: true
-                  email: "joseph@example.com"
+                  email: "ana@example.com"
                   password: "unPasswordSeguro"
                   status: activo
+              sinPasswordConCedula:
+                summary: Sin password (usa cedula como contraseña)
+                value:
+                  cedula: "V-12345678"
+              passwordNullConCedula:
+                summary: Password null (usa cedula como contraseña)
+                value:
+                  cedula: "V-12345678"
+                  password: null
       responses:
         '200':
           description: Usuario creado o error con `status=false`

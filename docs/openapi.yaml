@@ -1584,7 +1584,13 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Sede'
+              type: object
+              required: [nombre, tipo]
+              properties:
+                nombre: { type: string }
+                tipo: { type: string }
+                hospital_id: { type: integer, nullable: true }
+                status: { type: string, enum: [activo, inactivo], nullable: true }
       responses:
         '200':
           description: Sede creada o error con `status=false`
@@ -1643,7 +1649,12 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/Sede'
+              type: object
+              properties:
+                nombre: { type: string }
+                tipo: { type: string }
+                hospital_id: { type: integer, nullable: true }
+                status: { type: string, enum: [activo, inactivo], nullable: true }
       responses:
         '200':
           description: Sede actualizada o error con `status=false`

@@ -46,6 +46,7 @@ Route::middleware(['auth:sanctum','crud.perms'])->group(function () {
 
     // Sedes CRUD
     Route::get('/sedes', [SedeController::class, 'index']);
+    Route::get('/sedes/hospital/{id}', [SedeController::class, 'byHospital']);
     Route::post('/sedes', [SedeController::class, 'store']);
     Route::get('/sedes/{sede}', [SedeController::class, 'show']);
     Route::put('/sedes/{sede}', [SedeController::class, 'update']);

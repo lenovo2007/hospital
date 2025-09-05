@@ -86,6 +86,10 @@ class HospitalController extends Controller
             'ubicacion.lat' => ['nullable','numeric','between:-90,90'],
             'ubicacion.lng' => ['nullable','numeric','between:-180,180'],
             'direccion' => ['nullable','string','max:255'],
+            'dependencia' => ['nullable','string','max:255'],
+            'estado' => ['nullable','string','max:255'],
+            'municipio' => ['nullable','string','max:255'],
+            'parroquia' => ['nullable','string','max:255'],
             'tipo' => ['sometimes','required','string','max:255'],
             'status' => ['nullable','in:activo,inactivo'],
         ], [
@@ -148,6 +152,10 @@ class HospitalController extends Controller
             'ubicacion.lat' => ['nullable','numeric','between:-90,90'],
             'ubicacion.lng' => ['nullable','numeric','between:-180,180'],
             'direccion' => ['nullable','string','max:255'],
+            'dependencia' => ['nullable','string','max:255'],
+            'estado' => ['nullable','string','max:255'],
+            'municipio' => ['nullable','string','max:255'],
+            'parroquia' => ['nullable','string','max:255'],
             'tipo' => ['sometimes','required','string','max:255'],
             'status' => ['nullable','in:activo,inactivo'],
         ], [
@@ -186,6 +194,10 @@ class HospitalController extends Controller
             'ubicacion.lat' => ['nullable','numeric','between:-90,90'],
             'ubicacion.lng' => ['nullable','numeric','between:-180,180'],
             'direccion' => ['nullable','string','max:255'],
+            'dependencia' => ['nullable','string','max:255'],
+            'estado' => ['nullable','string','max:255'],
+            'municipio' => ['nullable','string','max:255'],
+            'parroquia' => ['nullable','string','max:255'],
             'tipo' => ['required','string','max:255'],
             'status' => ['nullable','in:activo,inactivo'],
         ], [

@@ -182,6 +182,22 @@ components:
           type: string
           nullable: true
           example: Caracas
+        dependencia:
+          type: string
+          nullable: true
+          example: Ministerio de Salud
+        estado:
+          type: string
+          nullable: true
+          example: Distrito Capital
+        municipio:
+          type: string
+          nullable: true
+          example: Libertador
+        parroquia:
+          type: string
+          nullable: true
+          example: San José
         tipo:
           type: string
           example: publico

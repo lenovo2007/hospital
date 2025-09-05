@@ -22,6 +22,10 @@ class Hospital extends Model
         'nombre_contacto',
         'ubicacion',
         'direccion',
+        'dependencia',
+        'estado',
+        'municipio',
+        'parroquia',
         'tipo',
         'status',
     ];

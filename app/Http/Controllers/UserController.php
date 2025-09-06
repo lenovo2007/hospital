@@ -112,7 +112,7 @@ class UserController extends Controller
     // GET /api/users/cedula/{cedula}
     public function showByCedula(Request $request, string $cedula)
     {
-        $user = User::where('cedula', $cedula)->first();
+        $user = User::with(['hospital','sede'])->where('cedula', $cedula)->first();
         if (!$user) {
             return response()->json([
                 'status' => true,

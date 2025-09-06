@@ -106,6 +106,14 @@ components:
           type: integer
           nullable: true
           example: 5
+        hospital:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Hospital'
+        sede:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Sede'
         can_view:
           type: boolean
           example: true

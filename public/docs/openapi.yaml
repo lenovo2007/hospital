@@ -530,6 +530,7 @@ paths:
                 rol: { type: string, nullable: true }
                 nombre: { type: string, nullable: true }
                 apellido: { type: string, nullable: true }
+                genero: { type: string, nullable: true }
                 cedula: { type: string, nullable: true }
                 telefono: { type: string, nullable: true }
                 direccion: { type: string, nullable: true }
@@ -547,6 +548,7 @@ paths:
               rol: admin
               nombre: "Ana"
               apellido: "García"
+              genero: femenino
               cedula: "V-12345678"
               telefono: "4140000000"
               direccion: "Caracas"
@@ -567,6 +569,7 @@ paths:
                   rol: admin
                   nombre: "Ana"
                   apellido: "García"
+                  genero: femenino
                   cedula: "V-12345678"
                   telefono: "4140000000"
                   direccion: "Caracas"

@@ -83,6 +83,10 @@ components:
         apellido:
           type: string
           example: García
+        genero:
+          type: string
+          nullable: true
+          example: femenino
         cedula:
           type: string
           example: V-12345678

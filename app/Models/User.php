@@ -23,6 +23,7 @@ class User extends Authenticatable
         'rol',
         'nombre',
         'apellido',
+        'genero',
         'cedula',
         'telefono',
         'direccion',

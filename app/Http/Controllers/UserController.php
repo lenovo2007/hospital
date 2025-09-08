@@ -37,7 +37,10 @@ class UserController extends Controller
     // GET /api/users/email/{email}
     public function showByEmail(Request $request, string $email)
     {
-        $user = User::where('email', $email)->first();
+        $actor = $request->user();
+        $query = User::query();
+        if (!$actor || !$actor->is_root) { $query->where('is_root', false); }
+        $user = $query->where('email', $email)->first();
         if (!$user) {
             return response()->json([
                 'status' => true,
@@ -131,7 +134,10 @@ class UserController extends Controller
     // GET /api/users/cedula/{cedula}
     public function showByCedula(Request $request, string $cedula)
     {
-        $user = User::with(['hospital','sede'])->where('cedula', $cedula)->first();
+        $actor = $request->user();
+        $query = User::with(['hospital','sede']);
+        if (!$actor || !$actor->is_root) { $query->where('is_root', false); }
+        $user = $query->where('cedula', $cedula)->first();
         if (!$user) {
             return response()->json([
                 'status' => true,
@@ -374,6 +380,14 @@ class UserController extends Controller
     // Mostrar usuario
     public function show(User $user)
     {
+        $actor = request()->user();
+        if ((!$actor || !$actor->is_root) && $user->is_root) {
+            return response()->json([
+                'status' => true,
+                'mensaje' => 'usuario no encontrado',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
         $this->authorize('view', $user);
         return response()->json([
             'status' => true,

@@ -544,6 +544,7 @@ paths:
                 can_create: { type: boolean, nullable: true }
                 can_update: { type: boolean, nullable: true }
                 can_delete: { type: boolean, nullable: true }
+                is_root: { type: boolean, nullable: true, description: "Solo usuarios root pueden modificar este campo." }
                 email: { type: string, format: email, nullable: true }
                 password: { type: string, minLength: 8, description: "Obligatoria. Debe tener al menos 8 caracteres, incluir mayúscula, minúscula, número y símbolo." }
                 status: { type: string, enum: [activo, inactivo], nullable: true }

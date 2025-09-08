@@ -18,7 +18,7 @@ class UserController extends Controller
         $status = $request->query('status', 'activo');
         if ($status === 'todos') { $status = 'all'; }
         if (!in_array($status, ['activo', 'inactivo', 'all'], true)) { $status = 'activo'; }
-        $query = User::query();
+        $query = User::query()->where('id', '<>', 1); // ocultar usuario root
         if ($status !== 'all') { $query->where('status', $status); }
         $users = $query->latest()->paginate(15);
         $mensaje = $users->total() > 0 ? 'Listado de usuarios.' : 'usuario no encontrado';
@@ -33,6 +33,13 @@ class UserController extends Controller
     public function showByEmail(Request $request, string $email)
     {
         $user = User::where('email', $email)->first();
+        if ($user && $user->id === 1) {
+            return response()->json([
+                'status' => true,
+                'mensaje' => 'usuario no encontrado',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
         if (!$user) {
             return response()->json([
                 'status' => true,
@@ -55,6 +62,13 @@ class UserController extends Controller
             return response()->json([
                 'status' => true,
                 'mensaje' => 'usuario no encontrado',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
+        if ($user->id === 1) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Operación no permitida para el usuario root.',
                 'data' => null,
             ], 200, [], JSON_UNESCAPED_UNICODE);
         }
@@ -117,6 +131,13 @@ class UserController extends Controller
     public function showByCedula(Request $request, string $cedula)
     {
         $user = User::with(['hospital','sede'])->where('cedula', $cedula)->first();
+        if ($user && $user->id === 1) {
+            return response()->json([
+                'status' => true,
+                'mensaje' => 'usuario no encontrado',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
         if (!$user) {
             return response()->json([
                 'status' => true,
@@ -139,6 +160,13 @@ class UserController extends Controller
             return response()->json([
                 'status' => true,
                 'mensaje' => 'usuario no encontrado',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
+        if ($user->id === 1) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Operación no permitida para el usuario root.',
                 'data' => null,
             ], 200, [], JSON_UNESCAPED_UNICODE);
         }
@@ -199,6 +227,13 @@ class UserController extends Controller
                 'data' => null,
             ], 200, [], JSON_UNESCAPED_UNICODE);
         }
+        if ($user->id === 1) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Operación no permitida para el usuario root.',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
 
         $v = validator($request->all(), [
             'password' => ['required','string','min:8'],
@@ -235,6 +270,13 @@ class UserController extends Controller
             return response()->json([
                 'status' => true,
                 'mensaje' => 'usuario no encontrado',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
+        if ($user->id === 1) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Operación no permitida para el usuario root.',
                 'data' => null,
             ], 200, [], JSON_UNESCAPED_UNICODE);
         }
@@ -368,6 +410,13 @@ class UserController extends Controller
     // Actualizar usuario
     public function update(Request $request, User $user)
     {
+        if ($user->id === 1) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Operación no permitida para el usuario root.',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
         $v = validator($request->all(), [
             'tipo' => ['sometimes','required','string','max:255'],
             'rol' => ['sometimes','required','string','max:255'],
@@ -420,6 +469,13 @@ class UserController extends Controller
     // Eliminar usuario
     public function destroy(User $user)
     {
+        if ($user->id === 1) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Operación no permitida para el usuario root.',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
         $user->delete();
         return response()->json([
             'status' => true,

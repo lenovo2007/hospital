@@ -602,6 +602,10 @@ paths:
                           
     get:
       summary: Listar usuarios
+      description: |
+        - Los usuarios con rol root (is_root=true) solo son visibles para usuarios autenticados root.
+        - Los usuarios no-root no verán cuentas root en los listados ni podrán consultarlas por email, cédula o id.
+        - Solo un usuario root puede ver/actualizar/eliminar a usuarios root.
       tags: [Usuarios]
       security:
         - bearerAuth: []

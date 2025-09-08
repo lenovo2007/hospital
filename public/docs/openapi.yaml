@@ -126,6 +126,10 @@ components:
         can_delete:
           type: boolean
           example: true
+        is_root:
+          type: boolean
+          description: "Indica si el usuario es root del sistema (solo lectura)."
+          example: false
         email:
           type: string
           format: email

@@ -63,6 +63,7 @@ class User extends Authenticatable
             'can_create' => 'boolean',
             'can_update' => 'boolean',
             'can_delete' => 'boolean',
+            'is_root' => 'boolean',
         ];
     }
 

@@ -92,6 +92,7 @@ class UserController extends Controller
             'can_create' => ['nullable','boolean'],
             'can_update' => ['nullable','boolean'],
             'can_delete' => ['nullable','boolean'],
+            'is_root' => ['sometimes','boolean'],
             'email' => ['sometimes','required','string','email','max:255', Rule::unique('users','email')->ignore($user->id)],
             'password' => ['nullable','string','min:8'],
             'status' => ['nullable','in:activo,inactivo'],
@@ -119,6 +120,10 @@ class UserController extends Controller
             }
         });
         $data = $v->validate();
+        // Solo root puede modificar is_root
+        if (!$request->user() || !$request->user()->is_root) {
+            unset($data['is_root']);
+        }
 
         if (!empty($data['password'])) { $data['password'] = Hash::make($data['password']); } else { unset($data['password']); }
 
@@ -135,24 +140,19 @@ class UserController extends Controller
     public function showByCedula(Request $request, string $cedula)
     {
         $actor = $request->user();
-        $query = User::with(['hospital','sede']);
-        if (!$actor || !$actor->is_root) { $query->where('is_root', false); }
-        $user = $query->where('cedula', $cedula)->first();
-        if (!$user) {
+        $user = User::with(['hospital','sede'])
+            ->where('cedula', $cedula)
+            ->first();
+            
+        // Si no se encuentra el usuario o es root y el actor no es root
+        if (!$user || ($user->is_root && (!$actor || !$actor->is_root))) {
             return response()->json([
                 'status' => true,
                 'mensaje' => 'usuario no encontrado',
                 'data' => null,
             ], 200, [], JSON_UNESCAPED_UNICODE);
         }
-        try { $this->authorize('view', $user); }
-        catch (\Illuminate\Auth\Access\AuthorizationException $e) {
-            return response()->json([
-                'status' => true,
-                'mensaje' => 'usuario no encontrado',
-                'data' => null,
-            ], 200, [], JSON_UNESCAPED_UNICODE);
-        }
+        
         return response()->json([
             'status' => true,
             'mensaje' => 'Usuario encontrado por cédula.',
@@ -188,6 +188,7 @@ class UserController extends Controller
             'can_create' => ['nullable','boolean'],
             'can_update' => ['nullable','boolean'],
             'can_delete' => ['nullable','boolean'],
+            'is_root' => ['sometimes','boolean'],
             'email' => ['sometimes','required','string','email','max:255', Rule::unique('users','email')->ignore($user->id)],
             'password' => ['nullable','string','min:8'],
             'status' => ['nullable','in:activo,inactivo'],
@@ -424,6 +425,7 @@ class UserController extends Controller
             'can_create' => ['nullable','boolean'],
             'can_update' => ['nullable','boolean'],
             'can_delete' => ['nullable','boolean'],
+            'is_root' => ['sometimes','boolean'],
             'email' => ['sometimes','required','string','email','max:255', Rule::unique('users','email')->ignore($user->id)],
             'password' => ['nullable','string','min:8'],
             'status' => ['nullable','in:activo,inactivo'],

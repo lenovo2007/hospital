@@ -29,7 +29,19 @@
   "mensaje": "Login exitoso.",
   "data": {
     "token": "<TOKEN>",
-    "user": { "id": 1, "email": "admin@example.com", "nombre": "Admin", "apellido": "Principal" }
+    "user": {
+      "id": 1,
+      "email": "admin@example.com",
+      "nombre": "Admin",
+      "apellido": "Principal",
+      "is_root": true,
+      "can_view": true,
+      "can_create": true,
+      "can_update": true,
+      "can_delete": true,
+      "can_crud_user": true,
+      "status": "activo"
+    }
   }
 }
 ```
@@ -44,7 +56,19 @@ Ejemplos de respuestas:
   "mensaje": "Login exitoso.",
   "data": {
     "token": "<TOKEN>",
-    "user": { "id": 1, "email": "admin@example.com", "nombre": "Admin", "apellido": "Principal" }
+    "user": {
+      "id": 1,
+      "email": "admin@example.com",
+      "nombre": "Admin",
+      "apellido": "Principal",
+      "is_root": true,
+      "can_view": true,
+      "can_create": true,
+      "can_update": true,
+      "can_delete": true,
+      "can_crud_user": true,
+      "status": "activo"
+    }
   }
 }
 ```
@@ -56,14 +80,34 @@ Ejemplos de respuestas:
   "mensaje": "Login exitoso.",
   "data": {
     "token": "<TOKEN>",
-    "user": { "id": 2, "email": "doctor@example.com", "nombre": "Doctor", "apellido": "Ejemplo" }
-  }
+    "user": {
+      "id": 2,
+      "tipo": "doctor",
+      "rol": "Médico",
+      "email": "doctor@example.com",
+      "nombre": "Doctor",
+      "apellido": "Ejemplo",
+      "is_root": false,
+      "can_view": true,
+      "can_create": false,
+      "can_update": false,
+      "can_delete": false,
+      "can_crud_user": false,
+      "status": "activo"
+    }
 }
 ```
 
 #### Cuentas de ejemplo
-- __Administrador__: email `admin@example.com`, password `password`.
-- __Cliente__: email `doctor@example.com`, password `password`.
+- __Administrador__: 
+  - Email: `admin@example.com`
+  - Contraseña: `password`
+  - Permisos: `is_root: true`, `can_view: true`, `can_create: true`, `can_update: true`, `can_delete: true`, `can_crud_user: true`
+
+- __Médico (Cliente)__: 
+  - Email: `doctor@example.com`
+  - Contraseña: `password`
+  - Permisos: `is_root: false`, `can_view: true`, `can_create: false`, `can_update: false`, `can_delete: false`, `can_crud_user: false`
 
 Puedes probar el login con cualquiera de las dos cuentas para obtener un token y consumir los endpoints protegidos.
 
@@ -80,10 +124,71 @@ Puedes probar el login con cualquiera de las dos cuentas para obtener un token y
 - Método: GET
 - URL: `/api/me`
 - Headers: `Authorization: Bearer <TOKEN>`
-- Respuesta 200: datos del usuario autenticado.
+- Respuesta 200 (ejemplo):
+```json
+{
+  "status": true,
+  "mensaje": "Datos del usuario autenticado.",
+  "data": {
+    "id": 1,
+    "tipo": "admin",
+    "rol": "Administrador",
+    "nombre": "Admin",
+    "apellido": "Principal",
+    "email": "admin@example.com",
+    "cedula": "V-12345678",
+    "telefono": "04140000000",
+    "direccion": "Caracas",
+    "is_root": true,
+    "can_view": true,
+    "can_create": true,
+    "can_update": true,
+    "can_delete": true,
+    "can_crud_user": true,
+    "status": "activo",
+    "created_at": "2025-01-01T00:00:00.000000Z",
+    "updated_at": "2025-01-01T00:00:00.000000Z"
+  }
+}
+```
 
 ## Usuarios (protegido)
-Modelo con campos personalizados: `tipo`, `rol`, `nombre`, `apellido`, `cedula` (único), `telefono` (opcional), `direccion` (opcional), `email`, `password`, `status` (`activo`|`inactivo`).
+
+### Modelo de Usuario
+
+#### Campos principales
+- `tipo`: Tipo de usuario (ej: 'admin', 'doctor', 'enfermero', etc.)
+- `rol`: Nombre del rol del usuario
+- `nombre`: Nombre del usuario
+- `apellido`: Apellido del usuario
+- `cedula`: Cédula de identidad (única)
+- `telefono`: (opcional) Número de teléfono
+- `direccion`: (opcional) Dirección física
+- `email`: Correo electrónico (único)
+- `password`: Contraseña (hash)
+- `status`: Estado del usuario (`activo`|`inactivo`)
+
+#### Campos de permisos (booleanos)
+- `is_root`: Indica si el usuario es administrador raíz (acceso total)
+- `can_view`: Permiso para ver recursos
+- `can_create`: Permiso para crear recursos
+- `can_update`: Permiso para actualizar recursos
+- `can_delete`: Permiso para eliminar recursos
+- `can_crud_user`: Permiso para gestionar usuarios (CRUD completo)
+
+#### Campos de auditoría
+- `created_at`: Fecha de creación
+- `updated_at`: Última actualización
+- `email_verified_at`: (opcional) Fecha de verificación de correo
+- `password_reset_expires_at`: (opcional) Expiración de restablecimiento de contraseña
+
+**Permisos requeridos para acceder a los endpoints de usuarios:**
+- `can_crud_user: true` o `is_root: true` para todas las operaciones
+- Permisos específicos por acción:
+  - Listar/Ver: `can_view: true`
+  - Crear: `can_create: true`
+  - Actualizar: `can_update: true`
+  - Eliminar: `can_delete: true`
 
 Nota: `status` por defecto es `activo`. Puede enviarse en creación/actualización.
 
@@ -100,6 +205,33 @@ Nota: `status` por defecto es `activo`. Puede enviarse en creación/actualizaci�
 - Método: GET
 - URL: `/api/users/{id}`
 - Headers: `Authorization: Bearer <TOKEN>`
+- Respuesta 200 (ejemplo):
+```json
+{
+  "status": true,
+  "mensaje": "Usuario encontrado.",
+  "data": {
+    "id": 1,
+    "tipo": "admin",
+    "rol": "Administrador",
+    "nombre": "Admin",
+    "apellido": "Principal",
+    "email": "admin@example.com",
+    "cedula": "V-12345678",
+    "telefono": "04140000000",
+    "direccion": "Caracas",
+    "is_root": true,
+    "can_view": true,
+    "can_create": true,
+    "can_update": true,
+    "can_delete": true,
+    "can_crud_user": true,
+    "status": "activo",
+    "created_at": "2025-01-01T00:00:00.000000Z",
+    "updated_at": "2025-01-01T00:00:00.000000Z"
+  }
+}
+```
 
 ### Crear usuario
 - Método: POST
@@ -116,7 +248,13 @@ Nota: `status` por defecto es `activo`. Puede enviarse en creación/actualizaci�
   "telefono": "04140000001",
   "direccion": "Caracas",
   "email": "ana@example.com",
-  "password": "secret123"
+  "password": "secret123",
+  "can_view": true,
+  "can_create": true,
+  "can_update": true,
+  "can_delete": false,
+  "can_crud_user": false,
+  "status": "activo"
 }
 ```
 - Respuesta 200: usuario creado.
@@ -125,8 +263,23 @@ Nota: `status` por defecto es `activo`. Puede enviarse en creación/actualizaci�
 - Método: PUT
 - URL: `/api/users/{id}`
 - Headers: `Authorization: Bearer <TOKEN>`
-- Body: mismos campos (los requeridos según validación del controlador).
-- Respuesta 200: usuario actualizado.
+- Body (JSON) ejemplo:
+```json
+{
+  "nombre": "Ana María",
+  "apellido": "González",
+  "telefono": "04141234567",
+  "direccion": "Nueva dirección",
+  "can_view": true,
+  "can_create": true,
+  "can_update": true,
+  "can_delete": true,
+  "can_crud_user": true,
+  "status": "activo"
+}
+```
+- Respuesta 200: usuario actualizado con los nuevos valores.
+- Nota: Solo usuarios con `can_crud_user: true` o `is_root: true` pueden modificar los campos de permisos.
 
 ### Eliminar usuario
 - Método: DELETE

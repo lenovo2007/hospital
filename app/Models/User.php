@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -10,13 +9,12 @@ use Laravel\Sanctum\HasApiTokens;
 
 class User extends Authenticatable
 {
-    /** @use HasFactory<\Database\Factories\UserFactory> */
     use HasApiTokens, HasFactory, Notifiable;
 
     /**
      * The attributes that are mass assignable.
      *
-     * @var list<string>
+     * @var array<int, string>
      */
     protected $fillable = [
         'tipo',
@@ -40,6 +38,16 @@ class User extends Authenticatable
     ];
 
     /**
+     * The attributes that should be hidden for serialization.
+     *
+     * @var array<int, string>
+     */
+    protected $hidden = [
+        'password',
+        'remember_token',
+    ];
+
+    /**
      * The attributes that should be cast.
      *
      * @var array<string, string>
@@ -60,23 +68,8 @@ class User extends Authenticatable
      *
      * @var array
      */
-    /**
-     * The accessors to append to the model's array form.
-     *
-     * @var array
-     */
     protected $appends = ['can_crud_user', 'hospital', 'sede'];
 
-    /**
-     * Get the can_crud_user attribute.
-     *
-     * @return bool
-     */
-    public function getCanCrudUserAttribute($value)
-    {
-        return (bool) $value;
-    }
-    
     /**
      * The relationships that should always be loaded.
      *
@@ -85,80 +78,58 @@ class User extends Authenticatable
     protected $with = ['hospital', 'sede'];
 
     /**
-     * The attributes that should be hidden for serialization.
+     * Get the can_crud_user attribute.
      *
-     * @var list<string>
+     * @param  mixed  $value
+     * @return bool
      */
-    protected $hidden = [
-        'password',
-        'remember_token',
-    ];
-
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
+    public function getCanCrudUserAttribute($value = null)
     {
-        return [
-            'email_verified_at' => 'datetime',
-            'password' => 'hashed',
-            'password_reset_expires_at' => 'datetime',
-            'is_root' => 'boolean',
-            'can_view' => 'boolean',
-            'can_create' => 'boolean',
-            'can_update' => 'boolean',
-            'can_delete' => 'boolean',
-            'can_crud_user' => 'boolean',
-            'status' => 'string',
-        ];
+        if ($value === null) {
+            return (bool) ($this->attributes['can_crud_user'] ?? false);
+        }
+        return (bool) $value;
     }
 
-    // Relaciones
+    /**
+     * Get the hospital that owns the user.
+     */
     public function hospital()
     {
         return $this->belongsTo(Hospital::class, 'hospital_id');
     }
 
+    /**
+     * Get the sede that owns the user.
+     */
     public function sede()
     {
-        return $this->belongsTo(Sede::class, 'sede_id'); // sedes table
+        return $this->belongsTo(Sede::class, 'sede_id');
     }
 
     /**
-     * Get the can_crud_user attribute.
+     * Get the hospital attribute.
      *
-     * @return bool
-     */
-    /**
-     * Get the can_crud_user attribute.
-     *
-     * @return bool
-     */
-    public function getCanCrudUserAttribute($value)
-    {
-        return (bool) $value;
-    }
-    
-    /**
-     * Get the hospital relationship.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * @return \App\Models\Hospital|null
      */
     public function getHospitalAttribute()
     {
-        return $this->hospital()->first();
+        if (!array_key_exists('hospital', $this->relations)) {
+            $this->load('hospital');
+        }
+        return $this->getRelation('hospital');
     }
-    
+
     /**
-     * Get the sede relationship.
+     * Get the sede attribute.
      *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     * @return \App\Models\Sede|null
      */
     public function getSedeAttribute()
     {
-        return $this->sede()->first();
+        if (!array_key_exists('sede', $this->relations)) {
+            $this->load('sede');
+        }
+        return $this->getRelation('sede');
     }
 }
-

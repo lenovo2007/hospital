@@ -24,8 +24,24 @@ return Application::configure(basePath: dirname(__DIR__))
             'append.auth' => \App\Http\Middleware\AppendAuthStatus::class,
         ]);
 
-        // Aplicar a todas las rutas del grupo API
-        $middleware->appendToGroup('api', \App\Http\Middleware\AppendAuthStatus::class);
+        // Enable CORS for all routes
+        $middleware->validateCsrfTokens(except: [
+            'api/*',
+            'sanctum/csrf-cookie',
+            'login',
+            'logout'
+        ]);
+
+        // Register CORS middleware
+        $middleware->alias([
+            'cors' => \App\Http\Middleware\Cors::class,
+        ]);
+
+        // Apply CORS middleware to API group
+        $middleware->appendToGroup('api', [
+            \App\Http\Middleware\Cors::class,
+            \App\Http\Middleware\AppendAuthStatus::class,
+        ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         // Errores de validación (422)

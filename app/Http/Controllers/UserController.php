@@ -497,74 +497,90 @@ class UserController extends Controller
     // Actualizar usuario
     public function update(Request $request, User $user)
     {
-        $actor = $request->user();
-        
-        // Verificar si el usuario tiene permiso para actualizar usuarios
-        if ((!$actor->can_crud_user || !$actor->can_update) && !$actor->is_root) {
-            return response()->json([
-                'status' => false,
-                'mensaje' => 'No tienes permiso para actualizar usuarios',
-                'data' => null,
-            ], 403, [], JSON_UNESCAPED_UNICODE);
-        }
-        
-        // Si el usuario objetivo es root y el actor no es root, denegar
-        if ($user->is_root && !$actor->is_root) {
-            return response()->json([
-                'status' => false,
-                'mensaje' => 'No tienes permiso para actualizar este usuario',
-                'data' => null,
-            ], 403, [], JSON_UNESCAPED_UNICODE);
-        }
-        $this->authorize('update', $user);
-        $v = validator($request->all(), [
-            'tipo' => ['sometimes','required','string','max:255'],
-            'rol' => ['sometimes','required','string','max:255'],
-            'nombre' => ['sometimes','required','string','max:255'],
-            'apellido' => ['sometimes','required','string','max:255'],
-            'cedula' => ['sometimes','required','string','max:255', Rule::unique('users','cedula')->ignore($user->id)],
-            'telefono' => ['nullable','string','max:255'],
-            'direccion' => ['nullable','string','max:255'],
-            'hospital_id' => ['nullable','integer','exists:hospitales,id'],
-            'sede_id' => ['nullable','integer','exists:sedes,id'],
-            'can_view' => ['nullable','boolean'],
-            'can_create' => ['nullable','boolean'],
-            'can_update' => ['nullable','boolean'],
-            'can_delete' => ['nullable','boolean'],
-            'is_root' => ['sometimes','boolean'],
-            'email' => ['sometimes','required','string','email','max:255', Rule::unique('users','email')->ignore($user->id)],
-            'password' => ['nullable','string','min:8'],
-            'status' => ['nullable','in:activo,inactivo'],
-        ], [
-            'email.unique' => 'El correo electrónico ya ha sido registrado para otro usuario.',
-            'cedula.unique' => 'La cédula ya ha sido registrada para otro usuario.',
-            'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
-        ]);
-        $v->after(function ($validator) use ($request) {
-            $pwd = $request->input('password');
-            if (!empty($pwd)) {
-                if (!preg_match('/[A-Z]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos una letra mayúscula.'); }
-                if (!preg_match('/[a-z]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos una letra minúscula.'); }
-                if (!preg_match('/[0-9]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos un número.'); }
-                if (!preg_match('/[\W_]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos un símbolo o carácter especial.'); }
+        try {
+            $actor = $request->user();
+            
+            // Verificar si el usuario tiene permiso para actualizar usuarios
+            if ((!$actor->can_crud_user || !$actor->can_update) && !$actor->is_root) {
+                return response()->json([
+                    'status' => false,
+                    'mensaje' => 'No tienes permiso para actualizar usuarios',
+                    'data' => null,
+                ], 403, [], JSON_UNESCAPED_UNICODE);
             }
-        });
-        $data = $v->validate();
+            
+            // Si el usuario objetivo es root y el actor no es root, denegar
+            if ($user->is_root && !$actor->is_root) {
+                return response()->json([
+                    'status' => false,
+                    'mensaje' => 'No tienes permiso para actualizar este usuario',
+                    'data' => null,
+                ], 403, [], JSON_UNESCAPED_UNICODE);
+            }
+            $this->authorize('update', $user);
 
-        if (!empty($data['password'])) {
-            $data['password'] = Hash::make($data['password']);
-        } else {
-            unset($data['password']);
+            $v = validator($request->all(), [
+                'tipo' => ['sometimes','required','string','max:255'],
+                'rol' => ['sometimes','required','string','max:255'],
+                'nombre' => ['sometimes','required','string','max:255'],
+                'apellido' => ['sometimes','required','string','max:255'],
+                'cedula' => ['sometimes','required','string','max:255', Rule::unique('users','cedula')->ignore($user->id)],
+                'telefono' => ['nullable','string','max:255'],
+                'direccion' => ['nullable','string','max:255'],
+                'hospital_id' => ['nullable','integer','exists:hospitales,id'],
+                'sede_id' => ['nullable','integer','exists:sedes,id'],
+                'can_view' => ['nullable','boolean'],
+                'can_create' => ['nullable','boolean'],
+                'can_update' => ['nullable','boolean'],
+                'can_delete' => ['nullable','boolean'],
+                'is_root' => ['sometimes','boolean'],
+                'email' => ['sometimes','required','string','email','max:255', Rule::unique('users','email')->ignore($user->id)],
+                'password' => ['nullable','string','min:8'],
+                'status' => ['nullable','in:activo,inactivo'],
+            ], [
+                'email.unique' => 'El correo electrónico ya ha sido registrado para otro usuario.',
+                'cedula.unique' => 'La cédula ya ha sido registrada para otro usuario.',
+                'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
+            ]);
+            $v->after(function ($validator) use ($request) {
+                $pwd = $request->input('password');
+                if (!empty($pwd)) {
+                    if (!preg_match('/[A-Z]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos una letra mayúscula.'); }
+                    if (!preg_match('/[a-z]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos una letra minúscula.'); }
+                    if (!preg_match('/[0-9]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos un número.'); }
+                    if (!preg_match('/[\W_]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos un símbolo o carácter especial.'); }
+                }
+            });
+            $data = $v->validate();
+
+            if (!empty($data['password'])) {
+                $data['password'] = Hash::make($data['password']);
+            } else {
+                unset($data['password']);
+            }
+
+            $user->update($data);
+            $user->refresh();
+
+            return response()->json([
+                'status' => true,
+                'mensaje' => 'Usuario actualizado.',
+                'data' => $user,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            // Se manejará por el render global ya configurado; lo relanzamos
+            throw $e;
+        } catch (\Throwable $e) {
+            \Log::error('Error inesperado en UserController@update', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Ocurrió un error al actualizar el usuario.',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
         }
-
-        $user->update($data);
-        $user->refresh();
-
-        return response()->json([
-            'status' => true,
-            'mensaje' => 'Usuario actualizado.',
-            'data' => $user,
-        ], 200, [], JSON_UNESCAPED_UNICODE);
     }
 
     // Eliminar usuario

@@ -33,6 +33,7 @@ class User extends Authenticatable
         'can_create',
         'can_update',
         'can_delete',
+        'can_crud_user',
         'email',
         'password',
         'status',

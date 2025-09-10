@@ -15,18 +15,35 @@ class UserController extends Controller
     // Listado de usuarios
     public function index(Request $request)
     {
+        $actor = $request->user();
+        
+        // Verificar si el usuario tiene permiso para ver la lista de usuarios
+        if ((!$actor->can_crud_user || !$actor->can_view) && !$actor->is_root) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'No tienes permiso para ver la lista de usuarios',
+                'data' => null,
+            ], 403, [], JSON_UNESCAPED_UNICODE);
+        }
+        
         $status = $request->query('status', 'activo');
         if ($status === 'todos') { $status = 'all'; }
         if (!in_array($status, ['activo', 'inactivo', 'all'], true)) { $status = 'activo'; }
-        $actor = $request->user();
+        
         $query = User::query();
+        
         // Ocultar usuarios root para actores no root
-        if (!$actor || !$actor->is_root) {
+        if (!$actor->is_root) {
             $query->where('is_root', false);
         }
-        if ($status !== 'all') { $query->where('status', $status); }
+        
+        if ($status !== 'all') { 
+            $query->where('status', $status); 
+        }
+        
         $users = $query->latest()->paginate(15);
-        $mensaje = $users->total() > 0 ? 'Listado de usuarios.' : 'usuario no encontrado';
+        $mensaje = $users->total() > 0 ? 'Listado de usuarios.' : 'No se encontraron usuarios';
+        
         return response()->json([
             'status' => true,
             'mensaje' => $mensaje,
@@ -38,13 +55,29 @@ class UserController extends Controller
     public function showByEmail(Request $request, string $email)
     {
         $actor = $request->user();
+        
+        // Verificar si el usuario tiene permiso para ver usuarios
+        if ((!$actor->can_crud_user || !$actor->can_view) && !$actor->is_root) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'No tienes permiso para ver este usuario',
+                'data' => null,
+            ], 403, [], JSON_UNESCAPED_UNICODE);
+        }
+        
         $query = User::query();
-        if (!$actor || !$actor->is_root) { $query->where('is_root', false); }
+        
+        // Ocultar usuarios root para actores no root
+        if (!$actor->is_root) { 
+            $query->where('is_root', false); 
+        }
+        
         $user = $query->where('email', $email)->first();
+        
         if (!$user) {
             return response()->json([
                 'status' => true,
-                'mensaje' => 'usuario no encontrado',
+                'mensaje' => 'Usuario no encontrado',
                 'data' => null,
             ], 200, [], JSON_UNESCAPED_UNICODE);
         }
@@ -363,6 +396,17 @@ class UserController extends Controller
     // Guardar nuevo usuario
     public function store(Request $request)
     {
+        $actor = $request->user();
+        
+        // Verificar si el usuario tiene permiso para crear usuarios
+        if ((!$actor->can_crud_user || !$actor->can_create) && !$actor->is_root) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'No tienes permiso para crear usuarios',
+                'data' => null,
+            ], 403, [], JSON_UNESCAPED_UNICODE);
+        }
+        
         // Normalizar: convertir strings vacíos a null
         $payload = $request->all();
         array_walk($payload, function (&$v) {
@@ -461,6 +505,25 @@ class UserController extends Controller
     // Actualizar usuario
     public function update(Request $request, User $user)
     {
+        $actor = $request->user();
+        
+        // Verificar si el usuario tiene permiso para actualizar usuarios
+        if ((!$actor->can_crud_user || !$actor->can_update) && !$actor->is_root) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'No tienes permiso para actualizar usuarios',
+                'data' => null,
+            ], 403, [], JSON_UNESCAPED_UNICODE);
+        }
+        
+        // Si el usuario objetivo es root y el actor no es root, denegar
+        if ($user->is_root && !$actor->is_root) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'No tienes permiso para actualizar este usuario',
+                'data' => null,
+            ], 403, [], JSON_UNESCAPED_UNICODE);
+        }
         $this->authorize('update', $user);
         $v = validator($request->all(), [
             'tipo' => ['sometimes','required','string','max:255'],
@@ -515,6 +578,25 @@ class UserController extends Controller
     // Eliminar usuario
     public function destroy(User $user)
     {
+        $actor = request()->user();
+        
+        // Verificar si el usuario tiene permiso para eliminar usuarios
+        if ((!$actor->can_crud_user || !$actor->can_delete) && !$actor->is_root) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'No tienes permiso para eliminar usuarios',
+                'data' => null,
+            ], 403, [], JSON_UNESCAPED_UNICODE);
+        }
+        
+        // Si el usuario objetivo es root y el actor no es root, denegar
+        if ($user->is_root && !$actor->is_root) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'No tienes permiso para eliminar este usuario',
+                'data' => null,
+            ], 403, [], JSON_UNESCAPED_UNICODE);
+        }
         $this->authorize('delete', $user);
         $user->delete();
         return response()->json([

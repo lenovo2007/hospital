@@ -11,9 +11,16 @@ class UserPolicy
      */
     public function view(User $actor, User $target): bool
     {
+        // Si el usuario objetivo es root y el actor no es root, denegar
         if ($target->is_root && !$actor->is_root) {
             return false;
         }
+        
+        // Si el usuario no tiene permiso CRUD de usuarios, denegar
+        if (!$actor->can_crud_user) {
+            return false;
+        }
+        
         return true;
     }
 
@@ -22,9 +29,16 @@ class UserPolicy
      */
     public function update(User $actor, User $target): bool
     {
+        // Si el usuario objetivo es root y el actor no es root, denegar
         if ($target->is_root && !$actor->is_root) {
             return false;
         }
+        
+        // Si el usuario no tiene permiso CRUD de usuarios, denegar
+        if (!$actor->can_crud_user) {
+            return false;
+        }
+        
         return true;
     }
 
@@ -33,9 +47,16 @@ class UserPolicy
      */
     public function delete(User $actor, User $target): bool
     {
+        // Si el usuario objetivo es root y el actor no es root, denegar
         if ($target->is_root && !$actor->is_root) {
             return false;
         }
+        
+        // Si el usuario no tiene permiso CRUD de usuarios, denegar
+        if (!$actor->can_crud_user) {
+            return false;
+        }
+        
         return true;
     }
 }

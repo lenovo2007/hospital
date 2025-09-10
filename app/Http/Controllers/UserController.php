@@ -9,64 +9,80 @@ use Illuminate\Support\Facades\Mail;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
 use App\Mail\PasswordResetTokenMail;
+use Illuminate\Support\Facades\Schema;
 
 class UserController extends Controller
 {
     // Listado de usuarios
     public function index(Request $request)
     {
-        $actor = $request->user();
-        
-        // Verificar si el usuario tiene permiso para ver la lista de usuarios
-        if ((!$actor->can_crud_user || !$actor->can_view) && !$actor->is_root) {
+        try {
+            $actor = $request->user();
+            
+            // Verificar permisos
+            if ((!$actor->can_crud_user || !$actor->can_view) && !$actor->is_root) {
+                return response()->json([
+                    'status' => false,
+                    'mensaje' => 'No tienes permiso para ver la lista de usuarios',
+                    'data' => null,
+                ], 403, [], JSON_UNESCAPED_UNICODE);
+            }
+            
+            $status = $request->query('status', 'activo');
+            if ($status === 'todos') { $status = 'all'; }
+            if (!in_array($status, ['activo', 'inactivo', 'all'], true)) { $status = 'activo'; }
+            
+            // Seleccionar solo columnas existentes en producción para evitar 500 por esquemas desactualizados
+            $base = ['id','tipo','rol','nombre','apellido','email','cedula','telefono','status','hospital_id','sede_id'];
+            $optional = ['can_crud_user','can_view','can_create','can_update','can_delete','is_root'];
+            $select = $base;
+            foreach ($optional as $col) {
+                if (Schema::hasColumn('users', $col)) {
+                    $select[] = $col;
+                }
+            }
+
+            $query = User::select($select);
+            
+            if (!$actor->is_root && Schema::hasColumn('users', 'is_root')) {
+                $query->where('is_root', false);
+            }
+            if ($status !== 'all') {
+                $query->where('status', $status);
+            }
+            
+            $users = $query->latest()->paginate(15);
+            
+            // Cargar relaciones de forma eficiente
+            $users->getCollection()->each(function ($user) {
+                $user->loadMissing([
+                    'hospital' => function($q) {
+                        $q->select(['id', 'nombre', 'rif', 'direccion', 'telefono', 'email']);
+                    },
+                    'sede' => function($q) {
+                        $q->select(['id', 'nombre', 'direccion', 'telefono', 'email', 'hospital_id']);
+                    }
+                ]);
+            });
+            
+            $mensaje = $users->total() > 0 ? 'Listado de usuarios.' : 'No se encontraron usuarios';
+            
+            return response()->json([
+                'status' => true,
+                'mensaje' => $mensaje,
+                'data' => $users,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        } catch (\Throwable $e) {
+            \Log::error('Error en UserController@index', [
+                'error' => $e->getMessage(),
+            ]);
+            // Evitar 500 y devolver JSON uniforme
             return response()->json([
                 'status' => false,
-                'mensaje' => 'No tienes permiso para ver la lista de usuarios',
+                'mensaje' => 'Ocurrió un error al listar usuarios.',
                 'data' => null,
-            ], 403, [], JSON_UNESCAPED_UNICODE);
+            ], 200, [], JSON_UNESCAPED_UNICODE);
         }
-        
-        $status = $request->query('status', 'activo');
-        if ($status === 'todos') { $status = 'all'; }
-        if (!in_array($status, ['activo', 'inactivo', 'all'], true)) { $status = 'activo'; }
-        
-        // Obtener solo los campos necesarios para la lista
-        $query = User::select([
-            'id', 'tipo', 'rol', 'nombre', 'apellido', 'email', 'cedula', 
-            'telefono', 'status', 'hospital_id', 'sede_id', 'can_crud_user',
-            'can_view', 'can_create', 'can_update', 'can_delete', 'is_root'
-        ]);
-        
-        // Ocultar usuarios root para actores no root
-        if (!$actor->is_root) {
-            $query->where('is_root', false);
-        }
-        
-        if ($status !== 'all') { 
-            $query->where('status', $status); 
-        }
-        
-        $users = $query->latest()->paginate(15);
-        
-        // Cargar relaciones de forma eficiente
-        $users->getCollection()->each(function ($user) {
-            $user->loadMissing([
-                'hospital' => function($q) {
-                    $q->select(['id', 'nombre', 'rif', 'direccion', 'telefono', 'email']);
-                },
-                'sede' => function($q) {
-                    $q->select(['id', 'nombre', 'direccion', 'telefono', 'email', 'hospital_id']);
-                }
-            ]);
-        });
-        
-        $mensaje = $users->total() > 0 ? 'Listado de usuarios.' : 'No se encontraron usuarios';
-        
-        return response()->json([
-            'status' => true,
-            'mensaje' => $mensaje,
-            'data' => $users,
-        ], 200, [], JSON_UNESCAPED_UNICODE);
     }
 
     // POST /api/users

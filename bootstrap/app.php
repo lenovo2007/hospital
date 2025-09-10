@@ -18,10 +18,26 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
-        // Alias de permisos CRUD y estado de autenticación
+        // Register middleware aliases
         $middleware->alias([
-            'crud.perms' => \App\Http\Middleware\CheckCrudPermissions::class,
-            'append.auth' => \App\Http\Middleware\AppendAuthStatus::class,
+            'check_crud_perms' => \App\Http\Middleware\CheckCrudPermissions::class,
+            'append_auth' => \App\Http\Middleware\AppendAuthStatus::class,
+        ]);
+
+        // Register middleware groups
+        $middleware->group('api', [
+            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+            \Illuminate\Routing\Middleware\ThrottleRequests::class.':api',
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
+        ]);
+
+        $middleware->group('web', [
+            \App\Http\Middleware\EncryptCookies::class,
+            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+            \Illuminate\Session\Middleware\StartSession::class,
+            \Illuminate\View\Middleware\ShareErrorsFromSession::class,
+            \App\Http\Middleware\VerifyCsrfToken::class,
+            \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ]);
 
         // Enable CORS for all routes

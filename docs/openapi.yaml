@@ -49,6 +49,9 @@ components:
           description: 0=autenticado/válido, 1=token inválido/ausente, 2=token expirado
           enum: [0, 1, 2]
           example: 1
+        data:
+          nullable: true
+          example: null
     User:
       type: object
       properties:
@@ -132,7 +135,6 @@ components:
           type: string
           enum: [activo, inactivo]
           example: activo
-
     Hospital:
       type: object
       properties:
@@ -165,7 +167,6 @@ components:
           type: string
           enum: [activo, inactivo]
           example: activo
-
     Sede:
       type: object
       properties:
@@ -198,3 +199,5 @@ components:
           type: string
           enum: [activo, inactivo]
           example: activo
+
+# Rest of the OpenAPI document with paths and other components...

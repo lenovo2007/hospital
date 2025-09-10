@@ -25,8 +25,8 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
 
         // Register middleware groups
+        // Note: For token (Bearer) auth with Sanctum, we do NOT need EnsureFrontendRequestsAreStateful
         $middleware->group('api', [
-            \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
             'throttle:60,1',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
         ]);
@@ -53,10 +53,9 @@ return Application::configure(basePath: dirname(__DIR__))
             'cors' => \App\Http\Middleware\Cors::class,
         ]);
 
-        // Apply CORS middleware to API group
+        // Apply CORS middleware to API group (without AppendAuthStatus for now)
         $middleware->appendToGroup('api', [
             \App\Http\Middleware\Cors::class,
-            \App\Http\Middleware\AppendAuthStatus::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

@@ -30,6 +30,15 @@ Route::post('/login', [AuthController::class, 'login']);
 Route::post('/users/password/forgot', [UserController::class, 'forgotPassword']);
 Route::post('/users/password/reset', [UserController::class, 'resetPassword']);
 
+// Ping autenticado sin middleware personalizado (diagnóstico)
+Route::middleware('auth:sanctum')->get('/auth-ping', function() {
+    return response()->json([
+        'status' => true,
+        'mensaje' => 'auth ok',
+        'data' => null,
+    ], 200, [], JSON_UNESCAPED_UNICODE);
+});
+
 
 Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::class])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
@@ -48,16 +57,18 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
     Route::delete('/users/{user}', [UserController::class, 'destroy']);
 
     // Hospitales CRUD
-    Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::class])->group(function () {
-        // Identificación por RIF (claridad de rutas)
-        Route::get('/hospitales/rif/{rif}', [HospitalController::class, 'showByRif']);
-        Route::put('/hospitales/rif/{rif}', [HospitalController::class, 'updateByRif']);
-        Route::get('/hospitales', [HospitalController::class, 'index']);
-        Route::post('/hospitales', [HospitalController::class, 'store']);
-        Route::get('/hospitales/{hospital}', [HospitalController::class, 'show']);
-        Route::put('/hospitales/{hospital}', [HospitalController::class, 'update']);
-        Route::delete('/hospitales/{hospital}', [HospitalController::class, 'destroy']);
+    // Diagnóstico: comprobar autenticación y middleware
+    Route::get('/hospitales/ping', function() {
+        return response()->json(['status' => true, 'mensaje' => 'pong', 'data' => null], 200, [], JSON_UNESCAPED_UNICODE);
     });
+    // Identificación por RIF (claridad de rutas)
+    Route::get('/hospitales/rif/{rif}', [HospitalController::class, 'showByRif']);
+    Route::put('/hospitales/rif/{rif}', [HospitalController::class, 'updateByRif']);
+    Route::get('/hospitales', [HospitalController::class, 'index']);
+    Route::post('/hospitales', [HospitalController::class, 'store']);
+    Route::get('/hospitales/{hospital}', [HospitalController::class, 'show']);
+    Route::put('/hospitales/{hospital}', [HospitalController::class, 'update']);
+    Route::delete('/hospitales/{hospital}', [HospitalController::class, 'destroy']);
 
     // Sedes CRUD
     Route::get('/sedes', [SedeController::class, 'index']);

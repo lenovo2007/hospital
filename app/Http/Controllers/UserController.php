@@ -33,25 +33,26 @@ class UserController extends Controller
             if (!in_array($status, ['activo', 'inactivo', 'all'], true)) { $status = 'activo'; }
             
             // Seleccionar solo columnas existentes en producción para evitar 500 por esquemas desactualizados
-            $base = ['id','tipo','rol','nombre','apellido','email','cedula','telefono','status','hospital_id','sede_id'];
-            $optional = ['can_crud_user','can_view','can_create','can_update','can_delete','is_root'];
-            $select = $base;
-            foreach ($optional as $col) {
+            $desired = ['id','tipo','rol','nombre','apellido','email','cedula','telefono','status','hospital_id','sede_id','can_crud_user','can_view','can_create','can_update','can_delete','is_root'];
+            $select = [];
+            foreach ($desired as $col) {
                 if (Schema::hasColumn('users', $col)) {
                     $select[] = $col;
                 }
             }
+            if (empty($select)) { $select = ['id']; }
 
             $query = User::select($select);
             
             if (!$actor->is_root && Schema::hasColumn('users', 'is_root')) {
                 $query->where('is_root', false);
             }
-            if ($status !== 'all') {
+            if ($status !== 'all' && Schema::hasColumn('users', 'status')) {
                 $query->where('status', $status);
             }
             
-            $users = $query->latest()->paginate(15);
+            // Evitar latest() si no hay timestamps en producción
+            $users = $query->orderByDesc('id')->paginate(15);
             
             // Cargar relaciones de forma eficiente
             $users->getCollection()->each(function ($user) {

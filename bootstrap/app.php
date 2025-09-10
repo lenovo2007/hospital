@@ -53,9 +53,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'cors' => \App\Http\Middleware\Cors::class,
         ]);
 
-        // Apply CORS middleware to API group (without AppendAuthStatus for now)
+        // Apply CORS and AppendAuthStatus middleware to API group
         $middleware->appendToGroup('api', [
             \App\Http\Middleware\Cors::class,
+            \App\Http\Middleware\AppendAuthStatus::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

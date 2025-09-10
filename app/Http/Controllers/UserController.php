@@ -30,7 +30,12 @@ class UserController extends Controller
         if ($status === 'todos') { $status = 'all'; }
         if (!in_array($status, ['activo', 'inactivo', 'all'], true)) { $status = 'activo'; }
         
-        $query = User::with(['hospital', 'sede']);
+        // Obtener solo los campos necesarios para la lista
+        $query = User::select([
+            'id', 'tipo', 'rol', 'nombre', 'apellido', 'email', 'cedula', 
+            'telefono', 'status', 'hospital_id', 'sede_id', 'can_crud_user',
+            'can_view', 'can_create', 'can_update', 'can_delete', 'is_root'
+        ]);
         
         // Ocultar usuarios root para actores no root
         if (!$actor->is_root) {
@@ -42,6 +47,19 @@ class UserController extends Controller
         }
         
         $users = $query->latest()->paginate(15);
+        
+        // Cargar relaciones de forma eficiente
+        $users->getCollection()->each(function ($user) {
+            $user->loadMissing([
+                'hospital' => function($q) {
+                    $q->select(['id', 'nombre', 'rif', 'direccion', 'telefono', 'email']);
+                },
+                'sede' => function($q) {
+                    $q->select(['id', 'nombre', 'direccion', 'telefono', 'email', 'hospital_id']);
+                }
+            ]);
+        });
+        
         $mensaje = $users->total() > 0 ? 'Listado de usuarios.' : 'No se encontraron usuarios';
         
         return response()->json([
@@ -322,8 +340,8 @@ class UserController extends Controller
     {
         $actor = $request->user();
         
-        // Verificar si el usuario tiene permiso para ver usuarios
-        if ((!$actor->can_crud_user || !$actor->can_view) && !$actor->is_root) {
+        // Verificar si el usuario tiene permiso para ver el detalle
+        if ($actor->id !== $user->id && !$actor->can_crud_user && !$actor->is_root) {
             return response()->json([
                 'status' => false,
                 'mensaje' => 'No tienes permiso para ver este usuario',
@@ -331,22 +349,58 @@ class UserController extends Controller
             ], 403, [], JSON_UNESCAPED_UNICODE);
         }
         
-        // Ocultar usuarios root para actores no root
-        if ($user->is_root && !$actor->is_root) {
-            return response()->json([
-                'status' => true,
-                'mensaje' => 'usuario no encontrado',
-                'data' => null,
-            ], 200, [], JSON_UNESCAPED_UNICODE);
+        // Cargar solo los campos necesarios
+        $userData = [
+            'id' => $user->id,
+            'tipo' => $user->tipo,
+            'rol' => $user->rol,
+            'nombre' => $user->nombre,
+            'apellido' => $user->apellido,
+            'email' => $user->email,
+            'cedula' => $user->cedula,
+            'telefono' => $user->telefono,
+            'direccion' => $user->direccion,
+            'genero' => $user->genero,
+            'status' => $user->status,
+            'hospital_id' => $user->hospital_id,
+            'sede_id' => $user->sede_id,
+            'can_view' => (bool)$user->can_view,
+            'can_create' => (bool)$user->can_create,
+            'can_update' => (bool)$user->can_update,
+            'can_delete' => (bool)$user->can_delete,
+            'can_crud_user' => (bool)$user->can_crud_user,
+            'is_root' => (bool)$user->is_root,
+            'created_at' => $user->created_at,
+            'updated_at' => $user->updated_at,
+        ];
+        
+        // Cargar relaciones de forma segura
+        if ($user->relationLoaded('hospital') || $user->hospital) {
+            $userData['hospital'] = $user->hospital ? [
+                'id' => $user->hospital->id,
+                'nombre' => $user->hospital->nombre,
+                'rif' => $user->hospital->rif,
+                'direccion' => $user->hospital->direccion,
+                'telefono' => $user->hospital->telefono,
+                'email' => $user->hospital->email
+            ] : null;
         }
         
-        // Cargar relaciones
-        $user->load(['hospital', 'sede']);
-        $this->authorize('view', $user);
+        if ($user->relationLoaded('sede') || $user->sede) {
+            $userData['sede'] = $user->sede ? [
+                'id' => $user->sede->id,
+                'nombre' => $user->sede->nombre,
+                'direccion' => $user->sede->direccion,
+                'telefono' => $user->sede->telefono,
+                'email' => $user->sede->email,
+                'hospital_id' => $user->sede->hospital_id
+            ] : null;
+        }
+        
         return response()->json([
             'status' => true,
             'mensaje' => 'Detalle de usuario.',
-            'data' => $user,
+            'data' => $userData,
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }
 

@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\User;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
@@ -12,6 +13,18 @@ use App\Http\Controllers\AlmacenCentralController;
 use App\Http\Controllers\InsumoController;
 
 // Autenticación con token
+// Test route to check if API is working
+Route::get('/test', function() {
+    return response()->json([
+        'status' => true,
+        'message' => 'API is working!',
+        'data' => [
+            'version' => '1.0',
+            'timestamp' => now()
+        ]
+    ]);
+});
+
 Route::post('/login', [AuthController::class, 'login']);
 // Recuperación de contraseña (público)
 Route::post('/users/password/forgot', [UserController::class, 'forgotPassword']);

@@ -75,7 +75,7 @@ class User extends Authenticatable
      *
      * @var array
      */
-    protected $with = ['hospital', 'sede'];
+    protected $with = [];
 
     /**
      * Get the can_crud_user attribute.
@@ -110,26 +110,46 @@ class User extends Authenticatable
     /**
      * Get the hospital attribute.
      *
-     * @return \App\Models\Hospital|null
+     * @return array|null
      */
     public function getHospitalAttribute()
     {
-        if (!array_key_exists('hospital', $this->relations)) {
+        if (!$this->relationLoaded('hospital')) {
             $this->load('hospital');
         }
-        return $this->getRelation('hospital');
+        
+        $hospital = $this->getRelation('hospital');
+        
+        return $hospital ? [
+            'id' => $hospital->id,
+            'nombre' => $hospital->nombre,
+            'rif' => $hospital->rif,
+            'direccion' => $hospital->direccion,
+            'telefono' => $hospital->telefono,
+            'email' => $hospital->email
+        ] : null;
     }
 
     /**
      * Get the sede attribute.
      *
-     * @return \App\Models\Sede|null
+     * @return array|null
      */
     public function getSedeAttribute()
     {
-        if (!array_key_exists('sede', $this->relations)) {
+        if (!$this->relationLoaded('sede')) {
             $this->load('sede');
         }
-        return $this->getRelation('sede');
+        
+        $sede = $this->getRelation('sede');
+        
+        return $sede ? [
+            'id' => $sede->id,
+            'nombre' => $sede->nombre,
+            'direccion' => $sede->direccion,
+            'telefono' => $sede->telefono,
+            'email' => $sede->email,
+            'hospital_id' => $sede->hospital_id
+        ] : null;
     }
 }

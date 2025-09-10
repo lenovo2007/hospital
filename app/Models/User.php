@@ -40,11 +40,42 @@ class User extends Authenticatable
     ];
 
     /**
+     * The attributes that should be cast.
+     *
+     * @var array<string, string>
+     */
+    protected $casts = [
+        'email_verified_at' => 'datetime',
+        'password' => 'hashed',
+        'can_view' => 'boolean',
+        'can_create' => 'boolean',
+        'can_update' => 'boolean',
+        'can_delete' => 'boolean',
+        'can_crud_user' => 'boolean',
+        'is_root' => 'boolean',
+    ];
+
+    /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array
+     */
+    /**
      * The accessors to append to the model's array form.
      *
      * @var array
      */
     protected $appends = ['can_crud_user', 'hospital', 'sede'];
+
+    /**
+     * Get the can_crud_user attribute.
+     *
+     * @return bool
+     */
+    public function getCanCrudUserAttribute($value)
+    {
+        return (bool) $value;
+    }
     
     /**
      * The relationships that should always be loaded.

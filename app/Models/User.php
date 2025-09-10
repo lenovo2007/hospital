@@ -114,11 +114,8 @@ class User extends Authenticatable
      */
     public function getHospitalAttribute()
     {
-        if (!$this->relationLoaded('hospital')) {
-            $this->load('hospital');
-        }
-        
-        $hospital = $this->getRelation('hospital');
+        // Do not trigger DB loads here; only use already-loaded relation
+        $hospital = $this->relationLoaded('hospital') ? $this->getRelation('hospital') : null;
         
         return $hospital ? [
             'id' => $hospital->id,
@@ -137,11 +134,8 @@ class User extends Authenticatable
      */
     public function getSedeAttribute()
     {
-        if (!$this->relationLoaded('sede')) {
-            $this->load('sede');
-        }
-        
-        $sede = $this->getRelation('sede');
+        // Do not trigger DB loads here; only use already-loaded relation
+        $sede = $this->relationLoaded('sede') ? $this->getRelation('sede') : null;
         
         return $sede ? [
             'id' => $sede->id,

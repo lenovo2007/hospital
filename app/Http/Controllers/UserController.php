@@ -69,6 +69,86 @@ class UserController extends Controller
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }
 
+    // POST /api/users
+    public function store(Request $request)
+    {
+        $actor = $request->user();
+
+        // Permisos: requiere poder crear usuarios, excepto si es root
+        if ((!$actor->can_crud_user || !$actor->can_create) && !$actor->is_root) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'No tienes permiso para crear usuarios',
+                'data' => null,
+            ], 403, [], JSON_UNESCAPED_UNICODE);
+        }
+
+        $rules = [
+            'tipo' => ['required','string','max:255'],
+            'rol' => ['required','string','max:255'],
+            'nombre' => ['required','string','max:255'],
+            'apellido' => ['required','string','max:255'],
+            'genero' => ['nullable','string','max:255'],
+            'cedula' => ['required','string','max:255','unique:users,cedula'],
+            'telefono' => ['nullable','string','max:255'],
+            'direccion' => ['nullable','string','max:255'],
+            'hospital_id' => ['nullable','integer','exists:hospitales,id'],
+            'sede_id' => ['nullable','integer','exists:sedes,id'],
+            'can_view' => ['nullable','boolean'],
+            'can_create' => ['nullable','boolean'],
+            'can_update' => ['nullable','boolean'],
+            'can_delete' => ['nullable','boolean'],
+            'can_crud_user' => ['nullable','boolean'],
+            'is_root' => ['nullable','boolean'],
+            'email' => ['required','string','email','max:255','unique:users,email'],
+            'password' => ['required','string','min:8'],
+            'status' => ['nullable','in:activo,inactivo'],
+        ];
+
+        $v = validator($request->all(), $rules, [
+            'email.unique' => 'El correo electrónico ya ha sido registrado para otro usuario.',
+            'cedula.unique' => 'La cédula ya ha sido registrada para otro usuario.',
+            'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
+        ]);
+
+        $v->after(function ($validator) use ($request) {
+            $pwd = $request->input('password');
+            if (!empty($pwd)) {
+                if (!preg_match('/[A-Z]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos una letra mayúscula.'); }
+                if (!preg_match('/[a-z]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos una letra minúscula.'); }
+                if (!preg_match('/[0-9]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos un número.'); }
+                if (!preg_match('/[\W_]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos un símbolo o carácter especial.'); }
+            }
+        });
+
+        $data = $v->validate();
+
+        // Solo root puede establecer is_root
+        if (!$actor->is_root) {
+            unset($data['is_root']);
+        }
+
+        // Valores por defecto
+        if (!isset($data['status'])) { $data['status'] = 'activo'; }
+        $data['password'] = Hash::make($data['password']);
+
+        // Si no se envían permisos, colocar falsos por defecto (o mantener null -> false por cast)
+        $data['can_view'] = (bool)($data['can_view'] ?? false);
+        $data['can_create'] = (bool)($data['can_create'] ?? false);
+        $data['can_update'] = (bool)($data['can_update'] ?? false);
+        $data['can_delete'] = (bool)($data['can_delete'] ?? false);
+        $data['can_crud_user'] = (bool)($data['can_crud_user'] ?? false);
+
+        $user = User::create($data);
+        $user->refresh();
+
+        return response()->json([
+            'status' => true,
+            'mensaje' => 'Usuario creado.',
+            'data' => $user,
+        ], 200, [], JSON_UNESCAPED_UNICODE);
+    }
+
     // GET /api/users/email/{email}
     public function showByEmail(Request $request, string $email)
     {

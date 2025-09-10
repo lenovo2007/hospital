@@ -44,7 +44,14 @@ class User extends Authenticatable
      *
      * @var array
      */
-    protected $appends = ['can_crud_user'];
+    protected $appends = ['can_crud_user', 'hospital', 'sede'];
+    
+    /**
+     * The relationships that should always be loaded.
+     *
+     * @var array
+     */
+    protected $with = ['hospital', 'sede'];
 
     /**
      * The attributes that should be hidden for serialization.
@@ -93,9 +100,34 @@ class User extends Authenticatable
      *
      * @return bool
      */
+    /**
+     * Get the can_crud_user attribute.
+     *
+     * @return bool
+     */
     public function getCanCrudUserAttribute($value)
     {
         return (bool) $value;
+    }
+    
+    /**
+     * Get the hospital relationship.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function getHospitalAttribute()
+    {
+        return $this->hospital()->first();
+    }
+    
+    /**
+     * Get the sede relationship.
+     *
+     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
+     */
+    public function getSedeAttribute()
+    {
+        return $this->sede()->first();
     }
 }
 

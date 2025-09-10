@@ -30,7 +30,7 @@ class UserController extends Controller
         if ($status === 'todos') { $status = 'all'; }
         if (!in_array($status, ['activo', 'inactivo', 'all'], true)) { $status = 'activo'; }
         
-        $query = User::query();
+        $query = User::with(['hospital', 'sede']);
         
         // Ocultar usuarios root para actores no root
         if (!$actor->is_root) {
@@ -65,7 +65,7 @@ class UserController extends Controller
             ], 403, [], JSON_UNESCAPED_UNICODE);
         }
         
-        $query = User::query();
+        $query = User::with(['hospital', 'sede']);
         
         // Ocultar usuarios root para actores no root
         if (!$actor->is_root) { 
@@ -173,15 +173,29 @@ class UserController extends Controller
     public function showByCedula(Request $request, string $cedula)
     {
         $actor = $request->user();
-        $user = User::with(['hospital','sede'])
-            ->where('cedula', $cedula)
-            ->first();
-            
-        // Si no se encuentra el usuario o es root y el actor no es root
-        if (!$user || ($user->is_root && (!$actor || !$actor->is_root))) {
+        
+        // Verificar si el usuario tiene permiso para ver usuarios
+        if ((!$actor->can_crud_user || !$actor->can_view) && !$actor->is_root) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'No tienes permiso para ver este usuario',
+                'data' => null,
+            ], 403, [], JSON_UNESCAPED_UNICODE);
+        }
+        
+        $query = User::with(['hospital', 'sede']);
+        
+        // Ocultar usuarios root para actores no root
+        if (!$actor->is_root) { 
+            $query->where('is_root', false); 
+        }
+        
+        $user = $query->where('cedula', $cedula)->first();
+        
+        if (!$user) {
             return response()->json([
                 'status' => true,
-                'mensaje' => 'usuario no encontrado',
+                'mensaje' => 'Usuario no encontrado',
                 'data' => null,
             ], 200, [], JSON_UNESCAPED_UNICODE);
         }
@@ -303,188 +317,31 @@ class UserController extends Controller
         }
     }
 
-    // PUT /api/users/email/{email}/password
-    public function passwordByEmail(Request $request, string $email)
-    {
-        $user = User::where('email', $email)->first();
-        if (!$user) {
-            return response()->json([
-                'status' => true,
-                'mensaje' => 'usuario no encontrado',
-                'data' => null,
-            ], 200, [], JSON_UNESCAPED_UNICODE);
-        }
-        $this->authorize('update', $user);
-
-        $v = validator($request->all(), [
-            'password' => ['required','string','min:8'],
-        ], [
-            'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
-        ]);
-        $v->after(function ($validator) use ($request) {
-            $pwd = $request->input('password');
-            if (!empty($pwd)) {
-                if (!preg_match('/[A-Z]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos una letra mayúscula.'); }
-                if (!preg_match('/[a-z]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos una letra minúscula.'); }
-                if (!preg_match('/[0-9]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos un número.'); }
-                if (!preg_match('/[\W_]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos un símbolo o carácter especial.'); }
-            }
-        });
-        $data = $v->validate();
-
-        $user->password = Hash::make($data['password']);
-        $user->save();
-        $user->refresh();
-
-        return response()->json([
-            'status' => true,
-            'mensaje' => 'Contraseña actualizada por email.',
-            'data' => $user,
-        ], 200, [], JSON_UNESCAPED_UNICODE);
-    }
-
-    // PUT /api/users/cedula/{cedula}/password
-    public function passwordByCedula(Request $request, string $cedula)
-    {
-        $user = User::where('cedula', $cedula)->first();
-        if (!$user) {
-            return response()->json([
-                'status' => true,
-                'mensaje' => 'usuario no encontrado',
-                'data' => null,
-            ], 200, [], JSON_UNESCAPED_UNICODE);
-        }
-        $this->authorize('update', $user);
-
-        $v = validator($request->all(), [
-            'password' => ['required','string','min:8'],
-        ], [
-            'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
-        ]);
-        $v->after(function ($validator) use ($request) {
-            $pwd = $request->input('password');
-            if (!empty($pwd)) {
-                if (!preg_match('/[A-Z]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos una letra mayúscula.'); }
-                if (!preg_match('/[a-z]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos una letra minúscula.'); }
-                if (!preg_match('/[0-9]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos un número.'); }
-                if (!preg_match('/[\\W_]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos un símbolo o carácter especial.'); }
-            }
-        });
-        $data = $v->validate();
-
-        $user->password = Hash::make($data['password']);
-        $user->save();
-        $user->refresh();
-
-        return response()->json([
-            'status' => true,
-            'mensaje' => 'Contraseña actualizada por cédula.',
-            'data' => $user,
-        ], 200, [], JSON_UNESCAPED_UNICODE);
-    }
-
-    // Mostrar formulario de creación (placeholder)
-    public function create()
-    {
-        return response()->json([
-            'status' => true,
-            'mensaje' => 'Mostrar formulario de creación de usuario.',
-            'data' => null,
-        ], 200, [], JSON_UNESCAPED_UNICODE);
-    }
-
-    // Guardar nuevo usuario
-    public function store(Request $request)
+    // GET /api/users/{user}
+    public function show(User $user, Request $request)
     {
         $actor = $request->user();
         
-        // Verificar si el usuario tiene permiso para crear usuarios
-        if ((!$actor->can_crud_user || !$actor->can_create) && !$actor->is_root) {
+        // Verificar si el usuario tiene permiso para ver usuarios
+        if ((!$actor->can_crud_user || !$actor->can_view) && !$actor->is_root) {
             return response()->json([
                 'status' => false,
-                'mensaje' => 'No tienes permiso para crear usuarios',
+                'mensaje' => 'No tienes permiso para ver este usuario',
                 'data' => null,
             ], 403, [], JSON_UNESCAPED_UNICODE);
         }
         
-        // Normalizar: convertir strings vacíos a null
-        $payload = $request->all();
-        array_walk($payload, function (&$v) {
-            if (is_string($v) && trim($v) === '') { $v = null; }
-        });
-
-        // Reglas base
-        $rules = [
-            'tipo' => ['sometimes','nullable','string','max:255'],
-            'rol' => ['sometimes','nullable','string','max:255'],
-            'nombre' => ['sometimes','nullable','string','max:255'],
-            'apellido' => ['sometimes','nullable','string','max:255'],
-            'genero' => ['sometimes','nullable','string','max:255'],
-            'cedula' => ['sometimes','nullable','string','max:255','unique:users,cedula'],
-            'telefono' => ['sometimes','nullable','string','max:255'],
-            'direccion' => ['sometimes','nullable','string','max:255'],
-            'hospital_id' => ['sometimes','nullable','integer','exists:hospitales,id'],
-            'sede_id' => ['sometimes','nullable','integer','exists:sedes,id'],
-            'can_view' => ['sometimes','boolean'],
-            'can_create' => ['sometimes','boolean'],
-            'can_update' => ['sometimes','boolean'],
-            'can_delete' => ['sometimes','boolean'],
-            'can_crud_user' => ['sometimes','boolean'],
-            'email' => ['sometimes','nullable','string','email','max:255','unique:users,email'],
-            'status' => ['sometimes','nullable','in:activo,inactivo'],
-        ];
-        // Password obligatorio con longitud mínima
-        $rules['password'] = ['required','string','min:8'];
-
-        $v = validator($payload, $rules, [
-            'email.unique' => 'El correo electrónico ya ha sido registrado previamente.',
-            'cedula.unique' => 'La cédula ya ha sido registrada previamente.',
-            'password.required' => 'La contraseña es obligatoria.',
-            'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
-        ]);
-        $v->after(function ($validator) use ($payload) {
-            $pwd = $payload['password'] ?? null;
-            if (!empty($pwd)) {
-                if (!preg_match('/[A-Z]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos una letra mayúscula.'); }
-                if (!preg_match('/[a-z]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos una letra minúscula.'); }
-                if (!preg_match('/[0-9]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos un número.'); }
-                if (!preg_match('/[\\W_]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos un símbolo o carácter especial.'); }
-            }
-        });
-        $data = $v->validate();
-
-        // Valores por defecto si no vienen
-        $data['rol'] = $data['rol'] ?? 'user';
-        $data['tipo'] = $data['tipo'] ?? 'cliente';
-        $data['status'] = $data['status'] ?? 'activo';
-
-        // Hash de contraseña
-        $data['password'] = Hash::make($data['password']);
-
-        $user = User::create($data);
-        // Refrescar para garantizar casts y timestamps actualizados
-        $user->refresh();
-
-        $responseData = $user->toArray();
-
-        return response()->json([
-            'status' => true,
-            'mensaje' => 'Usuario creado.',
-            'data' => $responseData,
-        ], 201, [], JSON_UNESCAPED_UNICODE);
-    }
-
-    // Mostrar usuario
-    public function show(User $user)
-    {
-        $actor = request()->user();
-        if ((!$actor || !$actor->is_root) && $user->is_root) {
+        // Ocultar usuarios root para actores no root
+        if ($user->is_root && !$actor->is_root) {
             return response()->json([
                 'status' => true,
                 'mensaje' => 'usuario no encontrado',
                 'data' => null,
             ], 200, [], JSON_UNESCAPED_UNICODE);
         }
+        
+        // Cargar relaciones
+        $user->load(['hospital', 'sede']);
         $this->authorize('view', $user);
         return response()->json([
             'status' => true,
@@ -555,7 +412,7 @@ class UserController extends Controller
                 if (!preg_match('/[A-Z]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos una letra mayúscula.'); }
                 if (!preg_match('/[a-z]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos una letra minúscula.'); }
                 if (!preg_match('/[0-9]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos un número.'); }
-                if (!preg_match('/[\\W_]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos un símbolo o carácter especial.'); }
+                if (!preg_match('/[\W_]/', $pwd)) { $validator->errors()->add('password', 'La contraseña debe contener al menos un símbolo o carácter especial.'); }
             }
         });
         $data = $v->validate();

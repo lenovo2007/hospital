@@ -54,16 +54,31 @@ class UserController extends Controller
             // Evitar latest() si no hay timestamps en producción
             $users = $query->orderByDesc('id')->paginate(15);
             
-            // Cargar relaciones de forma eficiente
+            // Cargar relaciones de forma eficiente y seguras según el esquema existente en producción
             $users->getCollection()->each(function ($user) {
-                $user->loadMissing([
-                    'hospital' => function($q) {
-                        $q->select(['id', 'nombre', 'rif', 'direccion', 'telefono', 'email']);
-                    },
-                    'sede' => function($q) {
-                        $q->select(['id', 'nombre', 'direccion', 'telefono', 'email', 'hospital_id']);
+                $relations = [];
+                if (Schema::hasTable('hospitales')) {
+                    $hospitalDesired = ['id','nombre','rif','direccion','telefono','email'];
+                    $hospitalSelect = [];
+                    foreach ($hospitalDesired as $col) {
+                        if (Schema::hasColumn('hospitales', $col)) { $hospitalSelect[] = $col; }
                     }
-                ]);
+                    if (empty($hospitalSelect)) { $hospitalSelect = ['id','nombre']; }
+                    $relations['hospital'] = function($q) use ($hospitalSelect) { $q->select($hospitalSelect); };
+                }
+                if (Schema::hasTable('sedes')) {
+                    // Production schema: sedes has no direccion/telefono/email
+                    $sedeDesired = ['id','nombre','tipo_almacen','hospital_id','status'];
+                    $sedeSelect = [];
+                    foreach ($sedeDesired as $col) {
+                        if (Schema::hasColumn('sedes', $col)) { $sedeSelect[] = $col; }
+                    }
+                    if (empty($sedeSelect)) { $sedeSelect = ['id','nombre']; }
+                    $relations['sede'] = function($q) use ($sedeSelect) { $q->select($sedeSelect); };
+                }
+                if (!empty($relations)) {
+                    $user->loadMissing($relations);
+                }
             });
             
             $mensaje = $users->total() > 0 ? 'Listado de usuarios.' : 'No se encontraron usuarios';

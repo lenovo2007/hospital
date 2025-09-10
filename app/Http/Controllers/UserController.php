@@ -163,8 +163,11 @@ class UserController extends Controller
     // PUT /api/users/cedula/{cedula}
     public function updateByCedula(Request $request, string $cedula)
     {
+        $actor = $request->user();
         $user = User::where('cedula', $cedula)->first();
-        if (!$user) {
+        
+        // Si no se encuentra el usuario o es root y el actor no es root
+        if (!$user || ($user->is_root && (!$actor || !$actor->is_root))) {
             return response()->json([
                 'status' => true,
                 'mensaje' => 'usuario no encontrado',

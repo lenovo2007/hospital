@@ -98,42 +98,34 @@ components:
           type: string
           nullable: true
           example: Caracas
-        hospital_id:
-          type: integer
-          nullable: true
-          example: 2
-        sede_id:
-          type: integer
-          nullable: true
-          example: 5
-        hospital:
-          nullable: true
-          allOf:
-            - $ref: '#/components/schemas/Hospital'
-        sede:
-          nullable: true
-          allOf:
-            - $ref: '#/components/schemas/Sede'
-        can_view:
-          type: boolean
-          example: true
-        can_create:
-          type: boolean
-          example: true
-        can_update:
-          type: boolean
-          example: true
-        can_delete:
-          type: boolean
-          example: true
-        is_root:
-          type: boolean
-          description: "Indica si el usuario es root del sistema (solo lectura)."
-          example: false
         email:
           type: string
           format: email
           example: ana@example.com
+        is_root:
+          type: boolean
+          description: Indica si el usuario es administrador raíz (acceso total)
+          example: false
+        can_view:
+          type: boolean
+          description: Permiso para ver recursos
+          example: true
+        can_create:
+          type: boolean
+          description: Permiso para crear recursos
+          example: true
+        can_update:
+          type: boolean
+          description: Permiso para actualizar recursos
+          example: true
+        can_delete:
+          type: boolean
+          description: Permiso para eliminar recursos
+          example: true
+        can_crud_user:
+          type: boolean
+          description: Permiso para gestionar usuarios (CRUD completo)
+          example: false
         created_at:
           type: string
           format: date-time
@@ -153,35 +145,35 @@ components:
         nombre:
           type: string
           example: Hospital Central
-        nombre_completo:
-          type: string
-          nullable: true
-          example: Hospital Central de Caracas Dr. Vargas
         rif:
           type: string
           example: J-12345678-9
-        cod_sicm:
-          type: string
-          nullable: true
-          example: SICM-000123
         email:
           type: string
           format: email
           nullable: true
           example: contacto@hospital.test
-        email_contacto:
-          type: string
-          format: email
-          nullable: true
-          example: director@hospital.test
         telefono:
           type: string
           nullable: true
           example: 04141234567
+        cod_sicm:
+          type: string
+          nullable: true
+          example: SICM-001
         nombre_contacto:
           type: string
           nullable: true
-          example: Dr. Juan Pérez
+          example: Juan Pérez
+        nombre_completo:
+          type: string
+          nullable: true
+          example: Hospital Central de Caracas
+        email_contacto:
+          type: string
+          format: email
+          nullable: true
+          example: juan.perez@hospital.test
         ubicacion:
           type: object
           nullable: true
@@ -540,11 +532,12 @@ paths:
                 direccion: { type: string, nullable: true }
                 hospital_id: { type: integer, nullable: true }
                 sede_id: { type: integer, nullable: true }
-                can_view: { type: boolean, nullable: true }
-                can_create: { type: boolean, nullable: true }
-                can_update: { type: boolean, nullable: true }
-                can_delete: { type: boolean, nullable: true }
-                is_root: { type: boolean, nullable: true, description: "Solo usuarios root pueden modificar este campo." }
+                can_view: { type: boolean, nullable: true, description: "Permiso para ver recursos" }
+                can_create: { type: boolean, nullable: true, description: "Permiso para crear recursos" }
+                can_update: { type: boolean, nullable: true, description: "Permiso para actualizar recursos" }
+                can_delete: { type: boolean, nullable: true, description: "Permiso para eliminar recursos" }
+                can_crud_user: { type: boolean, nullable: true, description: "Permiso para gestionar usuarios (CRUD completo)" }
+                is_root: { type: boolean, nullable: true, description: "Indica si el usuario es administrador raíz. Solo usuarios root pueden modificar este campo." }
                 email: { type: string, format: email, nullable: true }
                 password: { type: string, minLength: 8, description: "Obligatoria. Debe tener al menos 8 caracteres, incluir mayúscula, minúscula, número y símbolo." }
                 status: { type: string, enum: [activo, inactivo], nullable: true }
@@ -563,6 +556,7 @@ paths:
               can_create: true
               can_update: true
               can_delete: true
+              can_crud_user: false
               email: "ana@example.com"
               password: "unPasswordSeguro"
               status: activo
@@ -584,6 +578,7 @@ paths:
                   can_create: true
                   can_update: true
                   can_delete: true
+                  can_crud_user: false
                   email: "ana@example.com"
                   password: "Un4Segura!"
                   status: activo
@@ -598,9 +593,7 @@ paths:
                   - type: object
                     properties:
                       data:
-                        allOf:
-                          - $ref: '#/components/schemas/User'
-                          
+                        $ref: '#/components/schemas/User'
     get:
       summary: Listar usuarios
       description: |
@@ -855,6 +848,177 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
+
+  /api/users/email/{email}:
+    get:
+      summary: Ver usuario por email
+      tags: [Usuarios]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: email
+          in: path
+          required: true
+          schema:
+            type: string
+            format: email
+      responses:
+        '200':
+          description: Resultado por email o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+    put:
+      summary: Actualizar usuario por email
+      tags: [Usuarios]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: email
+          in: path
+          required: true
+          schema:
+            type: string
+            format: email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '200':
+          description: Actualizado por email o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+  /api/users/email/{email}/password:
+    put:
+      summary: Cambiar contraseña por email
+      tags: [Usuarios]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: email
+          in: path
+          required: true
+          schema:
+            type: string
+            format: email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password]
+              properties:
+                password:
+                  type: string
+                  minLength: 8
+      responses:
+        '200':
+          description: Contraseña actualizada por email o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+
+  /api/users/cedula/{cedula}:
+    get:
+      summary: Ver usuario por cédula
+      tags: [Usuarios]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cedula
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Resultado por cédula o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+    put:
+      summary: Actualizar usuario por cédula
+      tags: [Usuarios]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cedula
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '200':
+          description: Actualizado por cédula o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+  /api/users/cedula/{cedula}/password:
+    put:
+      summary: Cambiar contraseña por cédula
+      tags: [Usuarios]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cedula
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password]
+              properties:
+                password:
+                  type: string
+                  minLength: 8
+      responses:
+        '200':
+          description: Contraseña actualizada por cédula o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
   /api/login:
     post:
       summary: Login y emisión de token
@@ -890,17 +1054,78 @@ paths:
                         $ref: '#/components/schemas/LoginResponseData'
               examples:
                 admin:
-                  summary: Respuesta exitosa (admin)
+                  summary: Admin
                   value:
                     status: true
-                    mensaje: Login exitoso.
-                    data:
-                      token: "<TOKEN>"
-                      user:
-                        id: 1
-                        email: admin@example.com
-                        nombre: Admin
-                        apellido: Principal
+                    mensaje: Login exitoso
+                    data: { token: "1|token" }
+
+  /api/users/password/forgot:
+    post:
+      summary: Solicitar restablecimiento de contraseña (genera token)
+      tags: [Autenticación]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              anyOf:
+                - type: object
+                  required: [email]
+                  properties:
+                    email:
+                      type: string
+                      format: email
+                - type: object
+                  required: [cedula]
+                  properties:
+                    cedula:
+                      type: string
+      responses:
+        '200':
+          description: Token generado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          token: { type: string }
+                          user_id: { type: integer }
+                          email: { type: string, nullable: true }
+                          cedula: { type: string, nullable: true }
+
+  /api/users/password/reset:
+    post:
+      summary: Restablecer contraseña con token
+      tags: [Autenticación]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, password]
+              properties:
+                token: { type: string }
+                password: { type: string, minLength: 8 }
+      responses:
+        '200':
+          description: Contraseña restablecida o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+              examples:
                 cliente:
                   summary: Respuesta exitosa (cliente)
                   value:
@@ -1079,178 +1304,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
-  /api/users/email/{email}:
-    get:
-      summary: Ver usuario por email
-      tags: [Usuarios]
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: email
-          in: path
-          required: true
-          schema:
-            type: string
-            format: email
-      responses:
-        '200':
-          description: Resultado por email o error con `status=false`
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/User'
-    put:
-      summary: Actualizar usuario por email
-      tags: [Usuarios]
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: email
-          in: path
-          required: true
-          schema:
-            type: string
-            format: email
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/User'
-      responses:
-        '200':
-          description: Actualizado por email o error con `status=false`
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StandardResponse'
-
-  /api/users/email/{email}/password:
-    put:
-      summary: Cambiar contraseña por email
-      tags: [Usuarios]
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: email
-          in: path
-          required: true
-          schema:
-            type: string
-            format: email
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [password]
-              properties:
-                password:
-                  type: string
-                  minLength: 8
-      responses:
-        '200':
-          description: Contraseña actualizada por email o error con `status=false`
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/User'
-
-  /api/users/cedula/{cedula}:
-    get:
-      summary: Ver usuario por cédula
-      tags: [Usuarios]
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: cedula
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Resultado por cédula o error con `status=false`
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/User'
-    put:
-      summary: Actualizar usuario por cédula
-      tags: [Usuarios]
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: cedula
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/User'
-      responses:
-        '200':
-          description: Actualizado por cédula o error con `status=false`
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StandardResponse'
-
-  /api/users/cedula/{cedula}/password:
-    put:
-      summary: Cambiar contraseña por cédula
-      tags: [Usuarios]
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: cedula
-          in: path
-          required: true
-          schema:
-            type: string
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [password]
-              properties:
-                password:
-                  type: string
-                  minLength: 8
-      responses:
-        '200':
-          description: Contraseña actualizada por cédula o error con `status=false`
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/User'
 
   /api/mini_almacenes:
     get:
@@ -1844,7 +1897,7 @@ paths:
         - name: status
           in: query
           required: false
-          description: "Filtrar por estado: activo, inactivo o todos (todos). Por defecto activo."
+          description: "Filtrar por estado: activo, inactivo o todos. Por defecto activo."
           schema:
             type: string
             enum: [activo, inactivo, todos]
@@ -1879,6 +1932,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
+  /api/hospitales/buscar_por_rif:
+    get:
+      summary: Buscar hospital por RIF
+      tags: [Hospitales]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: rif
+          in: query
+          required: true
+          schema:
+            type: string
+          example: J-12345678-9
+      responses:
+        '200':
+          description: Resultado de búsqueda por RIF o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Hospital'
   /api/hospitales/{id}:
     get:
       summary: Ver detalle de hospital
@@ -1945,69 +2023,3 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
-
-  /api/users/password/forgot:
-    post:
-      summary: Solicitar restablecimiento de contraseña (genera token)
-      tags: [Autenticación]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              anyOf:
-                - type: object
-                  required: [email]
-                  properties:
-                    email:
-                      type: string
-                      format: email
-                - type: object
-                  required: [cedula]
-                  properties:
-                    cedula:
-                      type: string
-      responses:
-        '200':
-          description: Token generado o error con `status=false`
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        type: object
-                        properties:
-                          token: { type: string }
-                          user_id: { type: integer }
-                          email: { type: string, nullable: true }
-                          cedula: { type: string, nullable: true }
-
-  /api/users/password/reset:
-    post:
-      summary: Restablecer contraseña con token
-      tags: [Autenticación]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [token, password]
-              properties:
-                token: { type: string }
-                password: { type: string, minLength: 8 }
-      responses:
-        '200':
-          description: Contraseña restablecida o error con `status=false`
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/User'

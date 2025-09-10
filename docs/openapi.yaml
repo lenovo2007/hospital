@@ -98,42 +98,34 @@ components:
           type: string
           nullable: true
           example: Caracas
-        hospital_id:
-          type: integer
-          nullable: true
-          example: 2
-        sede_id:
-          type: integer
-          nullable: true
-          example: 5
-        hospital:
-          nullable: true
-          allOf:
-            - $ref: '#/components/schemas/Hospital'
-        sede:
-          nullable: true
-          allOf:
-            - $ref: '#/components/schemas/Sede'
-        can_view:
-          type: boolean
-          example: true
-        can_create:
-          type: boolean
-          example: true
-        can_update:
-          type: boolean
-          example: true
-        can_delete:
-          type: boolean
-          example: true
-        is_root:
-          type: boolean
-          description: "Indica si el usuario es root del sistema (solo lectura)."
-          example: false
         email:
           type: string
           format: email
           example: ana@example.com
+        is_root:
+          type: boolean
+          description: Indica si el usuario es administrador raíz (acceso total)
+          example: false
+        can_view:
+          type: boolean
+          description: Permiso para ver recursos
+          example: true
+        can_create:
+          type: boolean
+          description: Permiso para crear recursos
+          example: true
+        can_update:
+          type: boolean
+          description: Permiso para actualizar recursos
+          example: true
+        can_delete:
+          type: boolean
+          description: Permiso para eliminar recursos
+          example: true
+        can_crud_user:
+          type: boolean
+          description: Permiso para gestionar usuarios (CRUD completo)
+          example: false
         created_at:
           type: string
           format: date-time
@@ -540,11 +532,12 @@ paths:
                 direccion: { type: string, nullable: true }
                 hospital_id: { type: integer, nullable: true }
                 sede_id: { type: integer, nullable: true }
-                can_view: { type: boolean, nullable: true }
-                can_create: { type: boolean, nullable: true }
-                can_update: { type: boolean, nullable: true }
-                can_delete: { type: boolean, nullable: true }
-                is_root: { type: boolean, nullable: true, description: "Solo usuarios root pueden modificar este campo." }
+                can_view: { type: boolean, nullable: true, description: "Permiso para ver recursos" }
+                can_create: { type: boolean, nullable: true, description: "Permiso para crear recursos" }
+                can_update: { type: boolean, nullable: true, description: "Permiso para actualizar recursos" }
+                can_delete: { type: boolean, nullable: true, description: "Permiso para eliminar recursos" }
+                can_crud_user: { type: boolean, nullable: true, description: "Permiso para gestionar usuarios (CRUD completo)" }
+                is_root: { type: boolean, nullable: true, description: "Indica si el usuario es administrador raíz. Solo usuarios root pueden modificar este campo." }
                 email: { type: string, format: email, nullable: true }
                 password: { type: string, minLength: 8, description: "Obligatoria. Debe tener al menos 8 caracteres, incluir mayúscula, minúscula, número y símbolo." }
                 status: { type: string, enum: [activo, inactivo], nullable: true }
@@ -563,6 +556,7 @@ paths:
               can_create: true
               can_update: true
               can_delete: true
+              can_crud_user: false
               email: "ana@example.com"
               password: "unPasswordSeguro"
               status: activo
@@ -584,6 +578,7 @@ paths:
                   can_create: true
                   can_update: true
                   can_delete: true
+                  can_crud_user: false
                   email: "ana@example.com"
                   password: "Un4Segura!"
                   status: activo

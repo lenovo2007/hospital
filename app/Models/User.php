@@ -40,6 +40,13 @@ class User extends Authenticatable
     ];
 
     /**
+     * The accessors to append to the model's array form.
+     *
+     * @var array
+     */
+    protected $appends = ['can_crud_user'];
+
+    /**
      * The attributes that should be hidden for serialization.
      *
      * @var list<string>
@@ -79,6 +86,16 @@ class User extends Authenticatable
     public function sede()
     {
         return $this->belongsTo(Sede::class, 'sede_id'); // sedes table
+    }
+
+    /**
+     * Get the can_crud_user attribute.
+     *
+     * @return bool
+     */
+    public function getCanCrudUserAttribute($value)
+    {
+        return (bool) $value;
     }
 }
 

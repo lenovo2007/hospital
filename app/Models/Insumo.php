@@ -18,6 +18,12 @@ class Insumo extends Model
         'unidad_medida',
         'cantidad_por_paquete',
         'descripcion',
+        'presentacion',
         'status',
+    ];
+    
+    protected $casts = [
+        'cantidad_por_paquete' => 'integer',
+        'status' => 'string'
     ];
 }

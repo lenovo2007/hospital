@@ -67,9 +67,11 @@ class InsumoController extends Controller
             'unidad_medida' => ['required','string','max:100'],
             'cantidad_por_paquete' => ['required','integer','min:0'],
             'descripcion' => ['nullable','string'],
+            'presentacion' => ['nullable','string','max:255'],
             'status' => ['nullable','in:activo,inactivo'],
         ], [
             'codigo.unique' => 'El código de insumo ya ha sido registrado previamente.',
+            'presentacion.max' => 'La presentación no debe exceder los 255 caracteres.',
         ]);
 
         $insumo = Insumo::create($data);
@@ -91,9 +93,11 @@ class InsumoController extends Controller
             'unidad_medida' => ['sometimes','required','string','max:100'],
             'cantidad_por_paquete' => ['sometimes','required','integer','min:0'],
             'descripcion' => ['nullable','string'],
+            'presentacion' => ['nullable','string','max:255'],
             'status' => ['nullable','in:activo,inactivo'],
         ], [
             'codigo.unique' => 'El código de insumo ya ha sido registrado para otro insumo.',
+            'presentacion.max' => 'La presentación no debe exceder los 255 caracteres.',
         ]);
 
         $insumo->update($data);

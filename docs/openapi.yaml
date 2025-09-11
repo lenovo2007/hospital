@@ -489,6 +489,10 @@ components:
           type: string
           nullable: true
           example: Guantes de látex talla M
+        presentacion:
+          type: string
+          nullable: true
+          example: Caja x 100 unidades
         created_at:
           type: string
           format: date-time

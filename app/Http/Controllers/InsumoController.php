@@ -216,6 +216,19 @@ class InsumoController extends Controller
             'file' => ['required','file','mimes:xlsx','max:10240']
         ]);
 
+        // Prechecks: required PHP extensions for reading XLSX
+        $missingExt = [];
+        if (!extension_loaded('zip')) { $missingExt[] = 'zip'; }
+        if (!extension_loaded('xml')) { $missingExt[] = 'xml'; }
+        if (!extension_loaded('mbstring')) { $missingExt[] = 'mbstring'; }
+        if ($missingExt) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Extensiones PHP requeridas no disponibles: ' . implode(', ', $missingExt) . '. Habilítalas en php.ini (por ejemplo, extension=zip).',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
+
         if (!class_exists('PhpOffice\\PhpSpreadsheet\\IOFactory')) {
             return response()->json([
                 'status' => false,
@@ -225,6 +238,8 @@ class InsumoController extends Controller
         }
 
         try {
+            // Allow some headroom for XLSX parsing (local only; adjust as needed)
+            @ini_set('memory_limit', '512M');
             /** @var \Illuminate\Http\UploadedFile $file */
             $file = $request->file('file');
             $path = $file->getRealPath();
@@ -233,26 +248,14 @@ class InsumoController extends Controller
             $reader->setReadDataOnly(true);
             $spreadsheet = $reader->load($path);
             $sheet = $spreadsheet->getActiveSheet();
-            $rows = $sheet->toArray(null, true, true, true);
 
-            // Detectar columna DESCRIPCION por encabezado (case-insensitive)
-            $descripcionCol = null;
-            $header = $rows[1] ?? [];
-            foreach ($header as $col => $name) {
-                if (is_string($name) && Str::lower(trim($name)) === 'descripcion') {
-                    $descripcionCol = $col; // e.g., 'A', 'B', ...
-                    break;
-                }
-            }
-            // Fallback: si no está por encabezado, asumir que está en columna B
-            if (!$descripcionCol) {
-                $descripcionCol = 'B';
-            }
+            // Según requerimiento: DESCRIPCION está en columna B
+            $descripcionCol = 'B';
 
             $created = 0; $updated = 0; $skipped = 0; $errors = [];
-            $rowCount = count($rows);
+            $rowCount = (int) $sheet->getHighestRow();
             for ($i = 2; $i <= $rowCount; $i++) { // desde la fila 2
-                $raw = $rows[$i][$descripcionCol] ?? null;
+                $raw = $sheet->getCell($descripcionCol . $i)->getValue();
                 $descripcion = is_string($raw) ? trim($raw) : '';
                 if ($descripcion === '') { $skipped++; continue; }
 
@@ -283,6 +286,10 @@ class InsumoController extends Controller
                     Log::warning('Import insumos error', ['row' => $i, 'e' => $e->getMessage()]);
                 }
             }
+
+            // Liberar memoria del spreadsheet
+            $spreadsheet->disconnectWorksheets();
+            unset($spreadsheet);
 
             return response()->json([
                 'status' => true,

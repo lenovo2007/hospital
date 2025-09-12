@@ -42,6 +42,32 @@ class InsumoController extends Controller
                 'data' => null,
             ], 200, [], JSON_UNESCAPED_UNICODE);
         }
+
+        $descripcion = $insumo->descripcion;
+        $tokens = preg_split('/\s+/', trim($descripcion));
+        $candidate = $tokens[count($tokens)-1] ?? null;
+        $presentacion = $candidate;
+        $presentacionKeywords = ['unidad','unidades','tableta','tabletas','ampolla','ampollas','capsula','cápsula','cápsulas','caja','blister','sobre','frasco','bolsa','tira','tiras'];
+        $hasNumber = $presentacion && preg_match('/\d+/', $presentacion);
+        $isKeyword = $presentacion && in_array(Str::lower($presentacion), $presentacionKeywords, true);
+        if (!$hasNumber && !$isKeyword) {
+            $presentacion = null;
+            $tipo = 'medico_quirurgico';
+        }
+
+        $nombreBase = $presentacion ? trim(Str::beforeLast($descripcion, ' ' . $candidate)) : $descripcion;
+        if ($nombreBase === '') { $nombreBase = $descripcion; }
+
+        $cantidad = 1; $unidad = 'unidad';
+        if ($presentacion) {
+            if (preg_match('/(\d+)/', $presentacion, $m)) { $cantidad = (int) ($m[1] ?? 1); }
+            if (preg_match('/(unidad|unidades|tableta|tabletas|ampolla|ampollas|capsula|cápsula|cápsulas|caja|blister|sobre|frasco|bolsa|tira|tiras)/i', $presentacion, $m2)) {
+                $unidad = Str::lower($m2[1]);
+                $map = [ 'tableta' => 'unidades', 'tabletas' => 'unidades', 'ampolla' => 'unidades', 'ampollas' => 'unidades', 'capsula' => 'unidades', 'cápsula' => 'unidades', 'cápsulas' => 'unidades' ];
+                if (isset($map[$unidad])) { $unidad = $map[$unidad]; }
+            }
+        }
+
         return response()->json([
             'status' => true,
             'mensaje' => 'Detalle de insumo por código.',
@@ -75,6 +101,34 @@ class InsumoController extends Controller
             'codigo.unique' => 'El código de insumo ya ha sido registrado previamente.',
             'presentacion.max' => 'La presentación no debe exceder los 255 caracteres.',
         ]);
+
+        $descripcion = $data['descripcion'];
+        $tokens = preg_split('/\s+/', trim($descripcion));
+        $candidate = $tokens[count($tokens)-1] ?? null;
+        $presentacion = $candidate;
+        $presentacionKeywords = ['unidad','unidades','tableta','tabletas','ampolla','ampollas','capsula','cápsula','cápsulas','caja','blister','sobre','frasco','bolsa','tira','tiras'];
+        $hasNumber = $presentacion && preg_match('/\d+/', $presentacion);
+        $isKeyword = $presentacion && in_array(Str::lower($presentacion), $presentacionKeywords, true);
+        if (!$hasNumber && !$isKeyword) {
+            $presentacion = null;
+            $data['tipo'] = 'medico_quirurgico';
+        }
+
+        $nombreBase = $presentacion ? trim(Str::beforeLast($descripcion, ' ' . $candidate)) : $descripcion;
+        if ($nombreBase === '') { $nombreBase = $descripcion; }
+        $data['nombre'] = $nombreBase;
+
+        $cantidad = 1; $unidad = 'unidad';
+        if ($presentacion) {
+            if (preg_match('/(\d+)/', $presentacion, $m)) { $cantidad = (int) ($m[1] ?? 1); }
+            if (preg_match('/(unidad|unidades|tableta|tabletas|ampolla|ampollas|capsula|cápsula|cápsulas|caja|blister|sobre|frasco|bolsa|tira|tiras)/i', $presentacion, $m2)) {
+                $unidad = Str::lower($m2[1]);
+                $map = [ 'tableta' => 'unidades', 'tabletas' => 'unidades', 'ampolla' => 'unidades', 'ampollas' => 'unidades', 'capsula' => 'unidades', 'cápsula' => 'unidades', 'cápsulas' => 'unidades' ];
+                if (isset($map[$unidad])) { $unidad = $map[$unidad]; }
+            }
+        }
+        $data['cantidad_por_paquete'] = $cantidad;
+        $data['unidad_medida'] = $unidad;
 
         $insumo = Insumo::create($data);
 

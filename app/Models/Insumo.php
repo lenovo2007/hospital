@@ -13,6 +13,7 @@ class Insumo extends Model
 
     protected $fillable = [
         'codigo',
+        'codigo_alterno',
         'nombre',
         'tipo',
         'unidad_medida',

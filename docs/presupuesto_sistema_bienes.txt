@@ -1,0 +1,73 @@
+PRESUPUESTO - SISTEMA DE CONTROL DE BIENES MUEBLES E INMUEBLES
+
+1. MÓDULO DE AUTENTICACIÓN Y USUARIOS
+- Login y registro de usuarios
+- Recuperación de contraseña
+- Perfiles de usuario (Administrador, Supervisor, Usuario)
+- Gestión de permisos y roles
+Tiempo estimado: 25 horas
+
+2. MÓDULO DE GESTIÓN DE BIENES
+- Registro de bienes (muebles e inmuebles)
+- Categorización y clasificación
+- Carga de imágenes y documentos
+- Códigos de barras/QR
+Tiempo estimado: 35 horas
+
+3. MÓDULO DE MOVIMIENTOS
+- Incorporación de bienes
+- Desincorporación de bienes
+- Traslados entre ubicaciones
+- Historial de movimientos
+Tiempo estimado: 30 horas
+
+4. MÓDULO DE REPORTES
+- Inventario actual
+- Histórico de movimientos
+- Bienes por departamento/área
+- Exportación a Excel/PDF
+Tiempo estimado: 20 horas
+
+5. MÓDULO DE MANTENIMIENTO
+- Registro de mantenimientos preventivos
+- Historial de reparaciones
+- Alertas de mantenimiento
+Tiempo estimado: 15 horas
+
+6. SEGURIDAD Y RESPALDO
+- Copias de seguridad automáticas
+- Registro de actividades (logs)
+Tiempo estimado: 10 horas
+
+7. IMPLEMENTACIÓN Y CAPACITACIÓN
+- Instalación en servidor
+- Migración de datos (si aplica)
+- Capacitación al personal
+Tiempo estimado: 20 horas
+
+TOTAL DE HORAS ESTIMADAS: 155 horas
+
+COSTO ESTIMADO:
+- Desarrollo: 155 horas × $30-50 USD/hora* = $4,650 - $7,750 USD
+- Hosting y Dominio: $100-300 USD/año
+- Soporte post-implementación (opcional): 20% del costo de desarrollo el primer año
+
+TIEMPO DE DESARROLLO ESTIMADO: 8-10 semanas
+
+*El costo por hora puede variar según la experiencia del desarrollador y la ubicación.
+
+TECNOLOGÍAS PROPUESTAS:
+- Backend: PHP (Laravel)
+- Frontend: HTML5, CSS3, JavaScript (Vue.js/React)
+- Base de datos: MySQL
+- Servidor: Apache/Nginx
+
+ENTREGABLES:
+- Código fuente completo
+- Documentación técnica
+- Manual de usuario
+- 30 días de soporte gratuito post-implementación
+
+Fecha de generación: 26/08/2025
+
+*Este presupuesto tiene una validez de 30 días a partir de la fecha de emisión.

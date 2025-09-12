@@ -714,6 +714,7 @@ paths:
                 unidad_medida: { type: string }
                 cantidad_por_paquete: { type: integer, minimum: 0 }
                 descripcion: { type: string, nullable: true }
+                presentacion: { type: string, nullable: true }
                 status: { type: string, enum: [activo, inactivo] }
       responses:
         '200':
@@ -814,6 +815,7 @@ paths:
                 unidad_medida: { type: string }
                 cantidad_por_paquete: { type: integer, minimum: 0 }
                 descripcion: { type: string, nullable: true }
+                presentacion: { type: string, nullable: true }
                 status: { type: string, enum: [activo, inactivo] }
       responses:
         '200':
@@ -873,6 +875,7 @@ paths:
                 unidad_medida: { type: string }
                 cantidad_por_paquete: { type: integer, minimum: 0 }
                 descripcion: { type: string, nullable: true }
+                presentacion: { type: string, nullable: true }
                 status: { type: string, enum: [activo, inactivo] }
       responses:
         '200':

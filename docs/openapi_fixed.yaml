@@ -1,0 +1,203 @@
+openapi: 3.0.3
+info:
+  title: Almacen Principal
+  description: |
+    API para gestión de usuarios con autenticación por tokens (Laravel Sanctum).
+    Respuestas JSON unificadas `{status, mensaje, data}`.
+    Importante: todos los resultados (éxito y error) devuelven HTTP 200. Los errores se indican con `status=false` y un `mensaje` descriptivo.
+    Nota: cuando un listado no tiene resultados o un recurso no existe, la API responde HTTP 200 con `status=true`, `data` vacío o `null` según aplique y `mensaje` "<modelo> no encontrado" (por ejemplo: "hospitales no encontrado").
+  version: 1.0.0
+servers:
+  - url: https://almacen.alwaysdata.net
+    description: Producción (AlwaysData)
+  - url: http://localhost
+    description: Desarrollo local
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    StandardResponse:
+      type: object
+      properties:
+        status:
+          type: boolean
+          example: true
+        mensaje:
+          type: string
+          example: Operación exitosa.
+        autenticacion:
+          type: integer
+          description: 0=autenticado/válido, 1=token inválido/ausente, 2=token expirado
+          enum: [0, 1, 2]
+          example: 0
+        data:
+          nullable: true
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: boolean
+          example: false
+        mensaje:
+          type: string
+          example: No autenticado. Token inválido o ausente.
+        autenticacion:
+          type: integer
+          description: 0=autenticado/válido, 1=token inválido/ausente, 2=token expirado
+          enum: [0, 1, 2]
+          example: 1
+        data:
+          nullable: true
+          example: null
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        tipo:
+          type: string
+          example: natural
+        rol:
+          type: string
+          example: admin
+        nombre:
+          type: string
+          example: Ana
+        apellido:
+          type: string
+          example: García
+        genero:
+          type: string
+          nullable: true
+          example: femenino
+        cedula:
+          type: string
+          example: V-12345678
+        telefono:
+          type: string
+          nullable: true
+          example: 04140000000
+        direccion:
+          type: string
+          nullable: true
+          example: Caracas
+        email:
+          type: string
+          format: email
+          example: ana@example.com
+        is_root:
+          type: boolean
+          description: Indica si el usuario es administrador raíz (acceso total)
+          example: false
+        can_view:
+          type: boolean
+          description: Permiso para ver recursos
+          example: true
+        can_create:
+          type: boolean
+          description: Permiso para crear recursos
+          example: true
+        can_update:
+          type: boolean
+          description: Permiso para actualizar recursos
+          example: true
+        can_delete:
+          type: boolean
+          description: Permiso para eliminar recursos
+          example: true
+        can_crud_user:
+          type: boolean
+          description: Permiso para gestionar usuarios (CRUD completo)
+          example: false
+        hospital_id:
+          type: integer
+          nullable: true
+          example: 1
+        hospital:
+          $ref: '#/components/schemas/Hospital'
+        sede_id:
+          type: integer
+          nullable: true
+          example: 1
+        sede:
+          $ref: '#/components/schemas/Sede'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [activo, inactivo]
+          example: activo
+    Hospital:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        nombre:
+          type: string
+          example: Hospital Central
+        rif:
+          type: string
+          example: J-12345678-9
+        direccion:
+          type: string
+          example: Av. Principal
+        telefono:
+          type: string
+          example: 02121234567
+        email:
+          type: string
+          format: email
+          example: contacto@hospitalcentral.com
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [activo, inactivo]
+          example: activo
+    Sede:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        nombre:
+          type: string
+          example: Sede Principal
+        direccion:
+          type: string
+          example: Av. Principal 123
+        telefono:
+          type: string
+          example: 02121234567
+        email:
+          type: string
+          format: email
+          example: sede@hospitalcentral.com
+        hospital_id:
+          type: integer
+          example: 1
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [activo, inactivo]
+          example: activo
+
+# Rest of the OpenAPI document with paths and other components...

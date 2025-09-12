@@ -17,7 +17,9 @@ class AuthController extends Controller
             'password' => ['required','string'],
         ]);
 
-        $user = User::where('email', $credentials['email'])->first();
+        $user = User::with(['hospital', 'sede'])
+            ->where('email', $credentials['email'])
+            ->first();
 
         if (!$user || !Hash::check($credentials['password'], $user->password)) {
             return response()->json([
@@ -27,17 +29,43 @@ class AuthController extends Controller
             ], 200, [], JSON_UNESCAPED_UNICODE);
         }
 
-        // Opcional: limitar dispositivos o nombrar el token
+        // Create token with device name (optional)
         $token = $user->createToken('api')->plainTextToken;
 
-        return response()->json([
+        // Get user data with relationships
+        $response = [
             'status' => true,
             'mensaje' => 'Login exitoso.',
             'data' => [
                 'token' => $token,
-                'user' => $user,
+                'user' => $user->toArray(),
             ],
-        ], 200, [], JSON_UNESCAPED_UNICODE);
+        ];
+
+        // Add hospital data if relationship exists
+        if ($user->hospital) {
+            $response['data']['hospital'] = [
+                'id' => $user->hospital->id,
+                'nombre' => $user->hospital->nombre,
+                'rif' => $user->hospital->rif,
+                'direccion' => $user->hospital->direccion,
+                'telefono' => $user->hospital->telefono,
+                'email' => $user->hospital->email
+            ];
+        }
+
+        // Add sede data if relationship exists
+        if ($user->sede) {
+            $response['data']['sede'] = [
+                'id' => $user->sede->id,
+                'nombre' => $user->sede->nombre,
+                'tipo_almacen' => $user->sede->tipo_almacen,
+                'hospital_id' => $user->sede->hospital_id,
+                'status' => $user->sede->status
+            ];
+        }
+
+        return response()->json($response, 200, [], JSON_UNESCAPED_UNICODE);
     }
 
     // POST /api/logout (autenticado)

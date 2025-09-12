@@ -252,12 +252,18 @@ class InsumoController extends Controller
             // Según requerimiento: DESCRIPCION está en columna B
             $descripcionCol = 'B';
 
-            $created = 0; $updated = 0; $skipped = 0; $errors = [];
+            $created = 0; $updated = 0; $skipped = []; $errors = [];
             $rowCount = (int) $sheet->getHighestRow();
+            // Detect if 'presentacion' column exists to avoid SQL errors
+            $hasPresentacionColumn = \Illuminate\Support\Facades\Schema::hasColumn('insumos', 'presentacion');
+
             for ($i = 2; $i <= $rowCount; $i++) { // desde la fila 2
                 $raw = $sheet->getCell($descripcionCol . $i)->getValue();
                 $descripcion = is_string($raw) ? trim($raw) : '';
-                if ($descripcion === '') { $skipped++; continue; }
+                if ($descripcion === '') { 
+                    $skipped[] = ['fila' => $i, 'motivo' => 'Celda de descripción vacía o con solo espacios'];
+                    continue; 
+                }
 
                 $parsed = $this->parseDescripcion($descripcion);
                 $payload = [
@@ -267,9 +273,11 @@ class InsumoController extends Controller
                     'unidad_medida' => $parsed['unidad_medida'],
                     'cantidad_por_paquete' => $parsed['cantidad_por_paquete'],
                     'descripcion' => $descripcion,
-                    'presentacion' => $parsed['presentacion'],
                     'status' => 'activo',
                 ];
+                if ($hasPresentacionColumn) {
+                    $payload['presentacion'] = $parsed['presentacion'];
+                }
 
                 try {
                     $existing = Insumo::where('codigo', $payload['codigo'])->first();
@@ -288,8 +296,11 @@ class InsumoController extends Controller
             }
 
             // Liberar memoria del spreadsheet
-            $spreadsheet->disconnectWorksheets();
-            unset($spreadsheet);
+            if (isset($spreadsheet)) {
+                $spreadsheet->disconnectWorksheets();
+                unset($spreadsheet);
+                $reader = null;
+            }
 
             return response()->json([
                 'status' => true,
@@ -297,7 +308,8 @@ class InsumoController extends Controller
                 'data' => [
                     'creados' => $created,
                     'actualizados' => $updated,
-                    'omitidos' => $skipped,
+                    'omitidos' => count($skipped),
+                    'omitidos_detalle' => $skipped,
                     'errores' => $errors,
                 ],
             ], 200, [], JSON_UNESCAPED_UNICODE);

@@ -12,57 +12,71 @@ class AuthController extends Controller
     // POST /api/login
     public function login(Request $request)
     {
-        $credentials = $request->validate([
-            'email' => ['required','email'],
-            'password' => ['required','string'],
-        ]);
+        try {
+            // Validate request
+            $credentials = $request->validate([
+                'email' => ['required', 'email'],
+                'password' => ['required', 'string'],
+            ]);
 
-        $user = User::with(['hospital', 'sede'])
-            ->where('email', $credentials['email'])
-            ->first();
+            // Find user with email
+            $user = User::where('email', $credentials['email'])->first();
 
-        if (!$user || !Hash::check($credentials['password'], $user->password)) {
+            // Check if user exists and password is correct
+            if (!$user || !Hash::check($credentials['password'], $user->password)) {
+                return response()->json([
+                    'status' => false,
+                    'mensaje' => 'Credenciales inválidas.',
+                    'data' => null,
+                ], 200, [], JSON_UNESCAPED_UNICODE);
+            }
+
+            // Create API token
+            $token = $user->createToken('api')->plainTextToken;
+
+            // Load relationships if not already loaded
+            if (!$user->relationLoaded('hospital')) {
+                $user->load('hospital');
+            }
+            if (!$user->relationLoaded('sede')) {
+                $user->load('sede');
+            }
+
+            // Build a clean user payload WITHOUT relations to avoid duplicated info
+            $cleanUser = $user->withoutRelations()->makeHidden(['password', 'remember_token'])->toArray();
+
+            // Prepare response data (attach hospital and sede once at top level)
+            $response = [
+                'status' => true,
+                'mensaje' => 'Login exitoso.',
+                'data' => [
+                    'token' => $token,
+                    'user' => $cleanUser,
+                    'hospital' => $user->hospital_data,
+                    'sede' => $user->sede_data,
+                ],
+            ];
+
+            return response()->json($response, 200, [], JSON_UNESCAPED_UNICODE);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'status' => false,
-                'mensaje' => 'Credenciales inválidas.',
+                'mensaje' => 'Error de validación.',
+                'errores' => $e->errors(),
                 'data' => null,
-            ], 200, [], JSON_UNESCAPED_UNICODE);
-        }
+            ], 422, [], JSON_UNESCAPED_UNICODE);
 
-        // Create token with device name (optional)
-        $token = $user->createToken('api')->plainTextToken;
-
-        // Get user data with relationships
-        $response = [
-            'status' => true,
-            'mensaje' => 'Login exitoso.',
-            'data' => [
-                'token' => $token,
-                'user' => $user->toArray(),
-            ],
-        ];
-
-        // Add hospital data if relationship exists
-        if ($user->hospital) {
-            $response['data']['hospital'] = [
-                'id' => $user->hospital->id,
-                'nombre' => $user->hospital->nombre,
-                'rif' => $user->hospital->rif,
-                'direccion' => $user->hospital->direccion,
-                'telefono' => $user->hospital->telefono,
-                'email' => $user->hospital->email
-            ];
-        }
-
-        // Add sede data if relationship exists
-        if ($user->sede) {
-            $response['data']['sede'] = [
-                'id' => $user->sede->id,
-                'nombre' => $user->sede->nombre,
-                'tipo_almacen' => $user->sede->tipo_almacen,
-                'hospital_id' => $user->sede->hospital_id,
-                'status' => $user->sede->status
-            ];
+        } catch (\Exception $e) {
+            \Log::error('Login error: ' . $e->getMessage());
+            \Log::error($e->getTraceAsString());
+            
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Error en el servidor al procesar la autenticación.',
+                'error' => config('app.debug') ? $e->getMessage() : null,
+                'data' => null,
+            ], 500, [], JSON_UNESCAPED_UNICODE);
         }
 
         return response()->json($response, 200, [], JSON_UNESCAPED_UNICODE);

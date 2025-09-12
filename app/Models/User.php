@@ -68,7 +68,7 @@ class User extends Authenticatable
      *
      * @var array
      */
-    protected $appends = ['can_crud_user', 'hospital', 'sede'];
+    protected $appends = ['can_crud_user'];
 
     /**
      * The relationships that should always be loaded.
@@ -96,7 +96,10 @@ class User extends Authenticatable
      */
     public function hospital()
     {
-        return $this->belongsTo(Hospital::class, 'hospital_id');
+        return $this->belongsTo(Hospital::class, 'hospital_id')
+            ->withDefault(function() {
+                return Hospital::getDefault();
+            });
     }
 
     /**
@@ -104,46 +107,68 @@ class User extends Authenticatable
      */
     public function sede()
     {
-        return $this->belongsTo(Sede::class, 'sede_id');
+        return $this->belongsTo(Sede::class, 'sede_id')
+            ->withDefault(function() {
+                return new Sede([
+                    'id' => 0,
+                    'nombre' => 'Sede Desconocida',
+                    'status' => 'inactiva',
+                    'tipo_almacen' => 'no_especificado',
+                    'hospital_id' => $this->hospital_id ?? 0
+                ]);
+            });
+    }
+    
+    /**
+     * Prepare the model for array/JSON serialization.
+     *
+     * @return array
+     */
+    public function toArray()
+    {
+        // Return only the model attributes (no injected relations) to avoid duplication in API responses
+        return parent::toArray();
     }
 
     /**
-     * Get the hospital attribute.
+     * Get the hospital data for the user.
      *
      * @return array|null
      */
-    public function getHospitalAttribute()
+    public function getHospitalDataAttribute()
     {
-        // Do not trigger DB loads here; only use already-loaded relation
-        $hospital = $this->relationLoaded('hospital') ? $this->getRelation('hospital') : null;
+        if (!$this->relationLoaded('hospital')) {
+            $this->load('hospital');
+        }
         
-        return $hospital ? [
-            'id' => $hospital->id,
-            'nombre' => $hospital->nombre,
-            'rif' => $hospital->rif,
-            'direccion' => $hospital->direccion,
-            'telefono' => $hospital->telefono,
-            'email' => $hospital->email
+        return $this->hospital ? [
+            'id' => $this->hospital->id,
+            'nombre' => $this->hospital->nombre,
+            'rif' => $this->hospital->rif,
+            'direccion' => $this->hospital->direccion,
+            'telefono' => $this->hospital->telefono,
+            'email' => $this->hospital->email,
+            'status' => $this->hospital->status
         ] : null;
     }
 
     /**
-     * Get the sede attribute.
+     * Get the sede data for the user.
      *
      * @return array|null
      */
-    public function getSedeAttribute()
+    public function getSedeDataAttribute()
     {
-        // Do not trigger DB loads here; only use already-loaded relation
-        $sede = $this->relationLoaded('sede') ? $this->getRelation('sede') : null;
+        if (!$this->relationLoaded('sede')) {
+            $this->load('sede');
+        }
         
-        return $sede ? [
-            'id' => $sede->id,
-            'nombre' => $sede->nombre,
-            'direccion' => $sede->direccion,
-            'telefono' => $sede->telefono,
-            'email' => $sede->email,
-            'hospital_id' => $sede->hospital_id
+        return $this->sede ? [
+            'id' => $this->sede->id,
+            'nombre' => $this->sede->nombre,
+            'tipo_almacen' => $this->sede->tipo_almacen,
+            'hospital_id' => $this->sede->hospital_id,
+            'status' => $this->sede->status
         ] : null;
     }
 }

@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\User;
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 
 class DatabaseSeeder extends Seeder
 {
@@ -45,6 +46,12 @@ class DatabaseSeeder extends Seeder
             'telefono' => null,
             'direccion' => null,
             'email' => 'paciente@example.com',
+        ]);
+
+        // Ejecutar los seeders de hospitales y sedes
+        $this->call([
+            HospitalSeeder::class,
+            SedeSeeder::class,
         ]);
     }
 }

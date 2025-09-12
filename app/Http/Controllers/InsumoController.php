@@ -208,4 +208,164 @@ class InsumoController extends Controller
             'data' => null,
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }
+
+    // POST /api/insumos/import
+    public function importExcel(Request $request)
+    {
+        $request->validate([
+            'file' => ['required','file','mimes:xlsx','max:10240']
+        ]);
+
+        if (!class_exists('PhpOffice\\PhpSpreadsheet\\IOFactory')) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Dependencia faltante: phpoffice/phpspreadsheet. Ejecute: composer require phpoffice/phpspreadsheet',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
+
+        try {
+            /** @var \Illuminate\Http\UploadedFile $file */
+            $file = $request->file('file');
+            $path = $file->getRealPath();
+
+            $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader('Xlsx');
+            $reader->setReadDataOnly(true);
+            $spreadsheet = $reader->load($path);
+            $sheet = $spreadsheet->getActiveSheet();
+            $rows = $sheet->toArray(null, true, true, true);
+
+            // Detectar columna DESCRIPCION por encabezado (case-insensitive)
+            $descripcionCol = null;
+            $header = $rows[1] ?? [];
+            foreach ($header as $col => $name) {
+                if (is_string($name) && Str::lower(trim($name)) === 'descripcion') {
+                    $descripcionCol = $col; // e.g., 'A', 'B', ...
+                    break;
+                }
+            }
+            // Fallback: si no está por encabezado, asumir que está en columna B
+            if (!$descripcionCol) {
+                $descripcionCol = 'B';
+            }
+
+            $created = 0; $updated = 0; $skipped = 0; $errors = [];
+            $rowCount = count($rows);
+            for ($i = 2; $i <= $rowCount; $i++) { // desde la fila 2
+                $raw = $rows[$i][$descripcionCol] ?? null;
+                $descripcion = is_string($raw) ? trim($raw) : '';
+                if ($descripcion === '') { $skipped++; continue; }
+
+                $parsed = $this->parseDescripcion($descripcion);
+                $payload = [
+                    'codigo' => $parsed['codigo'],
+                    'nombre' => $parsed['nombre'],
+                    'tipo' => $parsed['tipo'],
+                    'unidad_medida' => $parsed['unidad_medida'],
+                    'cantidad_por_paquete' => $parsed['cantidad_por_paquete'],
+                    'descripcion' => $descripcion,
+                    'presentacion' => $parsed['presentacion'],
+                    'status' => 'activo',
+                ];
+
+                try {
+                    $existing = Insumo::where('codigo', $payload['codigo'])->first();
+                    if ($existing) {
+                        $existing->update($payload);
+                        $updated++;
+                    } else {
+                        Insumo::create($payload);
+                        $created++;
+                    }
+                } catch (\Throwable $e) {
+                    $skipped++;
+                    $errors[] = [ 'row' => $i, 'descripcion' => $descripcion, 'error' => $e->getMessage() ];
+                    Log::warning('Import insumos error', ['row' => $i, 'e' => $e->getMessage()]);
+                }
+            }
+
+            return response()->json([
+                'status' => true,
+                'mensaje' => 'Importación procesada.',
+                'data' => [
+                    'creados' => $created,
+                    'actualizados' => $updated,
+                    'omitidos' => $skipped,
+                    'errores' => $errors,
+                ],
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Error al procesar el archivo: ' . $e->getMessage(),
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
+    }
+
+    /**
+     * Parsear DESCRIPCION a atributos de Insumo con reglas de presentación y tipo.
+     */
+    protected function parseDescripcion(string $descripcion): array
+    {
+        $descLower = Str::lower($descripcion);
+
+        $farmaceuticoKeys = ['jarabe','suspensión','suspension','tableta','ampolla','capsula','cápsula','ungüento','pomada','solución','solucion'];
+        $medicoKeys = ['equipo','material','quirurgico','quirúrgico','medico','médico'];
+
+        $tipo = 'medico_quirurgico';
+        foreach ($farmaceuticoKeys as $k) {
+            if (Str::contains($descLower, Str::lower($k))) { $tipo = 'farmaceutico'; break; }
+        }
+        if ($tipo !== 'farmaceutico') {
+            foreach ($medicoKeys as $k) {
+                if (Str::contains($descLower, Str::lower($k))) { $tipo = 'medico_quirurgico'; break; }
+            }
+        }
+
+        // Candidata de presentación = última palabra
+        $tokens = preg_split('/\s+/', trim($descripcion));
+        $candidate = $tokens[count($tokens)-1] ?? null;
+        $presentacion = $candidate;
+        $presentacionKeywords = ['unidad','unidades','tableta','tabletas','ampolla','ampollas','capsula','cápsula','cápsulas','caja','blister','sobre','frasco','bolsa','tira','tiras'];
+        $hasNumber = $presentacion && preg_match('/\d+/', $presentacion);
+        $isKeyword = $presentacion && in_array(Str::lower($presentacion), $presentacionKeywords, true);
+        if (!$hasNumber && !$isKeyword) {
+            $presentacion = null;
+            $tipo = 'medico_quirurgico';
+        }
+
+        // Nombre sin la presentación (si existe) y sin palabras clave
+        $nombreBase = $presentacion ? trim(Str::beforeLast($descripcion, ' ' . $candidate)) : $descripcion;
+        if ($nombreBase === '') { $nombreBase = $descripcion; }
+        $allKeys = array_merge($farmaceuticoKeys, $medicoKeys);
+        foreach ($allKeys as $k) {
+            $nombreBase = preg_replace('/\b' . preg_quote($k, '/') . '\b/i', '', $nombreBase);
+        }
+        $nombre = trim(preg_replace('/\s+/', ' ', $nombreBase));
+
+        // Unidad y cantidad derivadas de presentación, si existe
+        $cantidad = 1; $unidad = 'unidad';
+        if ($presentacion) {
+            if (preg_match('/(\d+)/', $presentacion, $m)) { $cantidad = (int) ($m[1] ?? 1); }
+            if (preg_match('/(unidad|unidades|tableta|tabletas|ampolla|ampollas|capsula|cápsula|cápsulas|caja|blister|sobre|frasco|bolsa|tira|tiras)/i', $presentacion, $m2)) {
+                $unidad = Str::lower($m2[1]);
+                $map = [ 'tableta' => 'unidades', 'tabletas' => 'unidades', 'ampolla' => 'unidades', 'ampollas' => 'unidades', 'capsula' => 'unidades', 'cápsula' => 'unidades', 'cápsulas' => 'unidades' ];
+                if (isset($map[$unidad])) { $unidad = $map[$unidad]; }
+            }
+        }
+
+        // Código estable por nombre + presentacion
+        $base = Str::slug($nombre . '-' . ($presentacion ?? ''));
+        $codigo = strtoupper(substr($base, 0, 3)) . '-' . substr(md5($base), 0, 6);
+
+        return [
+            'codigo' => $codigo ?: 'AUTO-' . substr(md5($descripcion), 0, 8),
+            'nombre' => $nombre ?: $descripcion,
+            'tipo' => $tipo,
+            'unidad_medida' => $unidad,
+            'cantidad_por_paquete' => $cantidad,
+            'presentacion' => $presentacion,
+        ];
+    }
 }

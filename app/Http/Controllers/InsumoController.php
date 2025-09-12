@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Insumo;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
 
 class InsumoController extends Controller
 {

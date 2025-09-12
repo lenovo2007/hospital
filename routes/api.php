@@ -97,6 +97,8 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
     // Identificación por CÓDIGO (claridad de rutas)
     Route::get('/insumos/codigo/{codigo}', [InsumoController::class, 'showByCodigo']);
     Route::put('/insumos/codigo/{codigo}', [InsumoController::class, 'updateByCodigo']);
+    // Importación de insumos desde Excel (.xlsx)
+    Route::post('/insumos/import', [InsumoController::class, 'importExcel']);
     Route::get('/insumos', [InsumoController::class, 'index']);
     Route::post('/insumos', [InsumoController::class, 'store']);
     Route::get('/insumos/{insumo}', [InsumoController::class, 'show']);

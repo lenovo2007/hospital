@@ -1,8 +1,0 @@
-DateTimeUTC,To,Amount,Asset,Type,Network,TxID_or_OrderID,Notes
-# Ejemplos:
-# 2025-07-30 15:20:00,Comprador_P2P,170,USDT,P2P,,[numero_orden_p2p],Venta P2P
-# 2025-07-30 14:10:00,direccion_destino,50,LTC,OnChain,LTC,[txid_ltc],Retiro on-chain LTC
-# 2025-07-30 13:40:00,usuario_binance,20,USDT,Internal,,[id_transferencia_interna],Transferencia interna
-
- ,ltc1q9z77m296lxz55caqx405dxq4rfl5vnfpdyd3l8,0.07081200,LTC,OnChain,LTC,275a670c8b636f8c3f0c64db0eed4d976cb6cbbd45d2640fb75a01855dc19820,Retiro on-chain LTC
- ,ltc1q9z77m296lxz55caqx405dxq4rfl5vnfpdyd3l8,0.00290000,LTC,OnChain,LTC,d5eb49c5aa6d85b648523169a228edfe24ea016370fde8f2b6dab80aa0bf7cfb,Retiro on-chain LTC

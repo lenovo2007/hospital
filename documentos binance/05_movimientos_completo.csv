@@ -1,9 +1,0 @@
-DateTimeUTC,Direction,CounterpartyOrAddress,Amount,Asset,Type,Network,TxID_or_OrderID,Notes
-2025-02-23 06:21:18,IN,yarenny18,69.91495229,USDT,Internal,,,
-2025-04-05 16:12:40,IN,yarenny18,150,USDC,Internal,,,
-2025-04-16 12:11:58,IN,yarenny18,79.9,USDT,Internal,,,
-2025-05-07 21:03:25,IN,martatorredev,200,USDC,Internal,,,
-2025-07-10 00:08:10,IN,Krisstel262,2,USDT,Internal,,,
-2025-07-30 13:03:32,IN,martatorredev,150,USDC,Internal,,378051205794439168,Último pago reportado (transferencia interna por correo)
-,OUT,ltc1q9z77m296lxz55caqx405dxq4rfl5vnfpdyd3l8,0.07081200,LTC,OnChain,LTC,275a670c8b636f8c3f0c64db0eed4d976cb6cbbd45d2640fb75a01855dc19820,Retiro on-chain LTC
-,OUT,ltc1q9z77m296lxz55caqx405dxq4rfl5vnfpdyd3l8,0.00290000,LTC,OnChain,LTC,d5eb49c5aa6d85b648523169a228edfe24ea016370fde8f2b6dab80aa0bf7cfb,Retiro on-chain LTC

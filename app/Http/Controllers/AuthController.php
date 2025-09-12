@@ -42,19 +42,20 @@ class AuthController extends Controller
                 $user->load('sede');
             }
 
-            // Build a clean user payload WITHOUT relations to avoid duplicated info
-            $cleanUser = $user->withoutRelations()->makeHidden(['password', 'remember_token'])->toArray();
+            // Prepare user data with hospital and sede included
+            $userData = $user->withoutRelations()->makeHidden(['password', 'remember_token'])->toArray();
+            $userData['hospital'] = $user->hospital_data;
+            $userData['sede'] = $user->sede_data;
 
-            // Prepare response data (attach hospital and sede once at top level)
+            // Prepare response data
             $response = [
                 'status' => true,
                 'mensaje' => 'Login exitoso.',
                 'data' => [
                     'token' => $token,
-                    'user' => $cleanUser,
-                    'hospital' => $user->hospital_data,
-                    'sede' => $user->sede_data,
+                    'user' => $userData,
                 ],
+                'autenticacion' => 1
             ];
 
             return response()->json($response, 200, [], JSON_UNESCAPED_UNICODE);

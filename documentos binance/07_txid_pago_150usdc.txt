@@ -1,0 +1,13 @@
+PAGO DE 150 USDC – DETALLES PARA BINANCE
+
+Pagador (usuario): martatorredev
+Fecha/hora (UTC): 2025-07-30 13:03:32
+Tipo de operación: Transferencia interna por correo (no on-chain)
+TxID/Hash (on-chain): N/A
+ID interno/Orden (transferencia interna): 378051205794439168
+Dirección de origen: [si se conoce]
+Dirección de destino (del depósito): [si se conoce]
+Monto exacto: 150 USDC
+Notas: Conversión posterior a USDT para intento de retiro en P2P antes del bloqueo por verificación facial.
+
+Adjuntar también: captura del explorador de bloques mostrando el TxID, monto y confirmaciones.

@@ -1,0 +1,41 @@
+Asunto: Solicitud de liberación de activos – Cuenta de titular fallecido
+
+Hola equipo de Binance,
+
+Soy Oly Teresita Esser de García, cónyuge supérstite de Wuilliam José García Sánchez (CI V-5.678.944), titular de la cuenta cuyo acceso actualmente requiere verificación facial. Solicito el inicio del proceso de “deceased account” para la liberación de los fondos.
+
+Datos del titular fallecido:
+- Nombre: Wuilliam José García Sánchez
+- CI: V-5.678.944
+- Email de la cuenta: josephgarciae2016@gmail.com
+
+Mis datos (reclamante):
+- Nombre: Oly Teresita Esser de García
+- CI: V-5.286.741
+- País: Venezuela
+- Cuenta Binance verificada: olyteresacap@gmail.com (ID Binance: 1141137840)
+- Teléfono: +5804246851024
+
+Hechos:
+- El titular falleció, por lo cual no es posible completar su verificación facial.
+- En la cuenta existe un saldo aproximado de 172 USDT, incluyendo un último pago de 150 USDC del usuario “martatorredev” (transferencia interna por correo) que fue convertido a USDT.
+
+Solicitud:
+- Iniciar el procedimiento de “cuenta de usuario fallecido”.
+- Confirmar por sus registros internos los movimientos y el saldo.
+- Indicar el canal seguro para remitir documentación y confirmar el método de liberación permitido (transferencia a mi cuenta Binance verificada indicada arriba o a una wallet USDT a mi nombre).
+
+Adjuntos propuestos:
+- Acta de defunción del titular.
+- Acta de matrimonio.
+- Mi cédula vigente (anverso/reverso).
+- Cédula del titular.
+- Evidencias del último pago (150 USDC) y conversión a USDT.
+- Pagos recibidos ordenados por fecha (05_pagos_recibidos_ordenados.csv).
+
+Quedo atenta a sus instrucciones y a cualquier requisito adicional.
+
+Atentamente,
+Oly Teresita Esser de García
+Email: olyteresacap@gmail.com
+Teléfono: +5804246851024

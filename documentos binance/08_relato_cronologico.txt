@@ -1,0 +1,34 @@
+RELATO CRONOLÓGICO (Cuenta titular fallecido)
+
+Titular de la cuenta: Wuilliam José García Sánchez
+CI: V-5.678.944
+Email de la cuenta Binance: josephgarciae2016@gmail.com
+
+Reclamante principal: Oly Teresita Esser de García
+CI: V-5.286.741
+Email (Binance): olyteresacap@gmail.com (ID Binance: 1141137840)
+Teléfono: +5804246851024
+País: Venezuela
+
+Hechos relevantes:
+- El titular de la cuenta falleció. Por este motivo, no es posible completar su verificación facial.
+- Antes del bloqueo por verificación facial, se recibió un pago de 150 USDC (usuario: martatorredev). Dicho monto fue convertido a USDT para su posterior retiro en P2P.
+- Tras el intento de retiro y al cerrar sesión, el sistema solicitó nuevamente verificación facial del titular y ya no se pudo ingresar a la cuenta.
+- Se estima un saldo aproximado de 172 USDT en la cuenta del titular al momento del bloqueo.
+
+Evidencias disponibles:
+- Acta de defunción del titular.
+- Acta de matrimonio (cónyuge: Oly Teresita Esser de Garcia).
+- Cédula del titular y cédula vigente de la cónyuge.
+- Evidencias externas del último pago (150 USDC) y su conversión a USDT.
+- Archivo con pagos recibidos ordenados por fecha (05_pagos_recibidos_ordenados.csv).
+
+Solicitud a Binance:
+- Iniciar el proceso formal de “cuenta de usuario fallecido” (deceased account).
+- Confirmar por sus registros internos el saldo y movimientos.
+- Indicar canal seguro para el envío de documentos.
+- Liberar/transferir los fondos a una cuenta Binance verificada a nombre de la cónyuge o a una wallet USDT de la que sea titular.
+
+Notas:
+- No se intentará ninguna verificación biométrica del titular fallecido.
+- Se aportarán documentos adicionales (p. ej., declaración de herederos) si su equipo de Cumplimiento lo solicita.

@@ -78,25 +78,26 @@ class AuthTest extends TestCase
                         'id',
                         'nombre',
                         'apellido',
-                        'email'
-                    ],
-                    'hospital' => [
-                        'id',
-                        'nombre',
-                        'rif',
-                        'direccion',
-                        'telefono',
                         'email',
-                        'status'
-                    ],
-                    'sede' => [
-                        'id',
-                        'nombre',
-                        'tipo_almacen',
-                        'hospital_id',
-                        'status'
+                        'hospital' => [
+                            'id',
+                            'nombre',
+                            'rif',
+                            'direccion',
+                            'telefono',
+                            'email',
+                            'status'
+                        ],
+                        'sede' => [
+                            'id',
+                            'nombre',
+                            'tipo_almacen',
+                            'hospital_id',
+                            'status'
+                        ]
                     ]
-                ]
+                ],
+                'autenticacion'
             ]);
     }
 

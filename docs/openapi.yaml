@@ -430,6 +430,57 @@ components:
           type: integer
         total:
           type: integer
+    AlmacenFarmaciaSchema:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        insumos:
+          type: string
+          example: Guantes Quirúrgicos Nitrilo
+        codigo:
+          type: string
+          example: INS-001
+        numero_lote:
+          type: string
+          example: LOTE-FARM-2025
+        fecha_vencimiento:
+          type: string
+          format: date
+          example: "2026-12-31"
+        fecha_ingreso:
+          type: string
+          format: date
+          example: "2025-09-12"
+        cantidad:
+          type: integer
+          example: 50
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [activo, inactivo]
+          example: activo
+    PaginatedAlmacenesFarmacia:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AlmacenFarmaciaSchema'
+        current_page:
+          type: integer
+        last_page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
     Insumo:
       type: object
       properties:

@@ -9,6 +9,7 @@ use App\Http\Controllers\SedeController;
 use App\Http\Controllers\AlmacenPrincipalController;
 use App\Http\Controllers\AlmacenCentralController;
 use App\Http\Controllers\InsumoController;
+use App\Http\Controllers\AlmacenFarmaciaController;
 
 // Autenticación con token
 // Test route to check if API is working
@@ -76,6 +77,13 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
     Route::get('/almacenes_centrales/{almacenes_centrale}', [AlmacenCentralController::class, 'show']);
     Route::put('/almacenes_centrales/{almacenes_centrale}', [AlmacenCentralController::class, 'update']);
     Route::delete('/almacenes_centrales/{almacenes_centrale}', [AlmacenCentralController::class, 'destroy']);
+
+    // Almacenes Farmacia CRUD
+    Route::get('/almacenes_farmacia', [AlmacenFarmaciaController::class, 'index']);
+    Route::post('/almacenes_farmacia', [AlmacenFarmaciaController::class, 'store']);
+    Route::get('/almacenes_farmacia/{almacenes_farmacium}', [AlmacenFarmaciaController::class, 'show']);
+    Route::put('/almacenes_farmacia/{almacenes_farmacium}', [AlmacenFarmaciaController::class, 'update']);
+    Route::delete('/almacenes_farmacia/{almacenes_farmacium}', [AlmacenFarmaciaController::class, 'destroy']);
 
     // Insumos CRUD
     // Identificación por CÓDIGO (claridad de rutas)

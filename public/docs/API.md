@@ -339,6 +339,11 @@ Campos: `id`, `insumos`, `codigo`, `numero_lote`, `fecha_vencimiento` (date), `f
 
 Nota: `status` por defecto es `activo`. Puede enviarse en creación/actualización.
 
+## Almacenes Farmacia (protegido)
+Campos: `id`, `insumos`, `codigo`, `numero_lote`, `fecha_vencimiento` (date), `fecha_ingreso` (date), `cantidad` (entero ≥ 0), `status` (`activo`|`inactivo`).
+
+Nota: `status` por defecto es `activo`. Puede enviarse en creación/actualización.
+
 ## Insumos (protegido)
 Campos: `id`, `codigo` (único), `nombre`, `tipo`, `unidad_medida`, `cantidad_por_paquete` (entero ≥ 0), `descripcion` (opcional), `status` (`activo`|`inactivo`).
 

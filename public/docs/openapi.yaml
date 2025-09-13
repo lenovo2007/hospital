@@ -481,6 +481,78 @@ components:
           type: integer
         total:
           type: integer
+    AlmacenParaleloSchema:
+      type: object
+      properties:
+        id: { type: integer, example: 1 }
+        insumos: { type: string, example: "Guantes Nitrilo" }
+        codigo: { type: string, example: "INS-010" }
+        numero_lote: { type: string, example: "PAR-2025-01" }
+        fecha_vencimiento: { type: string, format: date, example: "2027-01-31" }
+        fecha_ingreso: { type: string, format: date, example: "2025-09-12" }
+        cantidad: { type: integer, example: 75 }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        status: { type: string, enum: [activo, inactivo], example: activo }
+    PaginatedAlmacenesParalelo:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AlmacenParaleloSchema'
+        current_page: { type: integer }
+        last_page: { type: integer }
+        per_page: { type: integer }
+        total: { type: integer }
+    AlmacenServiciosAtencionesSchema:
+      type: object
+      properties:
+        id: { type: integer, example: 1 }
+        insumos: { type: string, example: "Tapabocas 3 capas" }
+        codigo: { type: string, example: "INS-020" }
+        numero_lote: { type: string, example: "ATN-2025-01" }
+        fecha_vencimiento: { type: string, format: date, example: "2026-05-15" }
+        fecha_ingreso: { type: string, format: date, example: "2025-09-12" }
+        cantidad: { type: integer, example: 200 }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        status: { type: string, enum: [activo, inactivo], example: activo }
+    PaginatedAlmacenesServiciosAtenciones:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AlmacenServiciosAtencionesSchema'
+        current_page: { type: integer }
+        last_page: { type: integer }
+        per_page: { type: integer }
+        total: { type: integer }
+    AlmacenServiciosApoyoSchema:
+      type: object
+      properties:
+        id: { type: integer, example: 1 }
+        insumos: { type: string, example: "Batas desechables" }
+        codigo: { type: string, example: "INS-030" }
+        numero_lote: { type: string, example: "APO-2025-01" }
+        fecha_vencimiento: { type: string, format: date, example: "2028-10-10" }
+        fecha_ingreso: { type: string, format: date, example: "2025-09-12" }
+        cantidad: { type: integer, example: 40 }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+        status: { type: string, enum: [activo, inactivo], example: activo }
+    PaginatedAlmacenesServiciosApoyo:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AlmacenServiciosApoyoSchema'
+        current_page: { type: integer }
+        last_page: { type: integer }
+        per_page: { type: integer }
+        total: { type: integer }
     Insumo:
       type: object
       properties:
@@ -970,6 +1042,336 @@ paths:
     delete:
       summary: Eliminar almacén farmacia
       tags: [AlmacenesFarmacia]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Eliminado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/almacenes_paralelo:
+    get:
+      summary: Listar almacenes paralelo
+      tags: [AlmacenesParalelo]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: "Filtrar por estado: activo, inactivo o todos. Por defecto activo."
+          schema:
+            type: string
+            enum: [activo, inactivo, todos]
+            default: activo
+      responses:
+        '200':
+          description: Listado paginado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedAlmacenesParalelo'
+    post:
+      summary: Crear almacén paralelo
+      tags: [AlmacenesParalelo]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlmacenParaleloSchema'
+      responses:
+        '200':
+          description: Creado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/almacenes_paralelo/{id}:
+    get:
+      summary: Ver detalle de almacén paralelo
+      tags: [AlmacenesParalelo]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Detalle o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AlmacenParaleloSchema'
+    put:
+      summary: Actualizar almacén paralelo
+      tags: [AlmacenesParalelo]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlmacenParaleloSchema'
+      responses:
+        '200':
+          description: Actualizado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+    delete:
+      summary: Eliminar almacén paralelo
+      tags: [AlmacenesParalelo]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Eliminado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/almacenes_servicios_atenciones:
+    get:
+      summary: Listar almacenes servicios de atenciones
+      tags: [AlmacenesServiciosAtenciones]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: "Filtrar por estado: activo, inactivo o todos. Por defecto activo."
+          schema:
+            type: string
+            enum: [activo, inactivo, todos]
+            default: activo
+      responses:
+        '200':
+          description: Listado paginado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedAlmacenesServiciosAtenciones'
+    post:
+      summary: Crear almacén servicios de atenciones
+      tags: [AlmacenesServiciosAtenciones]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlmacenServiciosAtencionesSchema'
+      responses:
+        '200':
+          description: Creado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/almacenes_servicios_atenciones/{id}:
+    get:
+      summary: Ver detalle de almacén servicios de atenciones
+      tags: [AlmacenesServiciosAtenciones]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Detalle o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AlmacenServiciosAtencionesSchema'
+    put:
+      summary: Actualizar almacén servicios de atenciones
+      tags: [AlmacenesServiciosAtenciones]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlmacenServiciosAtencionesSchema'
+      responses:
+        '200':
+          description: Actualizado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+    delete:
+      summary: Eliminar almacén servicios de atenciones
+      tags: [AlmacenesServiciosAtenciones]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Eliminado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/almacenes_servicios_apoyo:
+    get:
+      summary: Listar almacenes servicios de apoyo
+      tags: [AlmacenesServiciosApoyo]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: "Filtrar por estado: activo, inactivo o todos. Por defecto activo."
+          schema:
+            type: string
+            enum: [activo, inactivo, todos]
+            default: activo
+      responses:
+        '200':
+          description: Listado paginado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedAlmacenesServiciosApoyo'
+    post:
+      summary: Crear almacén servicios de apoyo
+      tags: [AlmacenesServiciosApoyo]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlmacenServiciosApoyoSchema'
+      responses:
+        '200':
+          description: Creado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/almacenes_servicios_apoyo/{id}:
+    get:
+      summary: Ver detalle de almacén servicios de apoyo
+      tags: [AlmacenesServiciosApoyo]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Detalle o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AlmacenServiciosApoyoSchema'
+    put:
+      summary: Actualizar almacén servicios de apoyo
+      tags: [AlmacenesServiciosApoyo]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlmacenServiciosApoyoSchema'
+      responses:
+        '200':
+          description: Actualizado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+    delete:
+      summary: Eliminar almacén servicios de apoyo
+      tags: [AlmacenesServiciosApoyo]
       security:
         - bearerAuth: []
       parameters:

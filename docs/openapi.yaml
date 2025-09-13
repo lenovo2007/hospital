@@ -1,0 +1,2083 @@
+openapi: 3.0.3
+info:
+  title: Almacen Principal
+  description: |
+    API para gestión de usuarios con autenticación por tokens (Laravel Sanctum).
+    Respuestas JSON unificadas `{status, mensaje, data}`.
+    Importante: todos los resultados (éxito y error) devuelven HTTP 200. Los errores se indican con `status=false` y un `mensaje` descriptivo.
+    Nota: cuando un listado no tiene resultados o un recurso no existe, la API responde HTTP 200 con `status=true`, `data` vacío o `null` según aplique y `mensaje` "<modelo> no encontrado" (por ejemplo: "hospitales no encontrado").
+  version: 1.0.0
+servers:
+  - url: https://almacen.alwaysdata.net
+    description: Producción (AlwaysData)
+  - url: http://localhost
+    description: Desarrollo local
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    StandardResponse:
+      type: object
+      properties:
+        status:
+          type: boolean
+          example: true
+        mensaje:
+          type: string
+          example: Operación exitosa.
+        autenticacion:
+          type: integer
+          description: 0=autenticado/válido, 1=token inválido/ausente, 2=token expirado
+          enum: [0, 1, 2]
+          example: 0
+        data:
+          nullable: true
+    ErrorResponse:
+      type: object
+      properties:
+        status:
+          type: boolean
+          example: false
+        mensaje:
+          type: string
+          example: No autenticado. Token inválido o ausente.
+        autenticacion:
+          type: integer
+          description: 0=autenticado/válido, 1=token inválido/ausente, 2=token expirado
+          enum: [0, 1, 2]
+          example: 1
+        data:
+          nullable: true
+          example: null
+    ValidationErrorResponse:
+      allOf:
+        - $ref: '#/components/schemas/ErrorResponse'
+        - type: object
+          properties:
+            data:
+              type: object
+              additionalProperties:
+                type: array
+                items:
+                  type: string
+              example:
+                email: ["El campo email es obligatorio."]
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        tipo:
+          type: string
+          example: natural
+        rol:
+          type: string
+          example: admin
+        nombre:
+          type: string
+          example: Ana
+        apellido:
+          type: string
+          example: García
+        genero:
+          type: string
+          nullable: true
+          example: femenino
+        cedula:
+          type: string
+          example: V-12345678
+        telefono:
+          type: string
+          nullable: true
+          example: 04140000000
+        direccion:
+          type: string
+          nullable: true
+          example: Caracas
+        hospital_id:
+          type: integer
+          nullable: true
+          example: 2
+        sede_id:
+          type: integer
+          nullable: true
+          example: 5
+        hospital:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Hospital'
+        sede:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Sede'
+        can_view:
+          type: boolean
+          example: true
+        can_create:
+          type: boolean
+          example: true
+        can_update:
+          type: boolean
+          example: true
+        can_delete:
+          type: boolean
+          example: true
+        can_crud_user:
+          type: boolean
+          description: Indica si el usuario tiene permisos para gestionar otros usuarios
+          example: true
+        is_root:
+          type: boolean
+          description: "Indica si el usuario es root del sistema (solo lectura)."
+          example: false
+        email:
+          type: string
+          format: email
+          example: ana@example.com
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [activo, inactivo]
+          example: activo
+    Hospital:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        nombre:
+          type: string
+          example: Hospital Central
+        rif:
+          type: string
+          example: J-12345678-9
+        email:
+          type: string
+          format: email
+          nullable: true
+          example: contacto@hospital.test
+        telefono:
+          type: string
+          nullable: true
+          example: 04141234567
+        cod_sicm:
+          type: string
+          nullable: true
+          example: SICM-001
+        nombre_contacto:
+          type: string
+          nullable: true
+          example: Juan Pérez
+        nombre_completo:
+          type: string
+          nullable: true
+          example: Hospital Central de Caracas
+        email_contacto:
+          type: string
+          format: email
+          nullable: true
+          example: juan.perez@hospital.test
+        ubicacion:
+          type: object
+          nullable: true
+          properties:
+            lat:
+              type: number
+              format: double
+              example: 10.4910000
+            lng:
+              type: number
+              format: double
+              example: -66.9030000
+        direccion:
+          type: string
+          nullable: true
+          example: Caracas
+        dependencia:
+          type: string
+          nullable: true
+          example: Ministerio de Salud
+        estado:
+          type: string
+          nullable: true
+          example: Distrito Capital
+        municipio:
+          type: string
+          nullable: true
+          example: Libertador
+        parroquia:
+          type: string
+          nullable: true
+          example: San José
+        tipo:
+          type: string
+          example: publico
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [activo, inactivo]
+          example: activo
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          example: ana@example.com
+        password:
+          type: string
+          example: password
+      example:
+        email: doctor@example.com
+        password: password
+    LoginResponseData:
+      type: object
+      properties:
+        token:
+          type: string
+          example: 1|aVeryLongTokenString
+        user:
+          $ref: '#/components/schemas/User'
+    PaginatedUsers:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/User'
+        current_page:
+          type: integer
+        last_page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
+    PaginatedHospitals:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Hospital'
+        current_page:
+          type: integer
+        last_page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
+    Sede:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        nombre:
+          type: string
+          example: Almacén Principal
+        tipo_almacen:
+          type: string
+          example: almacen_principal
+        hospital_id:
+          type: integer
+          nullable: true
+          example: 2
+        hospital:
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/Hospital'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [activo, inactivo]
+          example: activo
+    PaginatedSedes:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Sede'
+        current_page:
+          type: integer
+        last_page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
+    Farmacia:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        nombre:
+          type: string
+          example: Farmacia Principal
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [activo, inactivo]
+          example: activo
+    PaginatedFarmacias:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Farmacia'
+        current_page:
+          type: integer
+        last_page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
+    MiniAlmacen:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        nombre:
+          type: string
+          example: Mini Almacén 1
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [activo, inactivo]
+          example: activo
+    PaginatedMiniAlmacenes:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/MiniAlmacen'
+        current_page:
+          type: integer
+        last_page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
+    AlmacenPrincipalSchema:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        nombre:
+          type: string
+          example: Almacén Principal A
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [activo, inactivo]
+          example: activo
+    PaginatedAlmacenesPrincipales:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AlmacenPrincipalSchema'
+        current_page:
+          type: integer
+        last_page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
+    AlmacenCentralSchema:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        nombre:
+          type: string
+          example: Almacén Central A
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [activo, inactivo]
+          example: activo
+    PaginatedAlmacenesCentrales:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AlmacenCentralSchema'
+        current_page:
+          type: integer
+        last_page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
+    Insumo:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        codigo:
+          type: string
+          example: INS-001
+        nombre:
+          type: string
+          example: Guantes Quirúrgicos
+        tipo:
+          type: string
+          example: descartable
+        unidad_medida:
+          type: string
+          example: caja
+        cantidad_por_paquete:
+          type: integer
+          example: 100
+        descripcion:
+          type: string
+          nullable: true
+          example: Guantes de látex talla M
+        presentacion:
+          type: string
+          nullable: true
+          example: Caja x 100 unidades
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [activo, inactivo]
+          example: activo
+    PaginatedInsumos:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Insumo'
+        current_page:
+          type: integer
+        last_page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
+security:
+  - bearerAuth: []
+paths:
+  /api/users:
+    post:
+      summary: Crear usuario
+      description: |
+        Crea un usuario. La mayoría de los campos son opcionales.
+        La contraseña es obligatoria y debe cumplir complejidad: mínimo 8 caracteres, incluir mayúscula, minúscula, número y símbolo.
+      tags: [Usuarios]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password]
+              properties:
+                tipo: { type: string, nullable: true }
+                rol: { type: string, nullable: true }
+                nombre: { type: string, nullable: true }
+                apellido: { type: string, nullable: true }
+                genero: { type: string, nullable: true }
+                cedula: { type: string, nullable: true }
+                telefono: { type: string, nullable: true }
+                direccion: { type: string, nullable: true }
+                hospital_id: { type: integer, nullable: true }
+                sede_id: { type: integer, nullable: true }
+                can_view: { type: boolean, nullable: true }
+                can_create: { type: boolean, nullable: true }
+                can_update: { type: boolean, nullable: true }
+                can_delete: { type: boolean, nullable: true }
+                is_root: { type: boolean, nullable: true, description: "Solo usuarios root pueden modificar este campo." }
+                email: { type: string, format: email, nullable: true }
+                password: { type: string, minLength: 8, description: "Obligatoria. Debe tener al menos 8 caracteres, incluir mayúscula, minúscula, número y símbolo." }
+                status: { type: string, enum: [activo, inactivo], nullable: true }
+            example:
+              tipo: natural
+              rol: admin
+              nombre: "Ana"
+              apellido: "García"
+              genero: femenino
+              cedula: "V-12345678"
+              telefono: "4140000000"
+              direccion: "Caracas"
+              hospital_id: 2
+              sede_id: 5
+              can_view: true
+              can_create: true
+              can_update: true
+              can_delete: true
+              email: "ana@example.com"
+              password: "unPasswordSeguro"
+              status: activo
+            examples:
+              completo:
+                summary: Todos los campos soportados (password obligatorio)
+                value:
+                  tipo: natural
+                  rol: admin
+                  nombre: "Ana"
+                  apellido: "García"
+                  genero: femenino
+                  cedula: "V-12345678"
+                  telefono: "4140000000"
+                  direccion: "Caracas"
+                  hospital_id: 2
+                  sede_id: 5
+                  can_view: true
+                  can_create: true
+                  can_update: true
+                  can_delete: true
+                  email: "ana@example.com"
+                  password: "Un4Segura!"
+                  status: activo
+      responses:
+        '200':
+          description: Usuario creado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+    get:
+      summary: Listar usuarios
+      description: |
+        - Los usuarios con rol root (is_root=true) solo son visibles para usuarios autenticados root.
+        - Los usuarios no-root no verán cuentas root en los listados ni podrán consultarlas por email, cédula o id.
+        - Solo un usuario root puede ver/actualizar/eliminar a usuarios root.
+      tags: [Usuarios]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: "Filtrar por estado: activo, inactivo o todos. Por defecto activo."
+          schema:
+            type: string
+            enum: [activo, inactivo, todos]
+            default: activo
+      responses:
+        '200':
+          description: Listado paginado de usuarios o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedUsers'
+  /api/insumos:
+    get:
+      summary: Listar insumos
+      tags: [Insumos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: "Filtrar por estado: activo, inactivo o todos. Por defecto activo."
+          schema:
+            type: string
+            enum: [activo, inactivo, todos]
+            default: activo
+      responses:
+        '200':
+          description: Listado de insumos (paginado)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedInsumos'
+  /api/sedes/hospital/{id}:
+    get:
+      summary: Listar sedes por hospital
+      tags: [Sedes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+        - in: query
+          name: status
+          required: false
+          description: "Filtrar por estado: activo, inactivo o todos. Por defecto activo."
+          schema:
+            type: string
+            enum: [activo, inactivo, todos]
+            default: activo
+      responses:
+        '200':
+          description: Listado de sedes del hospital (paginado) o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedSedes'
+    post:
+      summary: Crear insumo
+      tags: [Insumos]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [codigo, nombre, tipo, unidad_medida, cantidad_por_paquete]
+              properties:
+                codigo: { type: string }
+                nombre: { type: string }
+                tipo: { type: string }
+                unidad_medida: { type: string }
+                cantidad_por_paquete: { type: integer, minimum: 0 }
+                descripcion: { type: string, nullable: true }
+                presentacion: { type: string, nullable: true }
+                status: { type: string, enum: [activo, inactivo] }
+      responses:
+        '200':
+          description: Insumo creado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Insumo'
+  /api/insumos/import:
+    post:
+      summary: Importar insumos desde Excel (.xlsx)
+      tags: [Insumos]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Archivo Excel .xlsx con una columna DESCRIPCION
+      responses:
+        '200':
+          description: Resultado de importación
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          creados: { type: integer }
+                          actualizados: { type: integer }
+                          omitidos: { type: integer }
+                          errores:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                row: { type: integer }
+                                descripcion: { type: string }
+                                error: { type: string }
+  /api/insumos/codigo/{codigo}:
+    get:
+      summary: Ver insumo por código
+      tags: [Insumos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: codigo
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Detalle de insumo por código
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Insumo'
+    put:
+      summary: Actualizar insumo por código
+      tags: [Insumos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: codigo
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nombre: { type: string }
+                tipo: { type: string }
+                unidad_medida: { type: string }
+                cantidad_por_paquete: { type: integer, minimum: 0 }
+                descripcion: { type: string, nullable: true }
+                presentacion: { type: string, nullable: true }
+                status: { type: string, enum: [activo, inactivo] }
+      responses:
+        '200':
+          description: Insumo actualizado por código
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Insumo'
+  /api/insumos/{id}:
+    get:
+      summary: Ver detalle de insumo
+      tags: [Insumos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Detalle de insumo
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Insumo'
+    put:
+      summary: Actualizar insumo
+      tags: [Insumos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                codigo: { type: string }
+                nombre: { type: string }
+                tipo: { type: string }
+                unidad_medida: { type: string }
+                cantidad_por_paquete: { type: integer, minimum: 0 }
+                descripcion: { type: string, nullable: true }
+                presentacion: { type: string, nullable: true }
+                status: { type: string, enum: [activo, inactivo] }
+      responses:
+        '200':
+          description: Insumo actualizado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Insumo'
+    delete:
+      summary: Eliminar insumo
+      tags: [Insumos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Insumo eliminado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/users/email/{email}:
+    get:
+      summary: Ver usuario por email
+      tags: [Usuarios]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: email
+          in: path
+          required: true
+          schema:
+            type: string
+            format: email
+      responses:
+        '200':
+          description: Resultado por email o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+    put:
+      summary: Actualizar usuario por email
+      tags: [Usuarios]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: email
+          in: path
+          required: true
+          schema:
+            type: string
+            format: email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '200':
+          description: Actualizado por email o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+  /api/users/email/{email}/password:
+    put:
+      summary: Cambiar contraseña por email
+      tags: [Usuarios]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: email
+          in: path
+          required: true
+          schema:
+            type: string
+            format: email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password]
+              properties:
+                password:
+                  type: string
+                  minLength: 8
+      responses:
+        '200':
+          description: Contraseña actualizada por email o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+
+  /api/users/cedula/{cedula}:
+    get:
+      summary: Ver usuario por cédula
+      tags: [Usuarios]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cedula
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Resultado por cédula o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+    put:
+      summary: Actualizar usuario por cédula
+      tags: [Usuarios]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cedula
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '200':
+          description: Actualizado por cédula o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+  /api/users/cedula/{cedula}/password:
+    put:
+      summary: Cambiar contraseña por cédula
+      tags: [Usuarios]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cedula
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [password]
+              properties:
+                password:
+                  type: string
+                  minLength: 8
+      responses:
+        '200':
+          description: Contraseña actualizada por cédula o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+  /api/login:
+    post:
+      summary: Login y emisión de token
+      tags: [Autenticación]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+            examples:
+              admin:
+                summary: Administrador
+                value:
+                  email: admin@example.com
+                  password: password
+              cliente:
+                summary: Cliente
+                value:
+                  email: doctor@example.com
+                  password: password
+      responses:
+        '200':
+          description: Login exitoso o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/LoginResponseData'
+              examples:
+                admin:
+                  summary: Admin
+                  value:
+                    status: true
+                    mensaje: Login exitoso
+                    data: { token: "1|token" }
+
+  /api/users/password/forgot:
+    post:
+      summary: Solicitar restablecimiento de contraseña (genera token)
+      tags: [Autenticación]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              anyOf:
+                - type: object
+                  required: [email]
+                  properties:
+                    email:
+                      type: string
+                      format: email
+                - type: object
+                  required: [cedula]
+                  properties:
+                    cedula:
+                      type: string
+      responses:
+        '200':
+          description: Token generado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          token: { type: string }
+                          user_id: { type: integer }
+                          email: { type: string, nullable: true }
+                          cedula: { type: string, nullable: true }
+
+  /api/users/password/reset:
+    post:
+      summary: Restablecer contraseña con token
+      tags: [Autenticación]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, password]
+              properties:
+                token: { type: string }
+                password: { type: string, minLength: 8 }
+      responses:
+        '200':
+          description: Contraseña restablecida o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+              examples:
+                cliente:
+                  summary: Respuesta exitosa (cliente)
+                  value:
+                    status: true
+                    mensaje: Login exitoso.
+                    data:
+                      token: "<TOKEN>"
+                      user:
+                        id: 2
+                        email: doctor@example.com
+                        nombre: Doctor
+                        apellido: Ejemplo
+  /api/logout:
+    post:
+      summary: Cerrar sesión (revocar token)
+      tags: [Autenticación]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Sesión cerrada o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+  /api/hospitales/rif/{rif}:
+    get:
+      summary: Ver hospital por RIF
+      tags: [Hospitales]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: rif
+          in: path
+          required: true
+          schema:
+            type: string
+          example: J-12345678-9
+      responses:
+        '200':
+          description: Detalle por RIF o no encontrado con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Hospital'
+    put:
+      summary: Actualizar hospital por RIF
+      tags: [Hospitales]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: rif
+          in: path
+          required: true
+          schema:
+            type: string
+          example: J-12345678-9
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Hospital'
+      responses:
+        '200':
+          description: Hospital actualizado por RIF o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/farmacias:
+    get:
+      summary: Listar farmacias
+      tags: [Farmacias]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Listado de farmacias o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedFarmacias'
+    post:
+      summary: Crear farmacia
+      tags: [Farmacias]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Farmacia'
+      responses:
+        '200':
+          description: Farmacia creada o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+  /api/farmacias/{id}:
+    get:
+      summary: Ver detalle de farmacia
+      tags: [Farmacias]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detalle de farmacia o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Farmacia'
+    put:
+      summary: Actualizar farmacia
+      tags: [Farmacias]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Farmacia'
+      responses:
+        '200':
+          description: Farmacia actualizada o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+    delete:
+      summary: Eliminar farmacia
+      tags: [Farmacias]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Farmacia eliminada o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/mini_almacenes:
+    get:
+      summary: Listar mini almacenes
+      tags: [MiniAlmacenes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: "Filtrar por estado: activo, inactivo o todos. Por defecto activo."
+          schema:
+            type: string
+            enum: [activo, inactivo, todos]
+            default: activo
+      responses:
+        '200':
+          description: Listado de mini almacenes o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedMiniAlmacenes'
+    post:
+      summary: Crear mini almacén
+      tags: [MiniAlmacenes]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MiniAlmacen'
+      responses:
+        '200':
+          description: Mini almacén creado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+  /api/mini_almacenes/{id}:
+    get:
+      summary: Ver detalle de mini almacén
+      tags: [MiniAlmacenes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detalle de mini almacén o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/MiniAlmacen'
+    put:
+      summary: Actualizar mini almacén
+      tags: [MiniAlmacenes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MiniAlmacen'
+      responses:
+        '200':
+          description: Mini almacén actualizado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+    delete:
+      summary: Eliminar mini almacén
+      tags: [MiniAlmacenes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Mini almacén eliminado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/almacenes_principales:
+    get:
+      summary: Listar almacenes principales
+      tags: [AlmacenesPrincipales]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Listado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedAlmacenesPrincipales'
+    post:
+      summary: Crear almacén principal
+      tags: [AlmacenesPrincipales]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlmacenPrincipalSchema'
+      responses:
+        '200':
+          description: Creado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+  /api/almacenes_principales/{id}:
+    get:
+      summary: Ver detalle de almacén principal
+      tags: [AlmacenesPrincipales]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detalle o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AlmacenPrincipalSchema'
+    put:
+      summary: Actualizar almacén principal
+      tags: [AlmacenesPrincipales]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlmacenPrincipalSchema'
+      responses:
+        '200':
+          description: Actualizado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+    delete:
+      summary: Eliminar almacén principal
+      tags: [AlmacenesPrincipales]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Eliminado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/almacenes_centrales:
+    get:
+      summary: Listar almacenes centrales
+      tags: [AlmacenesCentrales]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Listado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedAlmacenesCentrales'
+    post:
+      summary: Crear almacén central
+      tags: [AlmacenesCentrales]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlmacenCentralSchema'
+      responses:
+        '200':
+          description: Creado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+  /api/almacenes_centrales/{id}:
+    get:
+      summary: Ver detalle de almacén central
+      tags: [AlmacenesCentrales]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detalle o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AlmacenCentralSchema'
+    put:
+      summary: Actualizar almacén central
+      tags: [AlmacenesCentrales]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlmacenCentralSchema'
+      responses:
+        '200':
+          description: Actualizado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+    delete:
+      summary: Eliminar almacén central
+      tags: [AlmacenesCentrales]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Eliminado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/sedes:
+    get:
+      summary: Listar sedes
+      tags: [Sedes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: "Filtrar por estado: activo, inactivo o todos. Por defecto activo."
+          schema:
+            type: string
+            enum: [activo, inactivo, todos]
+            default: activo
+      responses:
+        '200':
+          description: Listado de sedes o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedSedes'
+    post:
+      summary: Crear sede
+      tags: [Sedes]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nombre, tipo_almacen]
+              properties:
+                nombre: { type: string }
+                tipo_almacen: { type: string }
+                hospital_id: { type: integer, nullable: true }
+                status: { type: string, enum: [activo, inactivo], nullable: true }
+      responses:
+        '200':
+          description: Sede creada o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+              examples:
+                creado:
+                  summary: Respuesta al crear sede (incluye hospital relacionado)
+                  value:
+                    status: true
+                    mensaje: Sede creada.
+                    data:
+                      id: 1
+                      nombre: Almacén Principal
+                      tipo_almacen: almacen_principal
+                      hospital_id: 2
+                      hospital:
+                        id: 2
+                        nombre: Hospital Central
+                        rif: J-12345678-9
+                        email: contacto@hospital.test
+                        telefono: "4141234567"
+                        ubicacion:
+                          lat: 10.491
+                          lng: -66.903
+                        direccion: Caracas
+                        tipo: publico
+                        created_at: "2025-09-04T19:10:00.000Z"
+                        updated_at: "2025-09-04T19:10:00.000Z"
+                        status: activo
+                      created_at: "2025-09-04T19:10:00.000Z"
+                      updated_at: "2025-09-04T19:10:00.000Z"
+                      status: activo
+  /api/sedes/{id}:
+    get:
+      summary: Ver detalle de sede
+      tags: [Sedes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detalle de sede o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Sede'
+    put:
+      summary: Actualizar sede
+      tags: [Sedes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nombre: { type: string }
+                tipo_almacen: { type: string }
+                hospital_id: { type: integer, nullable: true }
+                status: { type: string, enum: [activo, inactivo], nullable: true }
+      responses:
+        '200':
+          description: Sede actualizada o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+              examples:
+                actualizado:
+                  summary: Respuesta al actualizar sede (incluye hospital relacionado)
+                  value:
+                    status: true
+                    mensaje: Sede actualizada.
+                    data:
+                      id: 1
+                      nombre: Almacén Principal
+                      tipo: almacen_principal
+                      hospital_id: 2
+                      hospital:
+                        id: 2
+                        nombre: Hospital Central
+                        rif: J-12345678-9
+                        email: contacto@hospital.test
+                        telefono: "4141234567"
+                        ubicacion:
+                          lat: 10.491
+                          lng: -66.903
+                        direccion: Caracas
+                        tipo: publico
+                        created_at: "2025-09-04T19:10:00.000Z"
+                        updated_at: "2025-09-04T19:10:00.000Z"
+                        status: activo
+                      created_at: "2025-09-04T19:10:00.000Z"
+                      updated_at: "2025-09-04T19:10:00.000Z"
+                      status: activo
+    delete:
+      summary: Eliminar sede
+      tags: [Sedes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Sede eliminada o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+  /api/me:
+    get:
+      summary: Información del usuario autenticado
+      tags: [Autenticación]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: OK o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+  
+  /api/users/{id}:
+    get:
+      summary: Ver detalle de usuario
+      tags: [Usuarios]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detalle o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/User'
+    put:
+      summary: Actualizar usuario
+      tags: [Usuarios]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/User'
+      responses:
+        '200':
+          description: Actualizado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+    delete:
+      summary: Eliminar usuario
+      tags: [Usuarios]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Eliminado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/hospitales:
+    get:
+      summary: Listar hospitales
+      tags: [Hospitales]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: "Filtrar por estado: activo, inactivo o todos. Por defecto activo."
+          schema:
+            type: string
+            enum: [activo, inactivo, todos]
+            default: activo
+      responses:
+        '200':
+          description: Listado de hospitales o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedHospitals'
+    post:
+      summary: Crear hospital
+      tags: [Hospitales]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Hospital'
+      responses:
+        '200':
+          description: Hospital creado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+  /api/hospitales/buscar_por_rif:
+    get:
+      summary: Buscar hospital por RIF
+      tags: [Hospitales]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: rif
+          in: query
+          required: true
+          schema:
+            type: string
+          example: J-12345678-9
+      responses:
+        '200':
+          description: Resultado de búsqueda por RIF o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Hospital'
+  /api/hospitales/{id}:
+    get:
+      summary: Ver detalle de hospital
+      tags: [Hospitales]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detalle de hospital o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Hospital'
+    put:
+      summary: Actualizar hospital
+      tags: [Hospitales]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Hospital'
+      responses:
+        '200':
+          description: Hospital actualizado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+    delete:
+      summary: Eliminar hospital
+      tags: [Hospitales]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Hospital eliminado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'

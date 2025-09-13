@@ -1,0 +1,116 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Sede;
+use Illuminate\Http\Request;
+
+class SedeController extends Controller
+{
+    // GET /api/sedes
+    public function index(Request $request)
+    {
+        $status = $request->query('status', 'activo');
+        if ($status === 'todos') { $status = 'all'; }
+        if (!in_array($status, ['activo', 'inactivo', 'all'], true)) { $status = 'activo'; }
+        $query = Sede::with('hospital');
+        if ($status !== 'all') { $query->where('status', $status); }
+        $items = $query->latest()->paginate(15);
+        $mensaje = $items->total() > 0 ? 'Listado de sedes.' : 'sedes no encontrado';
+        return response()->json([
+            'status' => true,
+            'mensaje' => $mensaje,
+            'data' => $items,
+        ], 200, [], JSON_UNESCAPED_UNICODE);
+    }
+
+    // GET /api/sedes/hospital/{id}
+    public function byHospital(Request $request, int $id)
+    {
+        $status = $request->query('status', 'activo');
+        if ($status === 'todos') { $status = 'all'; }
+        if (!in_array($status, ['activo', 'inactivo', 'all'], true)) { $status = 'activo'; }
+
+        $query = Sede::with('hospital')->where('hospital_id', $id);
+        if ($status !== 'all') { $query->where('status', $status); }
+
+        $items = $query->latest()->paginate(15);
+        $mensaje = $items->total() > 0 ? 'Listado de sedes por hospital.' : 'sedes no encontrado';
+
+        return response()->json([
+            'status' => true,
+            'mensaje' => $mensaje,
+            'data' => $items,
+        ], 200, [], JSON_UNESCAPED_UNICODE);
+    }
+
+    // POST /api/sedes
+    public function store(Request $request)
+    {
+        $data = $request->validate([
+            'nombre' => ['required','string','max:255'],
+            'tipo_almacen' => ['required','string','max:255'],
+            'hospital_id' => ['nullable','integer','exists:hospitales,id'],
+            'status' => ['nullable','in:activo,inactivo'],
+        ]);
+        if (!isset($data['status'])) { $data['status'] = 'activo'; }
+        $item = Sede::create($data);
+        $item->load('hospital');
+
+        return response()->json([
+            'status' => true,
+            'mensaje' => 'Sede creada.',
+            'data' => $item,
+        ], 200, [], JSON_UNESCAPED_UNICODE);
+    }
+
+    // GET /api/sedes/{id}
+    public function show($id)
+    {
+        $sede = Sede::with('hospital')->find($id);
+        if (!$sede) {
+            return response()->json([
+                'status' => true,
+                'mensaje' => 'sedes no encontrado',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
+        return response()->json([
+            'status' => true,
+            'mensaje' => 'Detalle de sede.',
+            'data' => $sede,
+        ], 200, [], JSON_UNESCAPED_UNICODE);
+    }
+
+    // PUT /api/sedes/{sede}
+    public function update(Request $request, Sede $sede)
+    {
+        $data = $request->validate([
+            'nombre' => ['sometimes','required','string','max:255'],
+            'tipo_almacen' => ['sometimes','required','string','max:255'],
+            'hospital_id' => ['nullable','integer','exists:hospitales,id'],
+            'status' => ['nullable','in:activo,inactivo'],
+        ]);
+
+        $sede->update($data);
+        $sede->refresh();
+        $sede->load('hospital');
+
+        return response()->json([
+            'status' => true,
+            'mensaje' => 'Sede actualizada.',
+            'data' => $sede,
+        ], 200, [], JSON_UNESCAPED_UNICODE);
+    }
+
+    // DELETE /api/sedes/{sede}
+    public function destroy(Sede $sede)
+    {
+        $sede->delete();
+        return response()->json([
+            'status' => true,
+            'mensaje' => 'Sede eliminada.',
+            'data' => null,
+        ], 200, [], JSON_UNESCAPED_UNICODE);
+    }
+}

@@ -94,7 +94,7 @@ class InsumoController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'codigo' => ['required','string','max:100','unique:insumos,codigo'],
+            'codigo' => ['nullable','string','max:100','unique:insumos,codigo'],
             'codigo_alterno' => ['nullable','string','max:100'],
             'nombre' => ['required','string','max:255'],
             'tipo' => ['required','string','max:100'],
@@ -120,10 +120,13 @@ class InsumoController extends Controller
             ]);
         }
 
-        // Si no se proporcionó un código alterno, usar el código principal
-        if (empty($data['codigo_alterno'])) {
+        // Si no se proporcionó un código alterno y existe código principal, copiarlo.
+        if (empty($data['codigo_alterno']) && !empty($data['codigo'])) {
             $data['codigo_alterno'] = $data['codigo'];
-            $data['codigo'] = ''; // Dejar el código principal en blanco
+        }
+        // Nunca guardar código como cadena vacía: usar null
+        if (isset($data['codigo']) && $data['codigo'] === '') {
+            $data['codigo'] = null;
         }
 
         $insumo = Insumo::create($data);
@@ -139,7 +142,7 @@ class InsumoController extends Controller
     public function update(Request $request, Insumo $insumo)
     {
         $data = $request->validate([
-            'codigo' => ['sometimes','required','string','max:100', Rule::unique('insumos','codigo')->ignore($insumo->id)],
+            'codigo' => ['sometimes','nullable','string','max:100', Rule::unique('insumos','codigo')->ignore($insumo->id)],
             'codigo_alterno' => ['nullable','string','max:100'],
             'nombre' => ['sometimes','required','string','max:255'],
             'tipo' => ['sometimes','required','string','max:100'],
@@ -166,10 +169,14 @@ class InsumoController extends Controller
         }
 
         // Si se está actualizando el código y no se proporciona código alterno,
-        // mover el código actual a código alterno y dejar el código principal en blanco
-        if (isset($data['codigo']) && !isset($data['codigo_alterno'])) {
-            $data['codigo_alterno'] = $data['codigo'];
-            $data['codigo'] = '';
+        // mover el código al alterno para mantener la búsqueda y dejar el principal como null si está vacío
+        if (array_key_exists('codigo', $data) && !array_key_exists('codigo_alterno', $data)) {
+            if (!empty($data['codigo'])) {
+                $data['codigo_alterno'] = $data['codigo'];
+            }
+        }
+        if (array_key_exists('codigo', $data) && $data['codigo'] === '') {
+            $data['codigo'] = null;
         }
 
         $insumo->update($data);
@@ -316,7 +323,7 @@ class InsumoController extends Controller
                 
                 // Preparar el payload con el código alterno si existe
                 $payload = [
-                    'codigo' => '', // Dejamos el código principal vacío según el requerimiento
+                    'codigo' => null, // Nunca usar cadena vacía, permitir NULL en columna única
                     'nombre' => $parsed['nombre'],
                     'tipo' => $parsed['tipo'],
                     'unidad_medida' => $parsed['unidad_medida'],
@@ -340,7 +347,7 @@ class InsumoController extends Controller
                         $existing = Insumo::where('codigo_alterno', $payload['codigo_alterno'])->first();
                     }
                     
-                    // Si no se encontró por código alterno, buscar por código principal
+                    // Si no se encontró por código alterno, buscar por código principal (cuando no es null)
                     if (!$existing && !empty($payload['codigo'])) {
                         $existing = Insumo::where('codigo', $payload['codigo'])->first();
                     }

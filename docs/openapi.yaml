@@ -910,7 +910,6 @@ paths:
       summary: Eliminar insumo
       tags: [Insumos]
       security:
-        - bearerAuth: []
       parameters:
         - in: path
           name: id
@@ -919,6 +918,116 @@ paths:
       responses:
         '200':
           description: Insumo eliminado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/almacenes_farmacia:
+    get:
+      summary: Listar almacenes farmacia
+      tags: [AlmacenesFarmacia]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: "Filtrar por estado: activo, inactivo o todos. Por defecto activo."
+          schema:
+            type: string
+            enum: [activo, inactivo, todos]
+            default: activo
+      responses:
+        '200':
+          description: Listado paginado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedAlmacenesFarmacia'
+    post:
+      summary: Crear almacén farmacia
+      tags: [AlmacenesFarmacia]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlmacenFarmaciaSchema'
+      responses:
+        '200':
+          description: Creado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/almacenes_farmacia/{id}:
+    get:
+      summary: Ver detalle de almacén farmacia
+      tags: [AlmacenesFarmacia]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Detalle o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AlmacenFarmaciaSchema'
+    put:
+      summary: Actualizar almacén farmacia
+      tags: [AlmacenesFarmacia]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlmacenFarmaciaSchema'
+      responses:
+        '200':
+          description: Actualizado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+    delete:
+      summary: Eliminar almacén farmacia
+      tags: [AlmacenesFarmacia]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Eliminado o error con `status=false`
           content:
             application/json:
               schema:

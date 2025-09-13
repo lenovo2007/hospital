@@ -430,6 +430,57 @@ components:
           type: integer
         total:
           type: integer
+    AlmacenFarmaciaSchema:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 1
+        insumos:
+          type: string
+          example: Guantes Quirúrgicos Nitrilo
+        codigo:
+          type: string
+          example: INS-001
+        numero_lote:
+          type: string
+          example: LOTE-FARM-2025
+        fecha_vencimiento:
+          type: string
+          format: date
+          example: "2026-12-31"
+        fecha_ingreso:
+          type: string
+          format: date
+          example: "2025-09-12"
+        cantidad:
+          type: integer
+          example: 50
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [activo, inactivo]
+          example: activo
+    PaginatedAlmacenesFarmacia:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/AlmacenFarmaciaSchema'
+        current_page:
+          type: integer
+        last_page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
     Insumo:
       type: object
       properties:
@@ -819,6 +870,116 @@ paths:
       responses:
         '200':
           description: Insumo eliminado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/almacenes_farmacia:
+    get:
+      summary: Listar almacenes farmacia
+      tags: [AlmacenesFarmacia]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          description: "Filtrar por estado: activo, inactivo o todos. Por defecto activo."
+          schema:
+            type: string
+            enum: [activo, inactivo, todos]
+            default: activo
+      responses:
+        '200':
+          description: Listado paginado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedAlmacenesFarmacia'
+    post:
+      summary: Crear almacén farmacia
+      tags: [AlmacenesFarmacia]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlmacenFarmaciaSchema'
+      responses:
+        '200':
+          description: Creado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/almacenes_farmacia/{id}:
+    get:
+      summary: Ver detalle de almacén farmacia
+      tags: [AlmacenesFarmacia]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Detalle o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AlmacenFarmaciaSchema'
+    put:
+      summary: Actualizar almacén farmacia
+      tags: [AlmacenesFarmacia]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AlmacenFarmaciaSchema'
+      responses:
+        '200':
+          description: Actualizado o error con `status=false`
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+    delete:
+      summary: Eliminar almacén farmacia
+      tags: [AlmacenesFarmacia]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Eliminado o error con `status=false`
           content:
             application/json:
               schema:

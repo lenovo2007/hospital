@@ -327,9 +327,6 @@ Campos: `id`, `nombre`, `status` (`activo`|`inactivo`).
 
 Nota: `status` por defecto es `activo`. Puede enviarse en creación/actualización.
 
-## Mini Almacenes (protegido)
-Campos: `id`, `nombre`, `status` (`activo`|`inactivo`).
-
 Nota: `status` por defecto es `activo`. Puede enviarse en creación/actualización.
 
 ## Almacenes Principales (protegido)

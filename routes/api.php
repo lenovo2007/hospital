@@ -36,15 +36,21 @@ Route::post('/users/password/reset', [UserController::class, 'resetPassword']);
 Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::class])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
-    Route::get('/users', [UserController::class, 'index']);
+    // Rutas GET de usuarios accesibles para cualquier usuario autenticado (sin CheckCrudPermissions)
+    Route::get('/users', [UserController::class, 'index'])
+        ->withoutMiddleware(\App\Http\Middleware\CheckCrudPermissions::class);
     // Identificación por EMAIL y CÉDULA (claridad de rutas)
-    Route::get('/users/email/{email}', [UserController::class, 'showByEmail']);
+    Route::get('/users/email/{email}', [UserController::class, 'showByEmail'])
+        ->withoutMiddleware(\App\Http\Middleware\CheckCrudPermissions::class);
     Route::put('/users/email/{email}', [UserController::class, 'updateByEmail']);
     Route::put('/users/email/{email}/password', [UserController::class, 'passwordByEmail']);
-    Route::get('/users/cedula/{cedula}', [UserController::class, 'showByCedula']);
+    Route::get('/users/cedula/{cedula}', [UserController::class, 'showByCedula'])
+        ->withoutMiddleware(\App\Http\Middleware\CheckCrudPermissions::class);
     Route::put('/users/cedula/{cedula}', [UserController::class, 'updateByCedula']);
     Route::put('/users/cedula/{cedula}/password', [UserController::class, 'passwordByCedula']);
-    Route::get('/users/{user}', [UserController::class, 'show']);
+    Route::get('/users/{user}', [UserController::class, 'show'])
+        ->withoutMiddleware(\App\Http\Middleware\CheckCrudPermissions::class);
+    // POST/PUT/DELETE requieren permisos (se mantiene CheckCrudPermissions)
     Route::post('/users', [UserController::class, 'store']);
     Route::put('/users/{user}', [UserController::class, 'update']);
     Route::delete('/users/{user}', [UserController::class, 'destroy']);

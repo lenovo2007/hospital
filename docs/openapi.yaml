@@ -850,6 +850,13 @@ paths:
   /api/insumos/import:
     post:
       summary: Importar insumos desde archivo Excel
+      description: |
+        Importa insumos desde un archivo Excel.
+        - Reutilizar el mismo archivo es seguro: los registros existentes se **actualizan** (prioridad por `codigo` de la columna A; si no coincide, intenta por `codigo_alterno` generado), y los que no existan se **crean**.
+        - Definiciones:
+          - "creados": cantidad de filas que resultaron en un nuevo insumo.
+          - "actualizados": cantidad de filas que coincidieron con un insumo existente y se actualizaron.
+          - "omitidos": filas saltadas por validación (por ejemplo, descripción vacía) o errores de procesamiento.
       tags: [Insumos]
       security:
         - bearerAuth: []

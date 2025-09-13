@@ -427,64 +427,6 @@ Respuestas 200:
 { "status": false, "mensaje": "Hospital no encontrado por ese RIF.", "data": null }
 ```
 
-## Sedes (protegido)
-Campos: `id`, `nombre`, `tipo`, `hospital_id` (FK hospitales.id, opcional), `status` (`activo`|`inactivo`).
-
-Nota: `status` por defecto es `activo`. Puede enviarse en creación/actualización.
-
-Nota: cuando no hay resultados o la sede no existe, se responde con HTTP 200, `status: true` y `mensaje: "sedes no encontrado"`.
-
-### Listar sedes
-- Método: GET
-- URL: `/api/sedes`
-- Headers: `Authorization: Bearer <TOKEN>`
-- Respuesta 200:
-```json
-{ "status": true, "mensaje": "Listado de sedes.", "data": { /* paginación */ } }
-```
-
-### Ver detalle de sede
-- Método: GET
-- URL: `/api/sedes/{id}`
-- Headers: `Authorization: Bearer <TOKEN>`
-
-### Crear sede
-- Método: POST
-- URL: `/api/sedes`
-- Headers: `Authorization: Bearer <TOKEN>`
-- Body (JSON) ejemplo:
-```json
-{
-  "nombre": "Sede 1",
-  "tipo": "almacen_principal",
-  "hospital_id": 2
-}
-```
-- Respuesta 200: sede creada.
-
-### Actualizar sede
-- Método: PUT
-- URL: `/api/sedes/{id}`
-- Headers: `Authorization: Bearer <TOKEN>`
-- Body: mismos campos (según validación).
-- Respuesta 200: sede actualizada.
-
-### Eliminar sede
-- Método: DELETE
-- URL: `/api/sedes/{id}`
-- Headers: `Authorization: Bearer <TOKEN>`
-- Respuesta 200: sede eliminada.
-
-## Farmacias (protegido)
-Campos: `id`, `nombre`, `status` (`activo`|`inactivo`).
-
-Nota: `status` por defecto es `activo`. Puede enviarse en creación/actualización.
-
-## Mini Almacenes (protegido)
-Campos: `id`, `nombre`, `status` (`activo`|`inactivo`).
-
-Nota: `status` por defecto es `activo`. Puede enviarse en creación/actualización.
-
 ## Almacenes Principales (protegido)
 Campos: `id`, `nombre`, `status` (`activo`|`inactivo`).
 

@@ -6,8 +6,6 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\HospitalController;
 use App\Http\Controllers\SedeController;
-use App\Http\Controllers\FarmaciaController;
-use App\Http\Controllers\MiniAlmacenController;
 use App\Http\Controllers\AlmacenPrincipalController;
 use App\Http\Controllers\AlmacenCentralController;
 use App\Http\Controllers\InsumoController;
@@ -64,20 +62,6 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
     Route::get('/sedes/{sede}', [SedeController::class, 'show']);
     Route::put('/sedes/{sede}', [SedeController::class, 'update']);
     Route::delete('/sedes/{sede}', [SedeController::class, 'destroy']);
-
-    // Farmacias CRUD
-    Route::get('/farmacias', [FarmaciaController::class, 'index']);
-    Route::post('/farmacias', [FarmaciaController::class, 'store']);
-    Route::get('/farmacias/{farmacia}', [FarmaciaController::class, 'show']);
-    Route::put('/farmacias/{farmacia}', [FarmaciaController::class, 'update']);
-    Route::delete('/farmacias/{farmacia}', [FarmaciaController::class, 'destroy']);
-
-    // Mini Almacenes CRUD
-    Route::get('/mini_almacenes', [MiniAlmacenController::class, 'index']);
-    Route::post('/mini_almacenes', [MiniAlmacenController::class, 'store']);
-    Route::get('/mini_almacenes/{mini_almacene}', [MiniAlmacenController::class, 'show']);
-    Route::put('/mini_almacenes/{mini_almacene}', [MiniAlmacenController::class, 'update']);
-    Route::delete('/mini_almacenes/{mini_almacene}', [MiniAlmacenController::class, 'destroy']);
 
     // Almacenes Principales CRUD
     Route::get('/almacenes_principales', [AlmacenPrincipalController::class, 'index']);

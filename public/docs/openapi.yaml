@@ -722,6 +722,50 @@ paths:
                     properties:
                       data:
                         $ref: '#/components/schemas/PaginatedUsers'
+  /api/insumos/import:
+    post:
+      summary: Importar insumos desde archivo Excel
+      tags: [Insumos]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: |
+                    Archivo Excel (.xlsx) con los insumos a importar.
+                    - Columna A: código alterno (opcional)
+                    - Columna B: descripción (obligatoria)
+      responses:
+        '200':
+          description: Resultado de la importación
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          creados: { type: integer, description: 'Número de insumos creados' }
+                          actualizados: { type: integer, description: 'Número de insumos actualizados' }
+                          omitidos: { type: integer, description: 'Número de insumos omitidos' }
+                          omitidos_detalle: 
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                fila: { type: integer, description: 'Número de fila en el archivo' }
+                                motivo: { type: string, description: 'Razón de la omisión' }
   /api/insumos:
     get:
       summary: Listar insumos

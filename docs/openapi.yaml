@@ -866,7 +866,7 @@ paths:
                   format: binary
                   description: |
                     Archivo Excel (.xlsx) con los insumos a importar.
-                    - Columna A: código alterno (opcional)
+                    - Columna A: código (principal)
                     - Columna B: descripción (obligatoria)
       responses:
         '200':

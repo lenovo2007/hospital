@@ -290,9 +290,8 @@ class InsumoController extends Controller
             $spreadsheet = $reader->load($path);
             $sheet = $spreadsheet->getActiveSheet();
 
-            // Según requerimiento: DESCRIPCION está en columna B
+            // Columnas del archivo: A = CODIGO, B = DESCRIPCION
             $descripcionCol = 'B';
-            // Verificar si hay una columna de códigos (columna A)
             $codigoCol = 'A';
 
             $created = 0; $updated = 0; $skipped = []; $errors = [];
@@ -310,20 +309,23 @@ class InsumoController extends Controller
                     continue; 
                 }
 
-                // Obtener el código alterno de la columna A si existe
-                $codigoAlterno = '';
+                // Obtener el código (columna A)
+                $codigoFromA = '';
                 try {
                     $rawCodigo = $sheet->getCell($codigoCol . $i)->getValue();
-                    $codigoAlterno = is_string($rawCodigo) ? trim($rawCodigo) : '';
+                    // Aceptar códigos numéricos o string; convertir a string y trim
+                    if ($rawCodigo !== null) {
+                        $codigoFromA = trim((string) $rawCodigo);
+                    }
                 } catch (\Exception $e) {
                     // Si no hay columna de códigos o está vacía, continuar
                 }
 
                 $parsed = $this->parseDescripcion($descripcion);
                 
-                // Preparar el payload con el código alterno si existe
+                // Preparar el payload con el código principal leído de la columna A
                 $payload = [
-                    'codigo' => null, // Nunca usar cadena vacía, permitir NULL en columna única
+                    'codigo' => ($codigoFromA !== '') ? $codigoFromA : null, // Nunca usar cadena vacía, permitir NULL en columna única
                     'nombre' => $parsed['nombre'],
                     'tipo' => $parsed['tipo'],
                     'unidad_medida' => $parsed['unidad_medida'],
@@ -331,9 +333,9 @@ class InsumoController extends Controller
                     'descripcion' => $descripcion,
                     'status' => 'activo',
                 ];
-                
-                // Si hay un código alterno, usarlo, de lo contrario usar el generado
-                $payload['codigo_alterno'] = !empty($codigoAlterno) ? $codigoAlterno : $parsed['codigo'];
+
+                // Asignar un código alterno derivado para facilitar búsquedas secundarias
+                $payload['codigo_alterno'] = $parsed['codigo'];
                 
                 // Agregar presentación si la columna existe
                 if ($hasPresentacionColumn) {
@@ -341,15 +343,13 @@ class InsumoController extends Controller
                 }
 
                 try {
-                    // Buscar por código alterno primero, luego por código principal
+                    // Buscar por código principal primero (nuevo requerimiento), luego por código alterno
                     $existing = null;
-                    if ($hasCodigoAlternoColumn && !empty($payload['codigo_alterno'])) {
-                        $existing = Insumo::where('codigo_alterno', $payload['codigo_alterno'])->first();
-                    }
-                    
-                    // Si no se encontró por código alterno, buscar por código principal (cuando no es null)
-                    if (!$existing && !empty($payload['codigo'])) {
+                    if (!empty($payload['codigo'])) {
                         $existing = Insumo::where('codigo', $payload['codigo'])->first();
+                    }
+                    if (!$existing && $hasCodigoAlternoColumn && !empty($payload['codigo_alterno'])) {
+                        $existing = Insumo::where('codigo_alterno', $payload['codigo_alterno'])->first();
                     }
 
                     if ($existing) {

@@ -10,6 +10,9 @@ use App\Http\Controllers\AlmacenPrincipalController;
 use App\Http\Controllers\AlmacenCentralController;
 use App\Http\Controllers\InsumoController;
 use App\Http\Controllers\AlmacenFarmaciaController;
+use App\Http\Controllers\AlmacenParaleloController;
+use App\Http\Controllers\AlmacenServiciosAtencionesController;
+use App\Http\Controllers\AlmacenServiciosApoyoController;
 
 // Autenticación con token
 // Test route to check if API is working
@@ -84,6 +87,27 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
     Route::get('/almacenes_farmacia/{almacenes_farmacium}', [AlmacenFarmaciaController::class, 'show']);
     Route::put('/almacenes_farmacia/{almacenes_farmacium}', [AlmacenFarmaciaController::class, 'update']);
     Route::delete('/almacenes_farmacia/{almacenes_farmacium}', [AlmacenFarmaciaController::class, 'destroy']);
+
+    // Almacenes Paralelo CRUD
+    Route::get('/almacenes_paralelo', [AlmacenParaleloController::class, 'index']);
+    Route::post('/almacenes_paralelo', [AlmacenParaleloController::class, 'store']);
+    Route::get('/almacenes_paralelo/{almacenes_paralelo}', [AlmacenParaleloController::class, 'show']);
+    Route::put('/almacenes_paralelo/{almacenes_paralelo}', [AlmacenParaleloController::class, 'update']);
+    Route::delete('/almacenes_paralelo/{almacenes_paralelo}', [AlmacenParaleloController::class, 'destroy']);
+
+    // Almacenes Servicios de Atenciones CRUD
+    Route::get('/almacenes_servicios_atenciones', [AlmacenServiciosAtencionesController::class, 'index']);
+    Route::post('/almacenes_servicios_atenciones', [AlmacenServiciosAtencionesController::class, 'store']);
+    Route::get('/almacenes_servicios_atenciones/{almacenes_servicios_atencione}', [AlmacenServiciosAtencionesController::class, 'show']);
+    Route::put('/almacenes_servicios_atenciones/{almacenes_servicios_atencione}', [AlmacenServiciosAtencionesController::class, 'update']);
+    Route::delete('/almacenes_servicios_atenciones/{almacenes_servicios_atencione}', [AlmacenServiciosAtencionesController::class, 'destroy']);
+
+    // Almacenes Servicios de Apoyo CRUD
+    Route::get('/almacenes_servicios_apoyo', [AlmacenServiciosApoyoController::class, 'index']);
+    Route::post('/almacenes_servicios_apoyo', [AlmacenServiciosApoyoController::class, 'store']);
+    Route::get('/almacenes_servicios_apoyo/{almacenes_servicios_apoyo}', [AlmacenServiciosApoyoController::class, 'show']);
+    Route::put('/almacenes_servicios_apoyo/{almacenes_servicios_apoyo}', [AlmacenServiciosApoyoController::class, 'update']);
+    Route::delete('/almacenes_servicios_apoyo/{almacenes_servicios_apoyo}', [AlmacenServiciosApoyoController::class, 'destroy']);
 
     // Insumos CRUD
     // Identificación por CÓDIGO (claridad de rutas)

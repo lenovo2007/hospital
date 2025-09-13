@@ -334,9 +334,26 @@ components:
         id:
           type: integer
           example: 1
-        nombre:
+        insumos:
           type: string
-          example: Almacén Principal A
+          example: Guantes Quirúrgicos Nitrilo
+        codigo:
+          type: string
+          example: INS-001
+        numero_lote:
+          type: string
+          example: LOTE-ABC-2025
+        fecha_vencimiento:
+          type: string
+          format: date
+          example: "2026-12-31"
+        fecha_ingreso:
+          type: string
+          format: date
+          example: "2025-09-12"
+        cantidad:
+          type: integer
+          example: 100
         created_at:
           type: string
           format: date-time
@@ -368,9 +385,26 @@ components:
         id:
           type: integer
           example: 1
-        nombre:
+        insumos:
           type: string
-          example: Almacén Central A
+          example: Tapabocas 3 capas
+        codigo:
+          type: string
+          example: INS-050
+        numero_lote:
+          type: string
+          example: LOTE-XYZ-2025
+        fecha_vencimiento:
+          type: string
+          format: date
+          example: "2027-03-15"
+        fecha_ingreso:
+          type: string
+          format: date
+          example: "2025-09-12"
+        cantidad:
+          type: integer
+          example: 250
         created_at:
           type: string
           format: date-time

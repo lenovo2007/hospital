@@ -12,7 +12,12 @@ class AlmacenPrincipal extends Model
     protected $table = 'almacenes_principales';
 
     protected $fillable = [
-        'nombre',
+        'insumos',
+        'codigo',
+        'numero_lote',
+        'fecha_vencimiento',
+        'fecha_ingreso',
+        'cantidad',
         'status',
     ];
 }

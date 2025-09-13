@@ -26,7 +26,12 @@ class AlmacenCentralController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'nombre' => ['required','string','max:255'],
+            'insumos' => ['required','string','max:255'],
+            'codigo' => ['required','string','max:100'],
+            'numero_lote' => ['required','string','max:100'],
+            'fecha_vencimiento' => ['required','date'],
+            'fecha_ingreso' => ['required','date'],
+            'cantidad' => ['required','integer','min:0'],
             'status' => ['nullable','in:activo,inactivo'],
         ]);
         if (!isset($data['status'])) { $data['status'] = 'activo'; }
@@ -58,7 +63,12 @@ class AlmacenCentralController extends Controller
     public function update(Request $request, AlmacenCentral $almacenes_centrale)
     {
         $data = $request->validate([
-            'nombre' => ['sometimes','required','string','max:255'],
+            'insumos' => ['sometimes','required','string','max:255'],
+            'codigo' => ['sometimes','required','string','max:100'],
+            'numero_lote' => ['sometimes','required','string','max:100'],
+            'fecha_vencimiento' => ['sometimes','required','date'],
+            'fecha_ingreso' => ['sometimes','required','date'],
+            'cantidad' => ['sometimes','required','integer','min:0'],
             'status' => ['nullable','in:activo,inactivo'],
         ]);
         $almacenes_centrale->update($data);

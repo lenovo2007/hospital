@@ -457,6 +457,36 @@ Campos: `id`, `insumos`, `codigo`, `numero_lote`, `fecha_vencimiento` (date), `f
 
 Nota: `status` por defecto es `activo`. Puede enviarse en creación/actualización.
 
+## Usuarios (acceso parcial)
+Campos: `id`, `cedula` (única), `nombres`, `apellidos`, `email` (único), `telefono` (opcional), `direccion` (opcional), `role` (`admin`|`user`), `status` (`activo`|`inactivo`).
+
+### Acceso:
+- **Cualquier usuario autenticado** puede ver listados y detalles (GET).
+- Se requieren permisos especiales (`can_crud_user` o `is_root`) para crear/actualizar/eliminar (POST/PUT/DELETE).
+
+### Listar usuarios
+- Método: GET
+- URL: `/api/users`
+- Filtros opcionales: `status` (`activo`|`inactivo`|`todos`), `role` (`admin`|`user`).
+
+### Ver detalle de usuario
+- Método: GET
+- URL: `/api/users/{id}` o `/api/users/email/{email}` o `/api/users/cedula/{cedula}`
+
+### Crear usuario (requiere permiso)
+- Método: POST
+- URL: `/api/users`
+- **Requiere permiso**: `can_crud_user` o `is_root`
+
+### Actualizar/eliminar usuario (requiere permiso)
+- Método: PUT/DELETE
+- URL: `/api/users/{id}` o `/api/users/email/{email}` o `/api/users/cedula/{cedula}`
+- **Requiere permiso**: `can_crud_user` o `is_root`
+
+Notas:
+- `status` por defecto es `activo`.
+- `role` por defecto es `user`.
+
 ## Insumos (protegido)
 Campos: `id`, `codigo` (único), `nombre`, `tipo`, `unidad_medida`, `cantidad_por_paquete` (entero ≥ 0), `descripcion` (opcional), `status` (`activo`|`inactivo`).
 

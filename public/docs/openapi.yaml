@@ -555,39 +555,73 @@ components:
         total: { type: integer }
     Insumo:
       type: object
+      required:
+        - codigo
+        - nombre
+        - tipo
+        - unidad_medida
+        - cantidad_por_paquete
+        - status
       properties:
         id:
           type: integer
           example: 1
+          readOnly: true
         codigo:
           type: string
-          example: INS-001
+          maxLength: 100
+          example: "INS-001"
+          description: Código único del insumo (puede ser nulo, pero si se proporciona debe ser único)
+          nullable: true
+        codigo_alterno:
+          type: string
+          maxLength: 100
+          example: "ALT-001"
+          description: Código alternativo para el insumo
+          nullable: true
         nombre:
           type: string
-          example: Guantes Quirúrgicos
+          maxLength: 255
+          example: "Guantes Quirúrgicos de Nitrilo"
         tipo:
           type: string
-          example: descartable
+          example: "descartable"
+          description: Tipo de insumo (ej. descartable, permanente, medicamento, etc.)
         unidad_medida:
           type: string
-          example: caja
+          example: "unidad"
+          description: Unidad de medida (ej. unidad, caja, paquete, etc.)
         cantidad_por_paquete:
           type: integer
+          minimum: 0
           example: 100
+          description: Cantidad de unidades por paquete
         descripcion:
           type: string
           nullable: true
-          example: Guantes de látex talla M
-        created_at:
+          example: "Guantes de nitrilo talla M, estériles, sin polvo"
+          description: Descripción detallada del insumo
+        presentacion:
           type: string
-          format: date-time
-        updated_at:
-          type: string
-          format: date-time
+          nullable: true
+          example: "Caja x 100 unidades"
+          description: Presentación comercial del insumo
         status:
           type: string
           enum: [activo, inactivo]
+          default: activo
           example: activo
+          description: Estado del insumo en el sistema
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          example: "2025-09-13T10:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          example: "2025-09-13T10:00:00Z"
     PaginatedInsumos:
       type: object
       properties:

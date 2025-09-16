@@ -18,12 +18,36 @@ class InsumoController extends Controller
         if (!in_array($status, ['activo', 'inactivo', 'all'], true)) {
             $status = 'activo';
         }
+
         $query = Insumo::query();
         if ($status !== 'all') {
             $query->where('status', $status);
         }
         $items = $query->latest()->paginate(15);
         $mensaje = $items->total() > 0 ? 'Listado de insumos.' : 'insumos no encontrado';
+        return response()->json([
+            'status' => true,
+            'mensaje' => $mensaje,
+            'data' => $items,
+        ], 200, [], JSON_UNESCAPED_UNICODE);
+    }
+
+    // GET /api/insumos/sede/{sede_id}
+    public function indexBySede(Request $request, int $sede_id)
+    {
+        $status = $request->query('status', 'activo');
+        if ($status === 'todos') { $status = 'all'; }
+        if (!in_array($status, ['activo', 'inactivo', 'all'], true)) {
+            $status = 'activo';
+        }
+
+        $query = Insumo::query()->where('sede_id', $sede_id);
+        if ($status !== 'all') {
+            $query->where('status', $status);
+        }
+
+        $items = $query->latest()->paginate(15);
+        $mensaje = $items->total() > 0 ? 'Listado de insumos por sede.' : 'insumos no encontrado';
         return response()->json([
             'status' => true,
             'mensaje' => $mensaje,

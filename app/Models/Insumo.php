@@ -12,6 +12,7 @@ class Insumo extends Model
     protected $table = 'insumos';
 
     protected $fillable = [
+        'sede_id',
         'codigo',
         'codigo_alterno',
         'nombre',
@@ -24,6 +25,7 @@ class Insumo extends Model
     ];
     
     protected $casts = [
+        'sede_id' => 'integer',
         'cantidad_por_paquete' => 'integer',
         'status' => 'string'
     ];

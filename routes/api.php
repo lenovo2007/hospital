@@ -117,6 +117,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
 
     // Insumos CRUD
     // Identificación por CÓDIGO (claridad de rutas)
+    Route::get('/insumos/sede/{sede_id}', [InsumoController::class, 'indexBySede']);
     Route::get('/insumos/codigo/{codigo}', [InsumoController::class, 'showByCodigo']);
     Route::put('/insumos/codigo/{codigo}', [InsumoController::class, 'updateByCodigo']);
     // Importación de insumos desde Excel (.xlsx)

@@ -132,17 +132,7 @@ class InsumoController extends Controller
             'presentacion.max' => 'La presentación no debe exceder los 255 caracteres.',
         ]);
 
-        $descripcion = $data['descripcion'] ?? '';
-        if ($descripcion) {
-            $parsed = $this->parseDescripcion($descripcion);
-            $data = array_merge($data, [
-                'nombre' => $parsed['nombre'],
-                'tipo' => $parsed['tipo'],
-                'unidad_medida' => $parsed['unidad_medida'],
-                'cantidad_por_paquete' => $parsed['cantidad_por_paquete'],
-                'presentacion' => $parsed['presentacion'],
-            ]);
-        }
+        // Nota: No auto-procesar descripcion en solicitudes manuales.
 
         // Si no se proporcionó un código alterno y existe código principal, copiarlo.
         if (empty($data['codigo_alterno']) && !empty($data['codigo'])) {
@@ -180,17 +170,7 @@ class InsumoController extends Controller
             'presentacion.max' => 'La presentación no debe exceder los 255 caracteres.',
         ]);
 
-        // Si se está actualizando la descripción, recalcular los campos derivados
-        if (isset($data['descripcion'])) {
-            $parsed = $this->parseDescripcion($data['descripcion']);
-            $data = array_merge($data, [
-                'nombre' => $parsed['nombre'],
-                'tipo' => $parsed['tipo'],
-                'unidad_medida' => $parsed['unidad_medida'],
-                'cantidad_por_paquete' => $parsed['cantidad_por_paquete'],
-                'presentacion' => $parsed['presentacion'],
-            ]);
-        }
+        // Nota: No auto-procesar descripcion en solicitudes manuales.
 
         // Si se está actualizando el código y no se proporciona código alterno,
         // mover el código al alterno para mantener la búsqueda y dejar el principal como null si está vacío
@@ -241,17 +221,7 @@ class InsumoController extends Controller
             'status' => ['nullable','in:activo,inactivo'],
         ]);
 
-        // Si se está actualizando la descripción, recalcular los campos derivados
-        if (isset($data['descripcion'])) {
-            $parsed = $this->parseDescripcion($data['descripcion']);
-            $data = array_merge($data, [
-                'nombre' => $parsed['nombre'],
-                'tipo' => $parsed['tipo'],
-                'unidad_medida' => $parsed['unidad_medida'],
-                'cantidad_por_paquete' => $parsed['cantidad_por_paquete'],
-                'presentacion' => $parsed['presentacion'],
-            ]);
-        }
+        // Nota: No auto-procesar descripcion en solicitudes manuales por código.
 
         $insumo->update($data);
         $insumo->refresh();

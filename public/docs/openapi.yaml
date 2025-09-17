@@ -563,6 +563,11 @@ components:
         - cantidad_por_paquete
         - status
       properties:
+        sede_id:
+          type: integer
+          nullable: true
+          example: 3
+          description: Identificador de la sede a la que pertenece el insumo
         id:
           type: integer
           example: 1
@@ -837,6 +842,37 @@ paths:
       responses:
         '200':
           description: Listado de insumos (paginado)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedInsumos'
+  /api/insumos/sede/{sede_id}:
+    get:
+      summary: Listar insumos por sede
+      tags: [Insumos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: sede_id
+          required: true
+          schema: { type: integer }
+        - name: status
+          in: query
+          required: false
+          description: "Filtrar por estado: activo, inactivo o todos. Por defecto activo."
+          schema:
+            type: string
+            enum: [activo, inactivo, todos]
+            default: activo
+      responses:
+        '200':
+          description: Listado de insumos por sede (paginado)
           content:
             application/json:
               schema:

@@ -13,6 +13,7 @@ use App\Http\Controllers\AlmacenFarmaciaController;
 use App\Http\Controllers\AlmacenParaleloController;
 use App\Http\Controllers\AlmacenServiciosAtencionesController;
 use App\Http\Controllers\AlmacenServiciosApoyoController;
+use App\Http\Controllers\LoteController;
 
 // Autenticación con token
 // Test route to check if API is working
@@ -129,4 +130,16 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
     Route::get('/insumos/{insumo}', [InsumoController::class, 'show']);
     Route::put('/insumos/{insumo}', [InsumoController::class, 'update']);
     Route::delete('/insumos/{insumo}', [InsumoController::class, 'destroy']);
+
+    // Lotes CRUD y manejo de stock por almacén
+    Route::get('/lotes', [LoteController::class, 'index']);
+    Route::post('/lotes', [LoteController::class, 'store']);
+    Route::get('/lotes/{lote}', [LoteController::class, 'show']);
+    Route::put('/lotes/{lote}', [LoteController::class, 'update']);
+    Route::delete('/lotes/{lote}', [LoteController::class, 'destroy']);
+
+    // Stock por almacén de un lote específico
+    Route::get('/lotes/{lote}/almacenes', [LoteController::class, 'listStocks']);
+    Route::post('/lotes/{lote}/almacenes', [LoteController::class, 'upsertStock']);
+    Route::delete('/lotes/{lote}/almacenes/{almacen_id}', [LoteController::class, 'deleteStock']);
 });

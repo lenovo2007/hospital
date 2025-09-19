@@ -642,6 +642,52 @@ components:
           type: integer
         total:
           type: integer
+    Lote:
+      type: object
+      description: Registro de lote por insumo y hospital. No contiene cantidades por almacén.
+      properties:
+        id: { type: integer, example: 1 }
+        id_insumo: { type: integer, example: 10, description: ID del insumo }
+        numero_lote: { type: string, example: "LOTE-ABC-2025" }
+        fecha_vencimiento: { type: string, format: date, example: "2026-12-31" }
+        fecha_ingreso: { type: string, format: date, example: "2025-09-19" }
+        hospital_id: { type: integer, example: 1 }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    LoteAlmacen:
+      type: object
+      description: Cantidad por almacén para un lote específico.
+      properties:
+        id: { type: integer, example: 1 }
+        lote_id: { type: integer, example: 5 }
+        almacen_id: { type: integer, example: 3 }
+        cantidad: { type: integer, example: 150 }
+        ultima_actualizacion: { type: string, format: date-time }
+        hospital_id: { type: integer, example: 1 }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    PaginatedLotes:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Lote'
+        current_page: { type: integer }
+        last_page: { type: integer }
+        per_page: { type: integer }
+        total: { type: integer }
+    PaginatedLoteAlmacenes:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/LoteAlmacen'
+        current_page: { type: integer }
+        last_page: { type: integer }
+        per_page: { type: integer }
+        total: { type: integer }
 security:
   - bearerAuth: []
 paths:
@@ -1123,7 +1169,227 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
-
+  /api/lotes:
+    get:
+      summary: Listar lotes
+      tags: [Lotes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: id_insumo
+          required: false
+          schema: { type: integer }
+        - in: query
+          name: hospital_id
+          required: false
+          schema: { type: integer }
+        - in: query
+          name: numero_lote
+          required: false
+          schema: { type: string }
+        - in: query
+          name: vence_desde
+          required: false
+          schema: { type: string, format: date }
+        - in: query
+          name: vence_hasta
+          required: false
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Listado de lotes (paginado)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedLotes'
+    post:
+      summary: Crear lote
+      tags: [Lotes]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [id_insumo, numero_lote, fecha_vencimiento, fecha_ingreso, hospital_id]
+              properties:
+                id_insumo: { type: integer }
+                numero_lote: { type: string, maxLength: 100 }
+                fecha_vencimiento: { type: string, format: date }
+                fecha_ingreso: { type: string, format: date }
+                hospital_id: { type: integer }
+      responses:
+        '200':
+          description: Lote creado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Lote'
+  /api/lotes/{lote}:
+    get:
+      summary: Ver detalle de lote
+      tags: [Lotes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: lote
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Detalle de lote
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Lote'
+    put:
+      summary: Actualizar lote
+      tags: [Lotes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: lote
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                id_insumo: { type: integer }
+                numero_lote: { type: string, maxLength: 100 }
+                fecha_vencimiento: { type: string, format: date }
+                fecha_ingreso: { type: string, format: date }
+                hospital_id: { type: integer }
+      responses:
+        '200':
+          description: Lote actualizado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Lote'
+    delete:
+      summary: Eliminar lote
+      tags: [Lotes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: lote
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Lote eliminado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+  /api/lotes/{lote}/almacenes:
+    get:
+      summary: Listar stock por almacén de un lote
+      tags: [Lotes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: lote
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Listado paginado de stock por almacén
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedLoteAlmacenes'
+    post:
+      summary: Crear/actualizar stock por almacén de un lote
+      tags: [Lotes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: lote
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [almacen_id, cantidad, hospital_id]
+              properties:
+                almacen_id: { type: integer }
+                cantidad: { type: integer, minimum: 0 }
+                hospital_id: { type: integer }
+      responses:
+        '200':
+          description: Stock creado/actualizado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/LoteAlmacen'
+  /api/lotes/{lote}/almacenes/{almacen_id}:
+    delete:
+      summary: Eliminar stock por almacén de un lote
+      tags: [Lotes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: lote
+          required: true
+          schema: { type: integer }
+        - in: path
+          name: almacen_id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Stock eliminado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
   /api/almacenes_farmacia:
     get:
       summary: Listar almacenes farmacia

@@ -11,6 +11,7 @@ class LoteAlmacen extends Model
 
     protected $fillable = [
         'lote_id',
+        'almacen_tipo',
         'almacen_id',
         'cantidad',
         'ultima_actualizacion',
@@ -27,10 +28,7 @@ class LoteAlmacen extends Model
         return $this->belongsTo(Lote::class, 'lote_id');
     }
 
-    public function almacen(): BelongsTo
-    {
-        return $this->belongsTo(Almacen::class, 'almacen_id');
-    }
+    // No relación directa a una tabla de almacenes específica; se usa almacen_tipo + almacen_id
 
     public function hospital(): BelongsTo
     {

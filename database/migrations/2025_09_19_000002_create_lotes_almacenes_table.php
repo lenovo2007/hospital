@@ -14,7 +14,8 @@ return new class extends Migration
         Schema::create('lotes_almacenes', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('lote_id');
-            $table->unsignedBigInteger('almacen_id');
+            $table->string('almacen_tipo', 100); // tipo de almacén (principal, central, farmacia, etc.)
+            $table->unsignedBigInteger('almacen_id'); // identificador del almacén dentro de su tabla correspondiente
             $table->integer('cantidad')->default(0);
             $table->timestamp('ultima_actualizacion')->useCurrent();
             $table->unsignedBigInteger('hospital_id');
@@ -26,18 +27,13 @@ return new class extends Migration
                   ->on('lotes')
                   ->onDelete('cascade');
 
-            $table->foreign('almacen_id')
-                  ->references('id')
-                  ->on('almacenes')
-                  ->onDelete('cascade');
-
             $table->foreign('hospital_id')
                   ->references('id')
                   ->on('hospitales')
                   ->onDelete('cascade');
 
-            // Restricción única para no duplicar el mismo lote en el mismo almacén
-            $table->unique(['lote_id', 'almacen_id']);
+            // Restricción única para no duplicar el mismo lote en el mismo almacén y tipo
+            $table->unique(['lote_id', 'almacen_tipo', 'almacen_id'], 'lote_almacen_unique');
         });
     }
 

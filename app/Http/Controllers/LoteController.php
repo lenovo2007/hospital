@@ -67,7 +67,7 @@ class LoteController extends Controller
     // GET /api/lotes/{lote}
     public function show(Lote $lote)
     {
-        $lote->load(['insumo', 'hospital', 'stocks.almacen']);
+        $lote->load(['insumo', 'hospital', 'stocks']);
         return response()->json([
             'status' => true,
             'mensaje' => 'Detalle de lote.',
@@ -128,7 +128,7 @@ class LoteController extends Controller
     // GET /api/lotes/{lote}/almacenes
     public function listStocks(Lote $lote)
     {
-        $stocks = $lote->stocks()->with('almacen')->orderBy('ultima_actualizacion', 'desc')->paginate(50);
+        $stocks = $lote->stocks()->orderBy('ultima_actualizacion', 'desc')->paginate(50);
         return response()->json([
             'status' => true,
             'mensaje' => 'Listado de stock por almacén para el lote.',
@@ -140,7 +140,8 @@ class LoteController extends Controller
     public function upsertStock(Request $request, Lote $lote)
     {
         $data = $request->validate([
-            'almacen_id' => ['required', 'exists:almacenes,id'],
+            'almacen_tipo' => ['required', 'string', 'max:100'],
+            'almacen_id' => ['required', 'integer', 'min:1'],
             'cantidad' => ['required', 'integer', 'min:0'],
             'hospital_id' => ['required', 'exists:hospitales,id'],
         ]);
@@ -148,6 +149,7 @@ class LoteController extends Controller
         $stock = LoteAlmacen::updateOrCreate(
             [
                 'lote_id' => $lote->id,
+                'almacen_tipo' => $data['almacen_tipo'],
                 'almacen_id' => $data['almacen_id'],
             ],
             [
@@ -165,17 +167,25 @@ class LoteController extends Controller
     }
 
     // DELETE /api/lotes/{lote}/almacenes/{almacen_id}
-    public function deleteStock(Lote $lote, int $almacen_id)
+    public function deleteStock(Request $request, Lote $lote, int $almacen_id)
     {
-        $stock = LoteAlmacen::where('lote_id', $lote->id)->where('almacen_id', $almacen_id)->first();
-        if (!$stock) {
+        $tipo = $request->query('almacen_tipo');
+        $query = LoteAlmacen::where('lote_id', $lote->id)->where('almacen_id', $almacen_id);
+        if ($tipo) {
+            $query->where('almacen_tipo', $tipo);
+        }
+        $stocks = $query->get();
+        if ($stocks->isEmpty()) {
             return response()->json([
                 'status' => true,
                 'mensaje' => 'Stock no encontrado para ese almacén.',
                 'data' => null,
             ], 200, [], JSON_UNESCAPED_UNICODE);
         }
-        $stock->delete();
+        // Eliminar todos los que coincidan (si no se especifica tipo, eliminará todos los tipos para ese almacen_id)
+        foreach ($stocks as $s) {
+            $s->delete();
+        }
         return response()->json([
             'status' => true,
             'mensaje' => 'Stock eliminado.',

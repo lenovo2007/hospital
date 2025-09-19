@@ -660,6 +660,7 @@ components:
       properties:
         id: { type: integer, example: 1 }
         lote_id: { type: integer, example: 5 }
+        almacen_tipo: { type: string, example: "farmacia", description: "Tipo de almacén (principal, central, farmacia, paralelo, servicios_atenciones, servicios_apoyo, etc.)" }
         almacen_id: { type: integer, example: 3 }
         cantidad: { type: integer, example: 150 }
         ultima_actualizacion: { type: string, format: date-time }
@@ -1487,8 +1488,9 @@ paths:
           application/json:
             schema:
               type: object
-              required: [almacen_id, cantidad, hospital_id]
+              required: [almacen_tipo, almacen_id, cantidad, hospital_id]
               properties:
+                almacen_tipo: { type: string, maxLength: 100, example: "farmacia" }
                 almacen_id: { type: integer }
                 cantidad: { type: integer, minimum: 0 }
                 hospital_id: { type: integer }
@@ -1519,6 +1521,11 @@ paths:
           name: almacen_id
           required: true
           schema: { type: integer }
+        - in: query
+          name: almacen_tipo
+          required: false
+          schema: { type: string }
+          description: Si se especifica, elimina solo el stock de ese tipo; si no, elimina todos los tipos para ese almacen_id.
       responses:
         '200':
           description: Stock eliminado

@@ -688,6 +688,26 @@ components:
         last_page: { type: integer }
         per_page: { type: integer }
         total: { type: integer }
+    TipoHospitalDistribucion:
+      type: object
+      description: Porcentaje de distribución por tipo de hospital.
+      properties:
+        id: { type: integer, example: 1 }
+        tipo: { type: string, example: "Tipo 1" }
+        porcentaje: { type: number, format: float, example: 0.11, description: Porcentaje en % }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    PaginatedTipoHospitalDistribuciones:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/TipoHospitalDistribucion'
+        current_page: { type: integer }
+        last_page: { type: integer }
+        per_page: { type: integer }
+        total: { type: integer }
 security:
   - bearerAuth: []
 paths:
@@ -1342,6 +1362,122 @@ paths:
       responses:
         '200':
           description: Stock eliminado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+  /api/tipos_hospital_distribuciones:
+    get:
+      summary: Listar distribución de tipos de hospitales
+      tags: [TiposHospitalDistribucion]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Listado paginado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedTipoHospitalDistribuciones'
+    post:
+      summary: Crear distribución de tipo de hospital
+      tags: [TiposHospitalDistribucion]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tipo, porcentaje]
+              properties:
+                tipo: { type: string, maxLength: 100 }
+                porcentaje: { type: number, format: float, minimum: 0, maximum: 100 }
+      responses:
+        '200':
+          description: Distribución creada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TipoHospitalDistribucion'
+  /api/tipos_hospital_distribuciones/{tipos_hospital_distribucione}:
+    get:
+      summary: Ver detalle de distribución
+      tags: [TiposHospitalDistribucion]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: tipos_hospital_distribucione
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Detalle de distribución
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TipoHospitalDistribucion'
+    put:
+      summary: Actualizar distribución
+      tags: [TiposHospitalDistribucion]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: tipos_hospital_distribucione
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tipo: { type: string, maxLength: 100 }
+                porcentaje: { type: number, format: float, minimum: 0, maximum: 100 }
+      responses:
+        '200':
+          description: Distribución actualizada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TipoHospitalDistribucion'
+    delete:
+      summary: Eliminar distribución
+      tags: [TiposHospitalDistribucion]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: tipos_hospital_distribucione
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Distribución eliminada
           content:
             application/json:
               schema:

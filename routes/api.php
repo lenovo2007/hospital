@@ -14,6 +14,7 @@ use App\Http\Controllers\AlmacenParaleloController;
 use App\Http\Controllers\AlmacenServiciosAtencionesController;
 use App\Http\Controllers\AlmacenServiciosApoyoController;
 use App\Http\Controllers\LoteController;
+use App\Http\Controllers\TipoHospitalDistribucionController;
 
 // Autenticación con token
 // Test route to check if API is working
@@ -142,4 +143,11 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
     Route::get('/lotes/{lote}/almacenes', [LoteController::class, 'listStocks']);
     Route::post('/lotes/{lote}/almacenes', [LoteController::class, 'upsertStock']);
     Route::delete('/lotes/{lote}/almacenes/{almacen_id}', [LoteController::class, 'deleteStock']);
+
+    // Distribución de tipos de hospitales CRUD
+    Route::get('/tipos_hospital_distribuciones', [TipoHospitalDistribucionController::class, 'index']);
+    Route::post('/tipos_hospital_distribuciones', [TipoHospitalDistribucionController::class, 'store']);
+    Route::get('/tipos_hospital_distribuciones/{tipos_hospital_distribucione}', [TipoHospitalDistribucionController::class, 'show']);
+    Route::put('/tipos_hospital_distribuciones/{tipos_hospital_distribucione}', [TipoHospitalDistribucionController::class, 'update']);
+    Route::delete('/tipos_hospital_distribuciones/{tipos_hospital_distribucione}', [TipoHospitalDistribucionController::class, 'destroy']);
 });

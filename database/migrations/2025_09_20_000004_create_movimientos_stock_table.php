@@ -23,8 +23,8 @@ return new class extends Migration
                 $table->timestamps();
 
                 $table->foreign('lote_id')->references('id')->on('lotes')->onDelete('cascade');
-                $table->foreign('hospital_id')->references('id')->on('hospitales')->onDelete('cascade');
-                $table->index(['tipo', 'hospital_id']);
+                // Nota: se omite FK a hospitales por incompatibilidad en producción; se mantiene índice
+                $table->index(['tipo', 'hospital_id'], 'mov_stock_tipo_hosp_idx');
             });
         }
     }

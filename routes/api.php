@@ -15,6 +15,9 @@ use App\Http\Controllers\AlmacenServiciosAtencionesController;
 use App\Http\Controllers\AlmacenServiciosApoyoController;
 use App\Http\Controllers\LoteController;
 use App\Http\Controllers\TipoHospitalDistribucionController;
+use App\Http\Controllers\DistribucionCentralController;
+use App\Http\Controllers\DistribucionInternaController;
+use App\Http\Controllers\SolicitudesFaltantesController;
 
 // Autenticación con token
 // Test route to check if API is working
@@ -150,4 +153,15 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
     Route::get('/tipos_hospital_distribuciones/{tipos_hospital_distribucione}', [TipoHospitalDistribucionController::class, 'show']);
     Route::put('/tipos_hospital_distribuciones/{tipos_hospital_distribucione}', [TipoHospitalDistribucionController::class, 'update']);
     Route::delete('/tipos_hospital_distribuciones/{tipos_hospital_distribucione}', [TipoHospitalDistribucionController::class, 'destroy']);
+
+    // Distribución desde almacén central hacia principal (hospital)
+    Route::post('/distribucion/central', [DistribucionCentralController::class, 'distribuir']);
+
+    // Distribución interna desde principal hacia farmacia/paralelo/servicios
+    Route::post('/distribucion/principal', [DistribucionInternaController::class, 'distribuir']);
+
+    // Solicitudes de faltantes (visibilidad de carencias)
+    Route::get('/solicitudes_faltantes', [SolicitudesFaltantesController::class, 'index']);
+    Route::post('/solicitudes_faltantes', [SolicitudesFaltantesController::class, 'store']);
+    Route::patch('/solicitudes_faltantes/{solicitud}', [SolicitudesFaltantesController::class, 'update']);
 });

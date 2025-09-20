@@ -18,6 +18,7 @@ use App\Http\Controllers\TipoHospitalDistribucionController;
 use App\Http\Controllers\DistribucionCentralController;
 use App\Http\Controllers\DistribucionInternaController;
 use App\Http\Controllers\SolicitudesFaltantesController;
+use App\Http\Controllers\DistribucionAutomaticaController;
 
 // Autenticación con token
 // Test route to check if API is working
@@ -159,6 +160,9 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
 
     // Distribución interna desde principal hacia farmacia/paralelo/servicios
     Route::post('/distribucion/principal', [DistribucionInternaController::class, 'distribuir']);
+
+    // Distribución automática desde central por porcentaje (varios hospitales y lotes)
+    Route::post('/distribucion/automatica/central', [DistribucionAutomaticaController::class, 'distribuirPorPorcentaje']);
 
     // Solicitudes de faltantes (visibilidad de carencias)
     Route::get('/solicitudes_faltantes', [SolicitudesFaltantesController::class, 'index']);

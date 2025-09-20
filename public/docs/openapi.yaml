@@ -781,6 +781,19 @@ components:
               destino_tipo: { type: string }
               destino_id: { type: integer }
               cantidad: { type: integer, minimum: 1 }
+    DistribucionAutomaticaRequest:
+      type: object
+      required: [origen_central_id, lote_ids, estrategia]
+      properties:
+        origen_central_id: { type: integer }
+        hospital_ids:
+          type: array
+          items: { type: integer }
+          description: Si se omite, se toman todos los hospitales activos.
+        lote_ids:
+          type: array
+          items: { type: integer }
+        estrategia: { type: string, enum: [porcentaje] }
 security:
   - bearerAuth: []
 paths:
@@ -1214,6 +1227,26 @@ paths:
       responses:
         '200':
           description: Insumo eliminado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+  /api/distribucion/automatica/central:
+    post:
+      summary: Distribución automática desde central a hospitales por porcentaje
+      description: Distribuye stock disponible en central para los lotes seleccionados hacia el almacén principal de cada hospital según su porcentaje configurado.
+      tags: [Distribucion]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DistribucionAutomaticaRequest'
+      responses:
+        '200':
+          description: Distribución automática aplicada
           content:
             application/json:
               schema:

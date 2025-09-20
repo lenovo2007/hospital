@@ -24,7 +24,7 @@ return new class extends Migration
 
                 $table->foreign('hospital_id')->references('id')->on('hospitales')->onDelete('cascade');
                 $table->foreign('insumo_id')->references('id')->on('insumos')->onDelete('cascade');
-                $table->index(['hospital_id', 'almacen_tipo', 'almacen_id', 'estado']);
+                $table->index(['hospital_id', 'almacen_tipo', 'almacen_id', 'estado'], 'sol_falt_idx');
             });
         }
     }

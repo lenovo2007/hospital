@@ -709,6 +709,78 @@ components:
         last_page: { type: integer }
         per_page: { type: integer }
         total: { type: integer }
+    MovimientoStock:
+      type: object
+      properties:
+        id: { type: integer }
+        tipo: { type: string, enum: [entrada, salida, transferencia] }
+        lote_id: { type: integer }
+        hospital_id: { type: integer }
+        origen_almacen_tipo: { type: string, nullable: true }
+        origen_almacen_id: { type: integer, nullable: true }
+        destino_almacen_tipo: { type: string, nullable: true }
+        destino_almacen_id: { type: integer, nullable: true }
+        cantidad: { type: integer }
+        user_id: { type: integer }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    SolicitudFaltante:
+      type: object
+      properties:
+        id: { type: integer }
+        hospital_id: { type: integer }
+        almacen_tipo: { type: string }
+        almacen_id: { type: integer }
+        insumo_id: { type: integer }
+        cantidad_sugerida: { type: integer, nullable: true }
+        prioridad: { type: string, enum: [baja, media, alta] }
+        estado: { type: string, enum: [pendiente, atendida, cancelada] }
+        user_id: { type: integer }
+        comentario: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+        updated_at: { type: string, format: date-time }
+    PaginatedSolicitudesFaltantes:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/SolicitudFaltante'
+        current_page: { type: integer }
+        last_page: { type: integer }
+        per_page: { type: integer }
+        total: { type: integer }
+    DistribucionCentralRequest:
+      type: object
+      required: [origen_central_id, hospital_id, principal_id, items]
+      properties:
+        origen_central_id: { type: integer }
+        hospital_id: { type: integer }
+        principal_id: { type: integer }
+        items:
+          type: array
+          items:
+            type: object
+            required: [lote_id, cantidad]
+            properties:
+              lote_id: { type: integer }
+              cantidad: { type: integer, minimum: 1 }
+    DistribucionInternaRequest:
+      type: object
+      required: [hospital_id, principal_id, items]
+      properties:
+        hospital_id: { type: integer }
+        principal_id: { type: integer }
+        items:
+          type: array
+          items:
+            type: object
+            required: [lote_id, destino_tipo, destino_id, cantidad]
+            properties:
+              lote_id: { type: integer }
+              destino_tipo: { type: string }
+              destino_id: { type: integer }
+              cantidad: { type: integer, minimum: 1 }
 security:
   - bearerAuth: []
 paths:
@@ -1146,6 +1218,127 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
+  /api/distribucion/central:
+    post:
+      summary: Distribuir desde almacén central hacia principal del hospital
+      tags: [Distribucion]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DistribucionCentralRequest'
+      responses:
+        '200':
+          description: Distribución aplicada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+  /api/distribucion/principal:
+    post:
+      summary: Distribución interna desde principal a otros almacenes del hospital
+      tags: [Distribucion]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DistribucionInternaRequest'
+      responses:
+        '200':
+          description: Distribución interna aplicada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+  /api/solicitudes_faltantes:
+    get:
+      summary: Listar solicitudes de faltantes
+      tags: [SolicitudesFaltantes]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Listado paginado de solicitudes
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedSolicitudesFaltantes'
+    post:
+      summary: Crear solicitud de faltante
+      tags: [SolicitudesFaltantes]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [hospital_id, almacen_tipo, almacen_id, insumo_id]
+              properties:
+                hospital_id: { type: integer }
+                almacen_tipo: { type: string }
+                almacen_id: { type: integer }
+                insumo_id: { type: integer }
+                cantidad_sugerida: { type: integer, nullable: true }
+                prioridad: { type: string, enum: [baja, media, alta] }
+                comentario: { type: string, nullable: true }
+      responses:
+        '200':
+          description: Solicitud creada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/SolicitudFaltante'
+  /api/solicitudes_faltantes/{solicitud}:
+    patch:
+      summary: Actualizar estado de solicitud de faltante
+      tags: [SolicitudesFaltantes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: solicitud
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [estado]
+              properties:
+                estado: { type: string, enum: [pendiente, atendida, cancelada] }
+                comentario: { type: string, nullable: true }
+      responses:
+        '200':
+          description: Solicitud actualizada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/SolicitudFaltante'
   /api/lotes:
     get:
       summary: Listar lotes

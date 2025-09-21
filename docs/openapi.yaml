@@ -765,6 +765,46 @@ components:
             properties:
               lote_id: { type: integer }
               cantidad: { type: integer, minimum: 1 }
+    RegistroInventarioRequest:
+      type: object
+      required: [insumo_id, lote_cod, fecha_vencimiento, almacen_tipo, almacen_id, cantidad, hospital_id, sede_id]
+      properties:
+        insumo_id:
+          type: integer
+          example: 1
+          description: ID del insumo existente
+        lote_cod:
+          type: string
+          example: "LOT-2024-001"
+          description: Código de lote (único por insumo)
+        fecha_vencimiento:
+          type: string
+          format: date
+          example: "2024-12-31"
+          description: Fecha de vencimiento del lote (YYYY-MM-DD)
+        almacen_tipo:
+          type: string
+          enum: [farmacia, principal, central, servicios_apoyo, servicios_atenciones]
+          example: "farmacia"
+          description: Tipo de almacén destino
+        almacen_id:
+          type: integer
+          example: 1
+          description: ID del almacén específico (ej: ID de farmacia, ID de almacén principal, etc.)
+        cantidad:
+          type: integer
+          minimum: 1
+          example: 100
+          description: Cantidad a registrar (debe ser mayor a 0)
+        hospital_id:
+          type: integer
+          example: 1
+          description: ID del hospital al que pertenece el inventario
+        sede_id:
+          type: integer
+          example: 1
+          description: ID de la sede del hospital
+
     DistribucionInternaRequest:
       type: object
       required: [hospital_id, principal_id, items]
@@ -2092,7 +2132,7 @@ paths:
   /api/almacenes_servicios_apoyo:
     get:
       summary: Listar almacenes servicios de apoyo
-      tags: [AlmacenesServiciosApoyo]
+      tags: [AlmacenesServiciosApoyo, Inventario]
       security:
         - bearerAuth: []
       parameters:
@@ -2134,6 +2174,57 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
+
+  /api/inventario/registrar:
+    post:
+      summary: Registrar nuevo lote e inventario
+      description: |
+        Registra un nuevo lote de insumo y lo asigna a un almacén específico.
+        Crea registros en las tablas `lotes` y `lotes_almacenes`.
+      tags: [Inventario]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistroInventarioRequest'
+      responses:
+        '201':
+          description: Lote e inventario registrados exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    example: true
+                  mensaje:
+                    type: string
+                    example: "Inventario registrado exitosamente"
+                  data:
+                    type: object
+                    properties:
+                      lote_id:
+                        type: integer
+                        example: 1
+                      lote_almacen_id:
+                        type: integer
+                        example: 1
+        '422':
+          description: Error de validación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorValidation'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /api/almacenes_servicios_apoyo/{id}:
     get:

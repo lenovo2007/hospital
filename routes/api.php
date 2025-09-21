@@ -114,6 +114,9 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
     Route::put('/almacenes_servicios_atenciones/{almacenes_servicios_atencione}', [AlmacenServiciosAtencionesController::class, 'update']);
     Route::delete('/almacenes_servicios_atenciones/{almacenes_servicios_atencione}', [AlmacenServiciosAtencionesController::class, 'destroy']);
 
+    // Inventario - Registro de lotes y almacenamiento
+    Route::post('/inventario/registrar', [\App\Http\Controllers\InventarioController::class, 'registrar']);
+
     // Almacenes Servicios de Apoyo CRUD
     Route::get('/almacenes_servicios_apoyo', [AlmacenServiciosApoyoController::class, 'index']);
     Route::post('/almacenes_servicios_apoyo', [AlmacenServiciosApoyoController::class, 'store']);

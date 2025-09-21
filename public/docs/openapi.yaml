@@ -765,6 +765,46 @@ components:
             properties:
               lote_id: { type: integer }
               cantidad: { type: integer, minimum: 1 }
+    RegistroInventarioRequest:
+      type: object
+      required: [insumo_id, lote_cod, fecha_vencimiento, almacen_tipo, almacen_id, cantidad, hospital_id, sede_id]
+      properties:
+        insumo_id:
+          type: integer
+          example: 1
+          description: ID del insumo existente
+        lote_cod:
+          type: string
+          example: "LOT-2024-001"
+          description: Código de lote (único por insumo)
+        fecha_vencimiento:
+          type: string
+          format: date
+          example: "2024-12-31"
+          description: Fecha de vencimiento del lote (YYYY-MM-DD)
+        almacen_tipo:
+          type: string
+          enum: [farmacia, principal, central, servicios_apoyo, servicios_atenciones]
+          example: "farmacia"
+          description: Tipo de almacén destino
+        almacen_id:
+          type: integer
+          example: 1
+          description: ID del almacén específico (ej: ID de farmacia, ID de almacén principal, etc.)
+        cantidad:
+          type: integer
+          minimum: 1
+          example: 100
+          description: Cantidad a registrar (debe ser mayor a 0)
+        hospital_id:
+          type: integer
+          example: 1
+          description: ID del hospital al que pertenece el inventario
+        sede_id:
+          type: integer
+          example: 1
+          description: ID de la sede del hospital
+
     DistribucionInternaRequest:
       type: object
       required: [hospital_id, principal_id, items]
@@ -913,69 +953,6 @@ paths:
                     properties:
                       data:
                         $ref: '#/components/schemas/PaginatedUsers'
-  /api/insumos/import:
-    post:
-      summary: Importar insumos desde archivo Excel
-      description: |
-        Importa insumos desde un archivo Excel.
-        - Reutilizar el mismo archivo es seguro: los registros existentes se **actualizan** (prioridad por `codigo` de la columna A; si no coincide, intenta por `codigo_alterno` generado), y los que no existan se **crean**.
-        - Definiciones:
-          - "creados": cantidad de filas que resultaron en un nuevo insumo.
-          - "actualizados": cantidad de filas que coincidieron con un insumo existente y se actualizaron.
-          - "omitidos": filas saltadas por validación (por ejemplo, descripción vacía) o errores de procesamiento.
-      tags: [Insumos]
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              required: [file]
-              properties:
-                file:
-                  type: string
-                  format: binary
-                  description: |
-                    Archivo Excel (.xlsx) con los insumos a importar.
-                    - Columna A: código (principal)
-                    - Columna B: descripción (obligatoria)
-      responses:
-        '200':
-          description: Resultado de la importación
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        type: object
-                        properties:
-                          creados: { type: integer, description: 'Número de insumos creados' }
-                          actualizados: { type: integer, description: 'Número de insumos actualizados' }
-                          omitidos: { type: integer, description: 'Número de insumos omitidos' }
-                          omitidos_detalle: 
-                            type: array
-                            items:
-                              type: object
-                              properties:
-                                fila: { type: integer, description: 'Número de fila en el archivo' }
-                                motivo: { type: string, description: 'Razón de la omisión' }
-              example:
-                status: true
-                mensaje: Importación procesada.
-                data:
-                  creados: 12
-                  actualizados: 3
-                  omitidos: 2
-                  omitidos_detalle:
-                    - fila: 7
-                      motivo: "Celda de descripción vacía o con solo espacios"
-                    - fila: 15
-                      motivo: "Error al procesar: El código de insumo ya ha sido registrado previamente."
   /api/insumos:
     get:
       summary: Listar insumos
@@ -1003,71 +980,10 @@ paths:
                     properties:
                       data:
                         $ref: '#/components/schemas/PaginatedInsumos'
-  /api/insumos/sede/{sede_id}:
-    get:
-      summary: Listar insumos por sede
-      tags: [Insumos]
-      security:
-        - bearerAuth: []
-      parameters:
-        - in: path
-          name: sede_id
-          required: true
-          schema: { type: integer }
-        - name: status
-          in: query
-          required: false
-          description: "Filtrar por estado: activo, inactivo o todos. Por defecto activo."
-          schema:
-            type: string
-            enum: [activo, inactivo, todos]
-            default: activo
-      responses:
-        '200':
-          description: Listado de insumos por sede (paginado)
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/PaginatedInsumos'
-  /api/sedes/hospital/{id}:
-    get:
-      summary: Listar sedes por hospital
-      tags: [Sedes]
-      security:
-        - bearerAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema: { type: integer }
-        - in: query
-          name: status
-          required: false
-          description: "Filtrar por estado: activo, inactivo o todos. Por defecto activo."
-          schema:
-            type: string
-            enum: [activo, inactivo, todos]
-            default: activo
-      responses:
-        '200':
-          description: Listado de sedes del hospital (paginado) o error con `status=false`
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/PaginatedSedes'
+  /api/distribucion/central:
     post:
-      summary: Crear insumo
-      tags: [Insumos]
+      summary: Distribuir desde almacén central hacia principal del hospital
+      tags: [Distribucion]
       security:
         - bearerAuth: []
       requestBody:
@@ -1075,158 +991,10 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required: [codigo, nombre, tipo, unidad_medida, cantidad_por_paquete]
-              properties:
-                codigo: { type: string }
-                nombre: { type: string }
-                tipo: { type: string }
-                unidad_medida: { type: string }
-                cantidad_por_paquete: { type: integer, minimum: 0 }
-                descripcion: { type: string, nullable: true }
-                status: { type: string, enum: [activo, inactivo] }
+              $ref: '#/components/schemas/DistribucionCentralRequest'
       responses:
         '200':
-          description: Insumo creado
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Insumo'
-  /api/insumos/codigo/{codigo}:
-    get:
-      summary: Ver insumo por código
-      tags: [Insumos]
-      security:
-        - bearerAuth: []
-      parameters:
-        - in: path
-          name: codigo
-          required: true
-          schema: { type: string }
-      responses:
-        '200':
-          description: Detalle de insumo por código
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Insumo'
-    put:
-      summary: Actualizar insumo por código
-      tags: [Insumos]
-      security:
-        - bearerAuth: []
-      parameters:
-        - in: path
-          name: codigo
-          required: true
-          schema: { type: string }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                nombre: { type: string }
-                tipo: { type: string }
-                unidad_medida: { type: string }
-                cantidad_por_paquete: { type: integer, minimum: 0 }
-                descripcion: { type: string, nullable: true }
-                status: { type: string, enum: [activo, inactivo] }
-      responses:
-        '200':
-          description: Insumo actualizado por código
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Insumo'
-  /api/insumos/{id}:
-    get:
-      summary: Ver detalle de insumo
-      tags: [Insumos]
-      security:
-        - bearerAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema: { type: integer }
-      responses:
-        '200':
-          description: Detalle de insumo
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Insumo'
-    put:
-      summary: Actualizar insumo
-      tags: [Insumos]
-      security:
-        - bearerAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema: { type: integer }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                codigo: { type: string }
-                nombre: { type: string }
-                tipo: { type: string }
-                unidad_medida: { type: string }
-                cantidad_por_paquete: { type: integer, minimum: 0 }
-                descripcion: { type: string, nullable: true }
-                status: { type: string, enum: [activo, inactivo] }
-      responses:
-        '200':
-          description: Insumo actualizado
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Insumo'
-    delete:
-      summary: Eliminar insumo
-      tags: [Insumos]
-      security:
-        - bearerAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema: { type: integer }
-      responses:
-        '200':
-          description: Insumo eliminado
+          description: Distribución aplicada
           content:
             application/json:
               schema:
@@ -1247,25 +1015,6 @@ paths:
       responses:
         '200':
           description: Distribución automática aplicada
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StandardResponse'
-  /api/distribucion/central:
-    post:
-      summary: Distribuir desde almacén central hacia principal del hospital
-      tags: [Distribucion]
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DistribucionCentralRequest'
-      responses:
-        '200':
-          description: Distribución aplicada
           content:
             application/json:
               schema:
@@ -1372,6 +1121,457 @@ paths:
                     properties:
                       data:
                         $ref: '#/components/schemas/SolicitudFaltante'
+  /api/tipos_hospital_distribuciones:
+    get:
+      summary: Listar distribución de tipos de hospitales
+      tags: [TiposHospitalDistribucion]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Listado paginado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedTipoHospitalDistribuciones'
+    post:
+      summary: Crear distribución de tipo de hospital
+      tags: [TiposHospitalDistribucion]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tipo, porcentaje]
+              properties:
+                tipo: { type: string, maxLength: 100 }
+                porcentaje: { type: number, format: float, minimum: 0, maximum: 100 }
+      responses:
+        '200':
+          description: Distribución creada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TipoHospitalDistribucion'
+  /api/tipos_hospital_distribuciones/{tipos_hospital_distribucione}:
+    get:
+      summary: Ver detalle de distribución
+      tags: [TiposHospitalDistribucion]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: tipos_hospital_distribucione
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Detalle de distribución
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TipoHospitalDistribucion'
+    put:
+      summary: Actualizar distribución
+      tags: [TiposHospitalDistribucion]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: tipos_hospital_distribucione
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tipo: { type: string, maxLength: 100 }
+                porcentaje: { type: number, format: float, minimum: 0, maximum: 100 }
+      responses:
+        '200':
+          description: Distribución actualizada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TipoHospitalDistribucion'
+    delete:
+      summary: Eliminar distribución
+      tags: [TiposHospitalDistribucion]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: tipos_hospital_distribucione
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Distribución eliminada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+  /api/insumos/sede/{sede_id}:
+    get:
+      summary: Listar insumos por sede
+      tags: [Insumos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: sede_id
+          required: true
+          schema: { type: integer }
+        - name: status
+          in: query
+          required: false
+          description: "Filtrar por estado: activo, inactivo o todos. Por defecto activo."
+          schema:
+            type: string
+            enum: [activo, inactivo, todos]
+            default: activo
+      responses:
+        '200':
+          description: Listado de insumos por sede (paginado)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedInsumos'
+  /api/sedes/hospital/{id}:
+    get:
+      summary: Listar sedes por hospital
+      tags: [Sedes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+        - in: query
+          name: status
+          required: false
+          description: "Filtrar por estado: activo, inactivo o todos. Por defecto activo."
+          schema:
+            type: string
+            enum: [activo, inactivo, todos]
+            default: activo
+      responses:
+        '200':
+          description: Listado de sedes del hospital (paginado) o error con `status=false`
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedSedes'
+    post:
+      summary: Crear insumo
+      tags: [Insumos]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [codigo, nombre, tipo, unidad_medida, cantidad_por_paquete]
+              properties:
+                codigo: { type: string }
+                nombre: { type: string }
+                tipo: { type: string }
+                unidad_medida: { type: string }
+                cantidad_por_paquete: { type: integer, minimum: 0 }
+                descripcion: { type: string, nullable: true }
+                presentacion: { type: string, nullable: true }
+                status: { type: string, enum: [activo, inactivo] }
+      responses:
+        '200':
+          description: Insumo creado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Insumo'
+  /api/insumos/import:
+    post:
+      summary: Importar insumos desde archivo Excel
+      description: |
+        Importa insumos desde un archivo Excel.
+        - Reutilizar el mismo archivo es seguro: los registros existentes se **actualizan** (prioridad por `codigo` de la columna A; si no coincide, intenta por `codigo_alterno` generado), y los que no existan se **crean**.
+        - Definiciones:
+          - "creados": cantidad de filas que resultaron en un nuevo insumo.
+          - "actualizados": cantidad de filas que coincidieron con un insumo existente y se actualizaron.
+          - "omitidos": filas saltadas por validación (por ejemplo, descripción vacía) o errores de procesamiento.
+      tags: [Insumos]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: |
+                    Archivo Excel (.xlsx) con los insumos a importar.
+                    - Columna A: código (principal)
+                    - Columna B: descripción (obligatoria)
+      responses:
+        '200':
+          description: Resultado de la importación
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          creados: { type: integer, description: 'Número de insumos creados' }
+                          actualizados: { type: integer, description: 'Número de insumos actualizados' }
+                          omitidos: { type: integer, description: 'Número de insumos omitidos' }
+                          omitidos_detalle: 
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                fila: { type: integer, description: 'Número de fila en el archivo' }
+                                motivo: { type: string, description: 'Razón de la omisión' }
+              example:
+                status: true
+                mensaje: Importación procesada.
+                data:
+                  creados: 12
+                  actualizados: 3
+                  omitidos: 2
+                  omitidos_detalle:
+                    - fila: 7
+                      motivo: "Celda de descripción vacía o con solo espacios"
+                    - fila: 15
+                      motivo: "Error al procesar: El código de insumo ya ha sido registrado previamente."
+  /api/insumos:
+    post:
+      summary: Importar insumos desde Excel (.xlsx)
+      tags: [Insumos]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Archivo Excel .xlsx con una columna DESCRIPCION
+      responses:
+        '200':
+          description: Resultado de importación
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          creados: { type: integer }
+                          actualizados: { type: integer }
+                          omitidos: { type: integer }
+                          errores:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                row: { type: integer }
+                                descripcion: { type: string }
+                                error: { type: string }
+  /api/insumos/codigo/{codigo}:
+    get:
+      summary: Ver insumo por código
+      tags: [Insumos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: codigo
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Detalle de insumo por código
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Insumo'
+    put:
+      summary: Actualizar insumo por código
+      tags: [Insumos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: codigo
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                nombre: { type: string }
+                tipo: { type: string }
+                unidad_medida: { type: string }
+                cantidad_por_paquete: { type: integer, minimum: 0 }
+                descripcion: { type: string, nullable: true }
+                presentacion: { type: string, nullable: true }
+                status: { type: string, enum: [activo, inactivo] }
+      responses:
+        '200':
+          description: Insumo actualizado por código
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Insumo'
+  /api/insumos/{id}:
+    get:
+      summary: Ver detalle de insumo
+      tags: [Insumos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Detalle de insumo
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Insumo'
+    put:
+      summary: Actualizar insumo
+      tags: [Insumos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                codigo: { type: string }
+                nombre: { type: string }
+                tipo: { type: string }
+                unidad_medida: { type: string }
+                cantidad_por_paquete: { type: integer, minimum: 0 }
+                descripcion: { type: string, nullable: true }
+                presentacion: { type: string, nullable: true }
+                status: { type: string, enum: [activo, inactivo] }
+      responses:
+        '200':
+          description: Insumo actualizado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Insumo'
+    delete:
+      summary: Eliminar insumo
+      tags: [Insumos]
+      security:
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Insumo eliminado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
   /api/lotes:
     get:
       summary: Listar lotes
@@ -1595,122 +1795,6 @@ paths:
       responses:
         '200':
           description: Stock eliminado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StandardResponse'
-  /api/tipos_hospital_distribuciones:
-    get:
-      summary: Listar distribución de tipos de hospitales
-      tags: [TiposHospitalDistribucion]
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Listado paginado
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/PaginatedTipoHospitalDistribuciones'
-    post:
-      summary: Crear distribución de tipo de hospital
-      tags: [TiposHospitalDistribucion]
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [tipo, porcentaje]
-              properties:
-                tipo: { type: string, maxLength: 100 }
-                porcentaje: { type: number, format: float, minimum: 0, maximum: 100 }
-      responses:
-        '200':
-          description: Distribución creada
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/TipoHospitalDistribucion'
-  /api/tipos_hospital_distribuciones/{tipos_hospital_distribucione}:
-    get:
-      summary: Ver detalle de distribución
-      tags: [TiposHospitalDistribucion]
-      security:
-        - bearerAuth: []
-      parameters:
-        - in: path
-          name: tipos_hospital_distribucione
-          required: true
-          schema: { type: integer }
-      responses:
-        '200':
-          description: Detalle de distribución
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/TipoHospitalDistribucion'
-    put:
-      summary: Actualizar distribución
-      tags: [TiposHospitalDistribucion]
-      security:
-        - bearerAuth: []
-      parameters:
-        - in: path
-          name: tipos_hospital_distribucione
-          required: true
-          schema: { type: integer }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                tipo: { type: string, maxLength: 100 }
-                porcentaje: { type: number, format: float, minimum: 0, maximum: 100 }
-      responses:
-        '200':
-          description: Distribución actualizada
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/TipoHospitalDistribucion'
-    delete:
-      summary: Eliminar distribución
-      tags: [TiposHospitalDistribucion]
-      security:
-        - bearerAuth: []
-      parameters:
-        - in: path
-          name: tipos_hospital_distribucione
-          required: true
-          schema: { type: integer }
-      responses:
-        '200':
-          description: Distribución eliminada
           content:
             application/json:
               schema:
@@ -2048,7 +2132,7 @@ paths:
   /api/almacenes_servicios_apoyo:
     get:
       summary: Listar almacenes servicios de apoyo
-      tags: [AlmacenesServiciosApoyo]
+      tags: [AlmacenesServiciosApoyo, Inventario]
       security:
         - bearerAuth: []
       parameters:
@@ -2090,6 +2174,57 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
+
+  /api/inventario/registrar:
+    post:
+      summary: Registrar nuevo lote e inventario
+      description: |
+        Registra un nuevo lote de insumo y lo asigna a un almacén específico.
+        Crea registros en las tablas `lotes` y `lotes_almacenes`.
+      tags: [Inventario]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegistroInventarioRequest'
+      responses:
+        '201':
+          description: Lote e inventario registrados exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    example: true
+                  mensaje:
+                    type: string
+                    example: "Inventario registrado exitosamente"
+                  data:
+                    type: object
+                    properties:
+                      lote_id:
+                        type: integer
+                        example: 1
+                      lote_almacen_id:
+                        type: integer
+                        example: 1
+        '422':
+          description: Error de validación
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorValidation'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
 
   /api/almacenes_servicios_apoyo/{id}:
     get:

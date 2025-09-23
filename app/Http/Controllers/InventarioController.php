@@ -6,6 +6,7 @@ use App\Models\Lote;
 use App\Models\LoteAlmacen;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 class InventarioController extends Controller
 {
@@ -56,14 +57,25 @@ class InventarioController extends Controller
             ]);
 
             // 2. Registrar en lotes_almacenes
-            $loteAlmacen = LoteAlmacen::create([
+            // Detectar el nombre correcto de columna para el tipo de almacén según el esquema
+            $tipoCol = Schema::hasColumn('lotes_almacenes', 'almacen_tipo')
+                ? 'almacen_tipo'
+                : (Schema::hasColumn('lotes_almacenes', 'tipo_almacen') ? 'tipo_almacen' : null);
+
+            if ($tipoCol === null) {
+                throw new \RuntimeException('No se encontró columna de tipo de almacén (almacen_tipo/tipo_almacen) en lotes_almacenes');
+            }
+
+            $payload = [
                 'lote_id' => $lote->id,
-                'almacen_tipo' => $validated['almacen_tipo'],
                 // Usar sede_id como identificador físico (reemplaza a almacen_id)
                 'sede_id' => $validated['sede_id'],
                 'cantidad' => $validated['cantidad'],
                 'hospital_id' => $validated['hospital_id'],
-            ]);
+            ];
+            $payload[$tipoCol] = $validated['almacen_tipo'];
+
+            $loteAlmacen = LoteAlmacen::create($payload);
 
             // 3. Registrar en tabla de almacén específica (opcional, si es necesario)
             // $this->registrarEnAlmacenEspecifico($validated, $lote->id);

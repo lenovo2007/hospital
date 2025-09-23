@@ -12,6 +12,7 @@ class LoteAlmacen extends Model
     protected $fillable = [
         'lote_id',
         'almacen_tipo',
+        'tipo_almacen',
         'almacen_id',
         'sede_id',
         'cantidad',

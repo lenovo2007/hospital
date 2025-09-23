@@ -782,6 +782,11 @@ components:
           format: date
           example: "2024-12-31"
           description: "Fecha de vencimiento del lote (YYYY-MM-DD)"
+        fecha_ingreso:
+          type: string
+          format: date
+          example: "2025-09-22"
+          description: "Fecha de ingreso del lote (YYYY-MM-DD). Si se omite, el backend usa la fecha actual."
         almacen_tipo:
           type: string
           enum: [almacenCent, almacenPrin, almacenFarm, almacenPar, almacenServAtenciones, almacenServApoyo]

@@ -767,7 +767,7 @@ components:
               cantidad: { type: integer, minimum: 1 }
     RegistroInventarioRequest:
       type: object
-      required: [insumo_id, lote_cod, fecha_vencimiento, almacen_tipo, almacen_id, cantidad, hospital_id, sede_id]
+      required: [insumo_id, lote_cod, fecha_vencimiento, almacen_tipo, cantidad, hospital_id, sede_id]
       properties:
         insumo_id:
           type: integer
@@ -784,13 +784,9 @@ components:
           description: Fecha de vencimiento del lote (YYYY-MM-DD)
         almacen_tipo:
           type: string
-          enum: [farmacia, principal, central, servicios_apoyo, servicios_atenciones]
+          enum: [almacenFarm, almacenPrin, almacenCent, almacenPar, almacenServAtenciones, almacenServApoyo]
           example: "farmacia"
           description: Tipo de almacén destino
-        almacen_id:
-          type: integer
-          example: 1
-          description: ID del almacén específico (ej: ID de farmacia, ID de almacén principal, etc.)
         cantidad:
           type: integer
           minimum: 1
@@ -803,7 +799,7 @@ components:
         sede_id:
           type: integer
           example: 1
-          description: ID de la sede del hospital
+          description: ID de la sede del hospital (se usa como identificador físico del almacén en lotes_almacenes)
 
     DistribucionInternaRequest:
       type: object

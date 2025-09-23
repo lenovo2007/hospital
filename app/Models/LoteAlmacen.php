@@ -13,6 +13,7 @@ class LoteAlmacen extends Model
         'lote_id',
         'almacen_tipo',
         'almacen_id',
+        'sede_id',
         'cantidad',
         'ultima_actualizacion',
         'hospital_id',

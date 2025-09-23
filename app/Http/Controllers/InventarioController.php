@@ -59,11 +59,10 @@ class InventarioController extends Controller
             $loteAlmacen = LoteAlmacen::create([
                 'lote_id' => $lote->id,
                 'almacen_tipo' => $validated['almacen_tipo'],
-                // Usar sede_id como identificador físico de almacén
-                'almacen_id' => $validated['sede_id'],
+                // Usar sede_id como identificador físico (reemplaza a almacen_id)
+                'sede_id' => $validated['sede_id'],
                 'cantidad' => $validated['cantidad'],
                 'hospital_id' => $validated['hospital_id'],
-                'sede_id' => $validated['sede_id'],
             ]);
 
             // 3. Registrar en tabla de almacén específica (opcional, si es necesario)

@@ -75,6 +75,11 @@ class InventarioController extends Controller
             ];
             $payload[$tipoCol] = $validated['almacen_tipo'];
 
+            // Compatibilidad con esquemas donde 'almacen_id' es NOT NULL
+            if (Schema::hasColumn('lotes_almacenes', 'almacen_id')) {
+                $payload['almacen_id'] = $validated['sede_id'];
+            }
+
             $loteAlmacen = LoteAlmacen::create($payload);
 
             // 3. Registrar en tabla de almacén específica (opcional, si es necesario)

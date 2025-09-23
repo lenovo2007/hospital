@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Lote;
 use App\Models\LoteAlmacen;
+use App\Models\AlmacenCentral;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -94,6 +95,68 @@ class InventarioController extends Controller
                 ]
             ], 201);
         });
+    }
+
+    /**
+     * Obtiene el inventario agrupado por insumo_id para una sede específica.
+     * 
+     * @urlParam sede_id int required ID de la sede. Example: 1
+     * 
+     * @response 200 {
+     *     "status": true,
+     *     "data": [
+     *         {
+     *             "insumo_id": 1,
+     *             "codigo": "INS-001",
+     *             "nombre": "Insumo Ejemplo",
+     *             "cantidad_total": 150,
+     *             "lotes": [
+     *                 {
+     *                     "lote_id": 1,
+     *                     "numero_lote": "LOT-2024-001",
+     *                     "fecha_vencimiento": "2024-12-31",
+     *                     "cantidad": 100
+     *                 },
+     *                 {
+     *                     "lote_id": 2,
+     *                     "numero_lote": "LOT-2024-002",
+     *                     "fecha_vencimiento": "2024-11-30",
+     *                     "cantidad": 50
+     *                 }
+     *             ]
+     *         }
+     *     ]
+     * }
+     */
+    public function listarPorSede($sedeId)
+    {
+        $inventario = AlmacenCentral::select(
+                'insumos.id as insumo_id',
+                'insumos.codigo',
+                'insumos.nombre',
+                DB::raw('SUM(almacenes_centrales.cantidad) as cantidad_total')
+            )
+            ->join('insumos', 'almacenes_centrales.insumos', '=', 'insumos.id')
+            ->where('almacenes_centrales.sede_id', $sedeId)
+            ->where('almacenes_centrales.status', true)
+            ->groupBy('insumos.id', 'insumos.codigo', 'insumos.nombre')
+            ->with(['lotes' => function($query) use ($sedeId) {
+                $query->select(
+                    'lotes.id as lote_id',
+                    'lotes.numero_lote',
+                    'lotes.fecha_vencimiento',
+                    'almacenes_centrales.cantidad'
+                )
+                ->join('almacenes_centrales', 'lotes.id', '=', 'almacenes_centrales.lote_id')
+                ->where('almacenes_centrales.sede_id', $sedeId)
+                ->where('almacenes_centrales.status', true);
+            }])
+            ->get();
+
+        return response()->json([
+            'status' => true,
+            'data' => $inventario
+        ]);
     }
 
     // Método opcional para registrar en tablas específicas de almacén

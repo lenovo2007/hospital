@@ -36,6 +36,7 @@ class InventarioController extends Controller
             'insumo_id' => 'required|exists:insumos,id',
             'lote_cod' => 'required|string|max:100',
             'fecha_vencimiento' => 'required|date_format:Y-m-d',
+            'fecha_ingreso' => 'nullable|date_format:Y-m-d',
             // Nuevos tipos de almacén según requerimiento
             'almacen_tipo' => 'required|string|in:almacenCent,almacenPrin,almacenFarm,almacenPar,almacenServAtenciones,almacenServApoyo',
             // Se deja de requerir almacen_id explícito; se usará sede_id como identificador físico
@@ -50,7 +51,7 @@ class InventarioController extends Controller
                 'id_insumo' => $validated['insumo_id'],
                 'numero_lote' => $validated['lote_cod'],
                 'fecha_vencimiento' => $validated['fecha_vencimiento'],
-                'fecha_ingreso' => now(),
+                'fecha_ingreso' => $validated['fecha_ingreso'] ?? now(),
                 'hospital_id' => $validated['hospital_id']
             ]);
 

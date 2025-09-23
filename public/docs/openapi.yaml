@@ -772,38 +772,38 @@ components:
         insumo_id:
           type: integer
           example: 1
-          description: ID del insumo existente
+          description: "ID del insumo existente"
         lote_cod:
           type: string
           example: "LOT-2024-001"
-          description: Código de lote (único por insumo)
+          description: "Código de lote (único por insumo)"
         fecha_vencimiento:
           type: string
           format: date
           example: "2024-12-31"
-          description: Fecha de vencimiento del lote (YYYY-MM-DD)
+          description: "Fecha de vencimiento del lote (YYYY-MM-DD)"
         almacen_tipo:
           type: string
           enum: [farmacia, principal, central, servicios_apoyo, servicios_atenciones]
           example: "farmacia"
-          description: Tipo de almacén destino
+          description: "Tipo de almacén destino"
         almacen_id:
           type: integer
           example: 1
-          description: ID del almacén específico (ej: ID de farmacia, ID de almacén principal, etc.)
+          description: "ID del almacén específico (ej: ID de farmacia, ID de almacén principal, etc.)"
         cantidad:
           type: integer
           minimum: 1
           example: 100
-          description: Cantidad a registrar (debe ser mayor a 0)
+          description: "Cantidad a registrar (debe ser mayor a 0)"
         hospital_id:
           type: integer
           example: 1
-          description: ID del hospital al que pertenece el inventario
+          description: "ID del hospital al que pertenece el inventario"
         sede_id:
           type: integer
           example: 1
-          description: ID de la sede del hospital
+          description: "ID de la sede del hospital"
 
     DistribucionInternaRequest:
       type: object

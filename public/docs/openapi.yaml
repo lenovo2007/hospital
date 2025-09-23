@@ -1395,7 +1395,7 @@ paths:
                       motivo: "Celda de descripción vacía o con solo espacios"
                     - fila: 15
                       motivo: "Error al procesar: El código de insumo ya ha sido registrado previamente."
-  /api/insumos:
+  /api/insumos/import:
     post:
       summary: Importar insumos desde Excel (.xlsx)
       tags: [Insumos]

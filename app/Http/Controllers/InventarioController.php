@@ -36,8 +36,9 @@ class InventarioController extends Controller
             'insumo_id' => 'required|exists:insumos,id',
             'lote_cod' => 'required|string|max:100',
             'fecha_vencimiento' => 'required|date_format:Y-m-d',
-            'almacen_tipo' => 'required|string|in:farmacia,principal,central,servicios_apoyo,servicios_atenciones',
-            'almacen_id' => 'required|integer|min:1',
+            // Nuevos tipos de almacén según requerimiento
+            'almacen_tipo' => 'required|string|in:almacenCent,almacenPrin,almacenFarm,almacenPar,almacenServAtenciones,almacenServApoyo',
+            // Se deja de requerir almacen_id explícito; se usará sede_id como identificador físico
             'cantidad' => 'required|integer|min:1',
             'hospital_id' => 'required|exists:hospitales,id',
             'sede_id' => 'required|exists:sedes,id',
@@ -57,7 +58,8 @@ class InventarioController extends Controller
             $loteAlmacen = LoteAlmacen::create([
                 'lote_id' => $lote->id,
                 'almacen_tipo' => $validated['almacen_tipo'],
-                'almacen_id' => $validated['almacen_id'],
+                // Usar sede_id como identificador físico de almacén
+                'almacen_id' => $validated['sede_id'],
                 'cantidad' => $validated['cantidad'],
                 'hospital_id' => $validated['hospital_id'],
                 'sede_id' => $validated['sede_id'],

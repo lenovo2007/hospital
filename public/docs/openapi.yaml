@@ -2185,6 +2185,82 @@ paths:
               schema:
                 $ref: '#/components/schemas/Error'
 
+  /api/inventario/sede/{sedeId}:
+    get:
+      summary: Listar inventario por sede
+      description: |
+        Obtiene el inventario agrupado por insumo para una sede específica.
+        Incluye la cantidad total por insumo y el detalle de los lotes.
+      tags: [Inventario]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sedeId
+          in: path
+          required: true
+          description: ID de la sede a consultar
+          schema:
+            type: integer
+            example: 1
+      responses:
+        '200':
+          description: Lista de inventario por insumo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    example: true
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        insumo_id:
+                          type: integer
+                          example: 1
+                        codigo:
+                          type: string
+                          example: "INS-001"
+                        nombre:
+                          type: string
+                          example: "Insumo de ejemplo"
+                        cantidad_total:
+                          type: integer
+                          example: 150
+                        lotes:
+                          type: array
+                          items:
+                            type: object
+                            properties:
+                              lote_id:
+                                type: integer
+                                example: 1
+                              numero_lote:
+                                type: string
+                                example: "LOT-2024-001"
+                              fecha_vencimiento:
+                                type: string
+                                format: date
+                                example: "2024-12-31"
+                              cantidad:
+                                type: integer
+                                example: 100
+        '404':
+          description: Sede no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
   /api/almacenes_servicios_apoyo/{id}:
     get:
       summary: Ver detalle de almacén servicios de apoyo

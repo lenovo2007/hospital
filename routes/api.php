@@ -39,10 +39,6 @@ Route::post('/users/password/forgot', [UserController::class, 'forgotPassword'])
 Route::post('/users/password/reset', [UserController::class, 'resetPassword']);
 
 
-// Inventario (público): consulta de inventario por sede
-Route::get('/inventario/sede/{sedeId}', [\App\Http\Controllers\InventarioController::class, 'listarPorSede'])
-    ->where('sedeId', '[0-9]+');
-
 Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::class])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
@@ -118,7 +114,10 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
     Route::put('/almacenes_servicios_atenciones/{almacenes_servicios_atencione}', [AlmacenServiciosAtencionesController::class, 'update']);
     Route::delete('/almacenes_servicios_atenciones/{almacenes_servicios_atencione}', [AlmacenServiciosAtencionesController::class, 'destroy']);
 
-    // Inventario - Registro de lotes y almacenamiento
+    // Inventario - Consulta protegida (requiere auth, sin CheckCrudPermissions)
+    Route::get('/inventario/sede/{sedeId}', [\App\Http\Controllers\InventarioController::class, 'listarPorSede'])
+        ->where('sedeId', '[0-9]+')
+        ->withoutMiddleware(\App\Http\Middleware\CheckCrudPermissions::class);
 
     // Inventario - Registro de lotes y almacenamiento
     Route::post('/inventario/registrar', [\App\Http\Controllers\InventarioController::class, 'registrar']);

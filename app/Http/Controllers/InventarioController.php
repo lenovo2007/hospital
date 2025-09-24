@@ -136,10 +136,7 @@ class InventarioController extends Controller
             // Detectar nombres de columna según el esquema real
             $tabla = 'almacenes_centrales';
             if (!Schema::hasTable($tabla)) {
-                return response()->json([
-                    'status' => true,
-                    'data' => [],
-                ]);
+                throw new \RuntimeException("No se encontró la tabla $tabla");
             }
             $insumoCol = Schema::hasColumn($tabla, 'insumos')
                 ? 'insumos'
@@ -150,11 +147,11 @@ class InventarioController extends Controller
             $loteCol = Schema::hasColumn($tabla, 'lote_id') ? 'lote_id' : null;
 
             if ($insumoCol === null || $sedeCol === null || $loteCol === null) {
-                // Faltan columnas requeridas; responder vacío de forma elegante
-                return response()->json([
-                    'status' => true,
-                    'data' => [],
-                ]);
+                $faltantes = [];
+                if ($insumoCol === null) { $faltantes[] = 'insumo (insumos/insumo_id)'; }
+                if ($sedeCol === null) { $faltantes[] = 'sede (sede_id/sede)'; }
+                if ($loteCol === null) { $faltantes[] = 'lote (lote_id)'; }
+                throw new \RuntimeException('No se encontraron columnas requeridas en ' . $tabla . ': ' . implode(', ', $faltantes));
             }
 
             // 1) Totales por insumo en la sede
@@ -173,9 +170,10 @@ class InventarioController extends Controller
 
             if ($insumos->isEmpty()) {
                 return response()->json([
-                    'status' => true,
-                    'data' => []
-                ]);
+                    'status' => false,
+                    'mensaje' => 'No hay registros de inventario para la sede especificada.',
+                    'data' => null,
+                ], 200);
             }
 
             // 2) Lotes por insumo en la sede

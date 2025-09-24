@@ -116,7 +116,8 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
 
     // Inventario - Registro y consulta de lotes
     Route::get('/inventario/sede/{sedeId}', [\App\Http\Controllers\InventarioController::class, 'listarPorSede'])
-        ->where('sedeId', '[0-9]+');
+        ->where('sedeId', '[0-9]+')
+        ->withoutMiddleware(\App\Http\Middleware\CheckCrudPermissions::class);
 
     // Inventario - Registro de lotes y almacenamiento
     Route::post('/inventario/registrar', [\App\Http\Controllers\InventarioController::class, 'registrar']);

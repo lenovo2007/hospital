@@ -172,7 +172,7 @@ class InventarioController extends Controller
                 return response()->json([
                     'status' => false,
                     'mensaje' => 'No hay registros de inventario para la sede especificada.',
-                    'data' => null,
+                    'data' => [],
                 ], 200);
             }
 

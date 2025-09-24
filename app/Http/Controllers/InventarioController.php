@@ -8,6 +8,7 @@ use App\Models\AlmacenCentral;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Throwable;
 
 class InventarioController extends Controller
 {
@@ -130,33 +131,68 @@ class InventarioController extends Controller
      */
     public function listarPorSede($sedeId)
     {
-        $inventario = AlmacenCentral::select(
-                'insumos.id as insumo_id',
-                'insumos.codigo',
-                'insumos.nombre',
-                DB::raw('SUM(almacenes_centrales.cantidad) as cantidad_total')
-            )
-            ->join('insumos', 'almacenes_centrales.insumos', '=', 'insumos.id')
-            ->where('almacenes_centrales.sede_id', $sedeId)
-            ->where('almacenes_centrales.status', true)
-            ->groupBy('insumos.id', 'insumos.codigo', 'insumos.nombre')
-            ->with(['lotes' => function($query) use ($sedeId) {
-                $query->select(
+        try {
+            // 1) Totales por insumo en la sede
+            $insumos = DB::table('almacenes_centrales')
+                ->join('insumos', 'almacenes_centrales.insumos', '=', 'insumos.id')
+                ->where('almacenes_centrales.sede_id', $sedeId)
+                ->where('almacenes_centrales.status', true)
+                ->select(
+                    'insumos.id as insumo_id',
+                    'insumos.codigo',
+                    'insumos.nombre',
+                    DB::raw('SUM(almacenes_centrales.cantidad) as cantidad_total')
+                )
+                ->groupBy('insumos.id', 'insumos.codigo', 'insumos.nombre')
+                ->get();
+
+            if ($insumos->isEmpty()) {
+                return response()->json([
+                    'status' => true,
+                    'data' => []
+                ]);
+            }
+
+            // 2) Lotes por insumo en la sede
+            $insumoIds = $insumos->pluck('insumo_id')->all();
+
+            $lotesPorInsumo = DB::table('almacenes_centrales')
+                ->join('lotes', 'almacenes_centrales.lote_id', '=', 'lotes.id')
+                ->where('almacenes_centrales.sede_id', $sedeId)
+                ->where('almacenes_centrales.status', true)
+                ->whereIn('almacenes_centrales.insumos', $insumoIds)
+                ->select(
+                    'almacenes_centrales.insumos as insumo_id',
                     'lotes.id as lote_id',
                     'lotes.numero_lote',
                     'lotes.fecha_vencimiento',
                     'almacenes_centrales.cantidad'
                 )
-                ->join('almacenes_centrales', 'lotes.id', '=', 'almacenes_centrales.lote_id')
-                ->where('almacenes_centrales.sede_id', $sedeId)
-                ->where('almacenes_centrales.status', true);
-            }])
-            ->get();
+                ->get()
+                ->groupBy('insumo_id');
 
-        return response()->json([
-            'status' => true,
-            'data' => $inventario
-        ]);
+            // 3) Armar respuesta
+            $data = $insumos->map(function ($row) use ($lotesPorInsumo) {
+                $row->lotes = array_values(optional($lotesPorInsumo->get($row->insumo_id))->toArray() ?? []);
+                return $row;
+            });
+
+            return response()->json([
+                'status' => true,
+                'data' => $data
+            ]);
+        } catch (Throwable $e) {
+            // En entorno local, incluir mensaje de error para diagnóstico
+            $mensaje = 'Error al listar inventario por sede';
+            if (app()->environment('local')) {
+                $mensaje .= ': ' . $e->getMessage();
+            }
+            return response()->json([
+                'status' => false,
+                'mensaje' => $mensaje,
+                'data' => null,
+            ], 500);
+        }
     }
 
     // Método opcional para registrar en tablas específicas de almacén

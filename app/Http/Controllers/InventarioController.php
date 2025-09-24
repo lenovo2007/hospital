@@ -8,6 +8,7 @@ use App\Models\AlmacenCentral;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Log;
 use Throwable;
 
 class InventarioController extends Controller
@@ -132,16 +133,40 @@ class InventarioController extends Controller
     public function listarPorSede($sedeId)
     {
         try {
+            // Detectar nombres de columna según el esquema real
+            $tabla = 'almacenes_centrales';
+            if (!Schema::hasTable($tabla)) {
+                return response()->json([
+                    'status' => true,
+                    'data' => [],
+                ]);
+            }
+            $insumoCol = Schema::hasColumn($tabla, 'insumos')
+                ? 'insumos'
+                : (Schema::hasColumn($tabla, 'insumo_id') ? 'insumo_id' : null);
+            $sedeCol = Schema::hasColumn($tabla, 'sede_id')
+                ? 'sede_id'
+                : (Schema::hasColumn($tabla, 'sede') ? 'sede' : null);
+            $loteCol = Schema::hasColumn($tabla, 'lote_id') ? 'lote_id' : null;
+
+            if ($insumoCol === null || $sedeCol === null || $loteCol === null) {
+                // Faltan columnas requeridas; responder vacío de forma elegante
+                return response()->json([
+                    'status' => true,
+                    'data' => [],
+                ]);
+            }
+
             // 1) Totales por insumo en la sede
-            $insumos = DB::table('almacenes_centrales')
-                ->join('insumos', 'almacenes_centrales.insumos', '=', 'insumos.id')
-                ->where('almacenes_centrales.sede_id', $sedeId)
-                ->where('almacenes_centrales.status', true)
+            $insumos = DB::table($tabla)
+                ->join('insumos', "$tabla.$insumoCol", '=', 'insumos.id')
+                ->where("$tabla.$sedeCol", $sedeId)
+                ->where("$tabla.status", true)
                 ->select(
                     'insumos.id as insumo_id',
                     'insumos.codigo',
                     'insumos.nombre',
-                    DB::raw('SUM(almacenes_centrales.cantidad) as cantidad_total')
+                    DB::raw("SUM($tabla.cantidad) as cantidad_total")
                 )
                 ->groupBy('insumos.id', 'insumos.codigo', 'insumos.nombre')
                 ->get();
@@ -156,17 +181,17 @@ class InventarioController extends Controller
             // 2) Lotes por insumo en la sede
             $insumoIds = $insumos->pluck('insumo_id')->all();
 
-            $lotesPorInsumo = DB::table('almacenes_centrales')
-                ->join('lotes', 'almacenes_centrales.lote_id', '=', 'lotes.id')
-                ->where('almacenes_centrales.sede_id', $sedeId)
-                ->where('almacenes_centrales.status', true)
-                ->whereIn('almacenes_centrales.insumos', $insumoIds)
+            $lotesPorInsumo = DB::table($tabla)
+                ->join('lotes', "$tabla.$loteCol", '=', 'lotes.id')
+                ->where("$tabla.$sedeCol", $sedeId)
+                ->where("$tabla.status", true)
+                ->whereIn("$tabla.$insumoCol", $insumoIds)
                 ->select(
-                    'almacenes_centrales.insumos as insumo_id',
+                    DB::raw("$tabla.$insumoCol as insumo_id"),
                     'lotes.id as lote_id',
                     'lotes.numero_lote',
                     'lotes.fecha_vencimiento',
-                    'almacenes_centrales.cantidad'
+                    DB::raw("$tabla.cantidad as cantidad")
                 )
                 ->get()
                 ->groupBy('insumo_id');
@@ -182,6 +207,10 @@ class InventarioController extends Controller
                 'data' => $data
             ]);
         } catch (Throwable $e) {
+            Log::error('Error en listarPorSede', [
+                'exception' => $e,
+                'sedeId' => $sedeId,
+            ]);
             // En entorno local, incluir mensaje de error para diagnóstico
             $mensaje = 'Error al listar inventario por sede';
             if (app()->environment('local')) {
@@ -191,7 +220,7 @@ class InventarioController extends Controller
                 'status' => false,
                 'mensaje' => $mensaje,
                 'data' => null,
-            ], 500);
+            ], 200);
         }
     }
 

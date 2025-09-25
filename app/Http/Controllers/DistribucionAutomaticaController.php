@@ -2,10 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Hospital;
-use App\Models\TipoHospitalDistribucion;
-use App\Models\Lote;
 use App\Models\MovimientoStock;
+use App\Models\LoteAlmacen;
 use App\Services\StockService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -35,75 +33,85 @@ class DistribucionAutomaticaController extends Controller
             'estrategia' => ['required','in:porcentaje'],
         ]);
 
-        // Obtener hospitales objetivo
-        $hospitales = Hospital::where('status', 'activo')
+        // Obtener hospitales objetivo (desde tabla 'hospitales')
+        $hospitales = DB::table('hospitales')
             ->when(!empty($data['hospital_ids']), fn($q) => $q->whereIn('id', $data['hospital_ids']))
-            ->with('principalAlmacen') // asumir relación
+            ->where('status', 'activo')
+            ->select('id', 'tipo')
             ->get();
 
         $resultados = [];
         foreach ($data['lote_ids'] as $loteId) {
-            $lote = Lote::find($loteId);
-            if (!$lote) continue;
-
-            // Calcular stock disponible en central
-            $stockCentral = \App\Models\LoteAlmacen::where('lote_id', $loteId)
+            // Stock disponible en central para este lote
+            $stockCentral = LoteAlmacen::where('lote_id', $loteId)
                 ->where('almacen_tipo', 'central')
                 ->where('almacen_id', $data['origen_central_id'])
                 ->first();
-            $disponible = $stockCentral ? $stockCentral->cantidad : 0;
+            $disponible = $stockCentral?->cantidad ?? 0;
+            if ($disponible <= 0) { continue; }
 
-            if ($disponible <= 0) continue;
+            // Construir mapa de porcentajes por tipo existente en BD
+            $tipos = DB::table('tipos_hospital_distribuciones')->pluck('porcentaje', 'tipo');
+            if ($tipos->isEmpty()) { continue; }
 
-            // Distribuir por porcentaje de tipo de hospital
-            foreach ($hospitales as $hospital) {
-                $tipoDist = TipoHospitalDistribucion::where('tipo', $hospital->tipo)->first();
-                if (!$tipoDist) continue;
+            // Suma total de porcentajes relevantes para hospitales seleccionados
+            $sumaPct = 0.0;
+            $targets = [];
+            foreach ($hospitales as $h) {
+                $pct = (float) ($tipos[$h->tipo] ?? 0);
+                if ($pct > 0) {
+                    $targets[] = ['hospital_id' => $h->id, 'tipo' => $h->tipo, 'pct' => $pct];
+                    $sumaPct += $pct;
+                }
+            }
+            if ($sumaPct <= 0) { continue; }
 
-                $porcentaje = $tipoDist->porcentaje / 100; // de decimal a porcentaje
-                $cantidadAsignada = (int) ($disponible * $porcentaje);
+            // Distribución proporcional al disponible según porcentaje relativo
+            foreach ($targets as $t) {
+                $rel = $t['pct'] / $sumaPct; // normalizado
+                $cantidadAsignada = (int) floor($disponible * $rel);
+                if ($cantidadAsignada <= 0) { continue; }
 
-                if ($cantidadAsignada <= 0) continue;
+                // Buscar almacén principal del hospital destino
+                $principal = DB::table('almacenes_principales')
+                    ->where('hospital_id', $t['hospital_id'])
+                    ->select('id')
+                    ->first();
+                if (!$principal) { continue; }
 
-                // Encontrar almacén principal del hospital
-                $principalAlmacen = $hospital->principalAlmacen;
-                if (!$principalAlmacen) continue;
-
-                // Transferir
                 try {
                     $this->stock->transferir(
-                        loteId: $loteId,
+                        loteId: (int) $loteId,
                         origenTipo: 'central',
                         origenId: (int) $data['origen_central_id'],
                         destinoTipo: 'principal',
-                        destinoId: $principalAlmacen->id,
+                        destinoId: (int) $principal->id,
                         cantidad: $cantidadAsignada,
-                        hospitalIdDestino: $hospital->id
+                        hospitalIdDestino: (int) $t['hospital_id']
                     );
 
-                    // Registrar movimiento
                     MovimientoStock::create([
                         'tipo' => 'transferencia',
-                        'lote_id' => $loteId,
-                        'hospital_id' => $hospital->id,
+                        'lote_id' => (int) $loteId,
+                        'hospital_id' => (int) $t['hospital_id'],
                         'origen_almacen_tipo' => 'central',
                         'origen_almacen_id' => (int) $data['origen_central_id'],
                         'destino_almacen_tipo' => 'principal',
-                        'destino_almacen_id' => $principalAlmacen->id,
+                        'destino_almacen_id' => (int) $principal->id,
                         'cantidad' => $cantidadAsignada,
                         'user_id' => (int) $request->user()->id,
                     ]);
 
                     $resultados[] = [
-                        'hospital_id' => $hospital->id,
-                        'lote_id' => $loteId,
+                        'hospital_id' => (int) $t['hospital_id'],
+                        'lote_id' => (int) $loteId,
                         'cantidad' => $cantidadAsignada,
-                        'porcentaje' => $tipoDist->porcentaje,
+                        'porcentaje_relativo' => $t['pct'],
                     ];
                 } catch (\Exception $e) {
                     $resultados[] = [
-                        'hospital_id' => $hospital->id,
-                        'lote_id' => $loteId,
+                        'hospital_id' => (int) $t['hospital_id'],
+                        'lote_id' => (int) $loteId,
                         'error' => $e->getMessage(),
                     ];
                 }

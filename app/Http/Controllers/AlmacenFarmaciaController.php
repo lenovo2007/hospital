@@ -9,11 +9,12 @@ class AlmacenFarmaciaController extends Controller
 {
     public function index(Request $request)
     {
-        $status = $request->query('status', 'activo');
-        if ($status === 'todos') { $status = 'all'; }
-        if (!in_array($status, ['activo', 'inactivo', 'all'], true)) { $status = 'activo'; }
+        $statusParam = $request->query('status', 'true');
         $query = AlmacenFarmacia::query();
-        if ($status !== 'all') { $query->where('status', $status); }
+        if ($statusParam !== 'all' && $statusParam !== 'todos') {
+            $statusBool = in_array(strtolower((string)$statusParam), ['true', '1', 'activo'], true);
+            $query->where('status', $statusBool);
+        }
         $items = $query->latest()->paginate(15);
         $mensaje = $items->total() > 0 ? 'Listado de almacenes farmacia.' : 'almacenes_farmacia no encontrado';
         return response()->json([
@@ -26,16 +27,20 @@ class AlmacenFarmaciaController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'insumos' => ['required','string','max:255'],
-            'codigo' => ['required','string','max:100'],
-            'numero_lote' => ['required','string','max:100'],
-            'fecha_vencimiento' => ['required','date'],
-            'fecha_ingreso' => ['required','date'],
             'cantidad' => ['required','integer','min:0'],
-            'status' => ['nullable','in:activo,inactivo'],
+            'sede_id' => ['required','integer','exists:sedes,id'],
+            'lote_id' => ['required','integer','exists:lotes,id'],
+            'hospital_id' => ['required','integer','exists:hospitales,id'],
+            'status' => ['nullable','boolean'],
         ]);
-        if (!isset($data['status'])) { $data['status'] = 'activo'; }
-        $item = AlmacenFarmacia::create($data);
+
+        $item = new AlmacenFarmacia();
+        $item->cantidad = $data['cantidad'];
+        $item->sede_id = $data['sede_id'];
+        $item->lote_id = $data['lote_id'];
+        $item->hospital_id = $data['hospital_id'];
+        $item->status = array_key_exists('status', $data) ? (bool)$data['status'] : true;
+        $item->save();
         return response()->json([
             'status' => true,
             'mensaje' => 'Almacén farmacia creado.',
@@ -63,15 +68,18 @@ class AlmacenFarmaciaController extends Controller
     public function update(Request $request, AlmacenFarmacia $almacenes_farmacium)
     {
         $data = $request->validate([
-            'insumos' => ['sometimes','required','string','max:255'],
-            'codigo' => ['sometimes','required','string','max:100'],
-            'numero_lote' => ['sometimes','required','string','max:100'],
-            'fecha_vencimiento' => ['sometimes','required','date'],
-            'fecha_ingreso' => ['sometimes','required','date'],
             'cantidad' => ['sometimes','required','integer','min:0'],
-            'status' => ['nullable','in:activo,inactivo'],
+            'sede_id' => ['sometimes','required','integer','exists:sedes,id'],
+            'lote_id' => ['sometimes','required','integer','exists:lotes,id'],
+            'hospital_id' => ['sometimes','required','integer','exists:hospitales,id'],
+            'status' => ['nullable','boolean'],
         ]);
-        $almacenes_farmacium->update($data);
+        if (array_key_exists('cantidad', $data)) { $almacenes_farmacium->cantidad = $data['cantidad']; }
+        if (array_key_exists('sede_id', $data)) { $almacenes_farmacium->sede_id = $data['sede_id']; }
+        if (array_key_exists('lote_id', $data)) { $almacenes_farmacium->lote_id = $data['lote_id']; }
+        if (array_key_exists('hospital_id', $data)) { $almacenes_farmacium->hospital_id = $data['hospital_id']; }
+        if (array_key_exists('status', $data)) { $almacenes_farmacium->status = (bool)$data['status']; }
+        $almacenes_farmacium->save();
         $almacenes_farmacium->refresh();
         return response()->json([
             'status' => true,

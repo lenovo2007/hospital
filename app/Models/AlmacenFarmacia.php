@@ -12,12 +12,10 @@ class AlmacenFarmacia extends Model
     protected $table = 'almacenes_farmacia';
 
     protected $fillable = [
-        'insumos',
-        'codigo',
-        'numero_lote',
-        'fecha_vencimiento',
-        'fecha_ingreso',
         'cantidad',
+        'sede_id',
+        'lote_id',
+        'hospital_id',
         'status',
     ];
 }

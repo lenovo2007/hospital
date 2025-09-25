@@ -85,8 +85,8 @@ class InventarioController extends Controller
 
             $loteAlmacen = LoteAlmacen::create($payload);
 
-            // 3. Registrar en tabla de almacén específica (opcional, si es necesario)
-            // $this->registrarEnAlmacenEspecifico($validated, $lote->id);
+            // 3. Registrar en la tabla del almacén específico correspondiente
+            $this->registrarEnAlmacenEspecifico($validated, $lote->id);
 
             return response()->json([
                 'status' => true,
@@ -133,31 +133,19 @@ class InventarioController extends Controller
     public function listarPorSede($sedeId)
     {
         try {
-            // Detectar nombres de columna según el esquema real
             $tabla = 'almacenes_centrales';
             if (!Schema::hasTable($tabla)) {
                 throw new \RuntimeException("No se encontró la tabla $tabla");
             }
-            $insumoCol = Schema::hasColumn($tabla, 'insumos')
-                ? 'insumos'
-                : (Schema::hasColumn($tabla, 'insumo_id') ? 'insumo_id' : null);
-            $sedeCol = Schema::hasColumn($tabla, 'sede_id')
-                ? 'sede_id'
-                : (Schema::hasColumn($tabla, 'sede') ? 'sede' : null);
-            $loteCol = Schema::hasColumn($tabla, 'lote_id') ? 'lote_id' : null;
 
-            if ($insumoCol === null || $sedeCol === null || $loteCol === null) {
-                $faltantes = [];
-                if ($insumoCol === null) { $faltantes[] = 'insumo (insumos/insumo_id)'; }
-                if ($sedeCol === null) { $faltantes[] = 'sede (sede_id/sede)'; }
-                if ($loteCol === null) { $faltantes[] = 'lote (lote_id)'; }
-                throw new \RuntimeException('No se encontraron columnas requeridas en ' . $tabla . ': ' . implode(', ', $faltantes));
-            }
+            // Esquema objetivo: almacenes_centrales(cantidad, sede_id, lote_id, hospital_id, status)
+            // Se deriva el insumo a través de lotes.id_insumo
 
             // 1) Totales por insumo en la sede
             $insumos = DB::table($tabla)
-                ->join('insumos', "$tabla.$insumoCol", '=', 'insumos.id')
-                ->where("$tabla.$sedeCol", $sedeId)
+                ->join('lotes', "$tabla.lote_id", '=', 'lotes.id')
+                ->join('insumos', 'lotes.id_insumo', '=', 'insumos.id')
+                ->where("$tabla.sede_id", $sedeId)
                 ->where("$tabla.status", true)
                 ->select(
                     'insumos.id as insumo_id',
@@ -180,12 +168,12 @@ class InventarioController extends Controller
             $insumoIds = $insumos->pluck('insumo_id')->all();
 
             $lotesPorInsumo = DB::table($tabla)
-                ->join('lotes', "$tabla.$loteCol", '=', 'lotes.id')
-                ->where("$tabla.$sedeCol", $sedeId)
+                ->join('lotes', "$tabla.lote_id", '=', 'lotes.id')
+                ->where("$tabla.sede_id", $sedeId)
                 ->where("$tabla.status", true)
-                ->whereIn("$tabla.$insumoCol", $insumoIds)
+                ->whereIn('lotes.id_insumo', $insumoIds)
                 ->select(
-                    DB::raw("$tabla.$insumoCol as insumo_id"),
+                    DB::raw('lotes.id_insumo as insumo_id'),
                     'lotes.id as lote_id',
                     'lotes.numero_lote',
                     'lotes.fecha_vencimiento',
@@ -223,26 +211,50 @@ class InventarioController extends Controller
     }
 
     // Método opcional para registrar en tablas específicas de almacén
-    protected function registrarEnAlmacenEspecifico($data, $loteId)
+    protected function registrarEnAlmacenEspecifico(array $data, int $loteId): void
     {
-        $tabla = match($data['almacen_tipo']) {
-            'farmacia' => 'almacenes_farmacia',
-            'principal' => 'almacenes_principales',
-            'central' => 'almacenes_centrales',
-            'servicios_apoyo' => 'almacenes_servicios_apoyo',
-            'servicios_atenciones' => 'almacenes_servicios_atenciones',
+        $tabla = match ($data['almacen_tipo']) {
+            'almacenCent' => 'almacenes_centrales',
+            'almacenPrin' => 'almacenes_principales',
+            'almacenFarm' => 'almacenes_farmacia',
+            'almacenPar' => 'almacenes_paralelo',
+            'almacenServApoyo' => 'almacenes_servicios_apoyo',
+            'almacenServAtenciones' => 'almacenes_servicios_atenciones',
             default => null,
         };
 
-        if ($tabla) {
-            DB::table($tabla)->insert([
-                'lote_id' => $loteId,
-                'cantidad' => $data['cantidad'],
-                'hospital_id' => $data['hospital_id'],
-                'sede_id' => $data['sede_id'],
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+        if (!$tabla || !Schema::hasTable($tabla)) {
+            return;
         }
+
+        $clave = [
+            'sede_id' => $data['sede_id'],
+            'lote_id' => $loteId,
+            'hospital_id' => $data['hospital_id'],
+        ];
+
+        $cantidad = (int) $data['cantidad'];
+
+        $registroExistente = DB::table($tabla)
+            ->where($clave)
+            ->lockForUpdate()
+            ->first();
+
+        if ($registroExistente) {
+            DB::table($tabla)
+                ->where('id', $registroExistente->id)
+                ->increment('cantidad', $cantidad, [
+                    'status' => true,
+                    'updated_at' => now(),
+                ]);
+            return;
+        }
+
+        DB::table($tabla)->insert(array_merge($clave, [
+            'cantidad' => $cantidad,
+            'status' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]));
     }
 }

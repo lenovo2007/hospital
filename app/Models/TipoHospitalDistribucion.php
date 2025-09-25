@@ -9,11 +9,16 @@ class TipoHospitalDistribucion extends Model
     protected $table = 'tipos_hospital_distribuciones';
 
     protected $fillable = [
-        'tipo',
-        'porcentaje',
+        'tipo1',
+        'tipo2',
+        'tipo3',
+        'tipo4',
     ];
 
     protected $casts = [
-        'porcentaje' => 'decimal:2',
+        'tipo1' => 'decimal:2',
+        'tipo2' => 'decimal:2',
+        'tipo3' => 'decimal:2',
+        'tipo4' => 'decimal:2',
     ];
 }

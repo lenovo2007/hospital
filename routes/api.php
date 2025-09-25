@@ -156,12 +156,9 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
     Route::post('/lotes/{lote}/almacenes', [LoteController::class, 'upsertStock']);
     Route::delete('/lotes/{lote}/almacenes/{almacen_id}', [LoteController::class, 'deleteStock']);
 
-    // Distribución de tipos de hospitales CRUD
+    // Configuración de porcentajes por tipo de hospital (único registro)
     Route::get('/tipos_hospital_distribuciones', [TipoHospitalDistribucionController::class, 'index']);
     Route::post('/tipos_hospital_distribuciones', [TipoHospitalDistribucionController::class, 'store']);
-    Route::get('/tipos_hospital_distribuciones/{tipos_hospital_distribucione}', [TipoHospitalDistribucionController::class, 'show']);
-    Route::put('/tipos_hospital_distribuciones/{tipos_hospital_distribucione}', [TipoHospitalDistribucionController::class, 'update']);
-    Route::delete('/tipos_hospital_distribuciones/{tipos_hospital_distribucione}', [TipoHospitalDistribucionController::class, 'destroy']);
 
     // Distribución desde almacén central hacia principal (hospital)
     Route::post('/distribucion/central', [DistribucionCentralController::class, 'distribuir']);

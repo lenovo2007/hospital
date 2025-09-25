@@ -658,24 +658,30 @@ components:
         total: { type: integer }
     TipoHospitalDistribucion:
       type: object
-      description: Porcentaje de distribución por tipo de hospital.
+      description: Configuración de porcentajes para los tipos de hospitales.
       properties:
         id: { type: integer, example: 1 }
-        tipo: { type: string, example: "Tipo 1" }
-        porcentaje: { type: number, format: float, example: 0.11, description: Porcentaje en % }
+        tipo1: { type: number, format: float, example: 25, description: Porcentaje para Tipo 1 }
+        tipo2: { type: number, format: float, example: 25, description: Porcentaje para Tipo 2 }
+        tipo3: { type: number, format: float, example: 25, description: Porcentaje para Tipo 3 }
+        tipo4: { type: number, format: float, example: 25, description: Porcentaje para Tipo 4 }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
-    PaginatedTipoHospitalDistribuciones:
+    TipoHospitalDistribucionRequest:
       type: object
+      required: [tipo1, tipo2, tipo3, tipo4]
       properties:
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/TipoHospitalDistribucion'
-        current_page: { type: integer }
-        last_page: { type: integer }
-        per_page: { type: integer }
-        total: { type: integer }
+        tipo1: { type: number, minimum: 0, maximum: 100, example: 25 }
+        tipo2: { type: number, minimum: 0, maximum: 100, example: 25 }
+        tipo3: { type: number, minimum: 0, maximum: 100, example: 25 }
+        tipo4: { type: number, minimum: 0, maximum: 100, example: 25 }
+    StandardResponseItemTipoHospitalDistribucion:
+      allOf:
+        - $ref: '#/components/schemas/StandardResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/TipoHospitalDistribucion'
     MovimientoStock:
       type: object
       properties:
@@ -800,6 +806,50 @@ components:
 security:
   - bearerAuth: []
 paths:
+  /api/tipos_hospital_distribuciones:
+    get:
+      summary: Obtener configuración de porcentajes por tipo de hospital
+      tags: [TiposHospitalDistribuciones]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Configuración actual
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TipoHospitalDistribucion'
+    post:
+      summary: Actualizar porcentajes por tipo de hospital
+      description: Reemplaza los porcentajes de los cuatro tipos fijos. La suma debe ser 100.
+      tags: [TiposHospitalDistribuciones]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TipoHospitalDistribucionRequest'
+            examples:
+              ejemplo:
+                value:
+                  tipo1: 25
+                  tipo2: 25
+                  tipo3: 25
+                  tipo4: 25
+      responses:
+        '200':
+          description: Configuración actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponseItemTipoHospitalDistribucion'
   /api/users:
     post:
       summary: Crear usuario
@@ -943,12 +993,6 @@ paths:
                     properties:
                       data:
                         $ref: '#/components/schemas/PaginatedInsumos'
-  /api/distribucion/central:
-    post:
-      summary: Distribuir desde almacén central hacia principal del hospital
-      tags: [Distribucion]
-      security:
-        - bearerAuth: []
       requestBody:
         required: true
         content:

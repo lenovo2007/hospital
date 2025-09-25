@@ -657,24 +657,30 @@ components:
         total: { type: integer }
     TipoHospitalDistribucion:
       type: object
-      description: Porcentaje de distribución por tipo de hospital.
+      description: Configuración de porcentajes para los tipos de hospitales.
       properties:
         id: { type: integer, example: 1 }
-        tipo: { type: string, example: "Tipo 1" }
-        porcentaje: { type: number, format: float, example: 0.11, description: Porcentaje en % }
+        tipo1: { type: number, format: float, example: 25, description: Porcentaje para Tipo 1 }
+        tipo2: { type: number, format: float, example: 25, description: Porcentaje para Tipo 2 }
+        tipo3: { type: number, format: float, example: 25, description: Porcentaje para Tipo 3 }
+        tipo4: { type: number, format: float, example: 25, description: Porcentaje para Tipo 4 }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
-    PaginatedTipoHospitalDistribuciones:
+    TipoHospitalDistribucionRequest:
       type: object
+      required: [tipo1, tipo2, tipo3, tipo4]
       properties:
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/TipoHospitalDistribucion'
-        current_page: { type: integer }
-        last_page: { type: integer }
-        per_page: { type: integer }
-        total: { type: integer }
+        tipo1: { type: number, minimum: 0, maximum: 100, example: 25 }
+        tipo2: { type: number, minimum: 0, maximum: 100, example: 25 }
+        tipo3: { type: number, minimum: 0, maximum: 100, example: 25 }
+        tipo4: { type: number, minimum: 0, maximum: 100, example: 25 }
+    StandardResponseItemTipoHospitalDistribucion:
+      allOf:
+        - $ref: '#/components/schemas/StandardResponse'
+        - type: object
+          properties:
+            data:
+              $ref: '#/components/schemas/TipoHospitalDistribucion'
     MovimientoStock:
       type: object
       properties:
@@ -1082,128 +1088,6 @@ paths:
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/SolicitudFaltante'
-  /api/tipos_hospital_distribuciones:
-    get:
-      summary: Listar distribución de tipos de hospitales
-      tags: [TiposHospitalDistribucion]
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Listado paginado
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/PaginatedTipoHospitalDistribuciones'
-    post:
-      summary: Crear distribución de tipo de hospital
-      tags: [TiposHospitalDistribucion]
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [tipo, porcentaje]
-              properties:
-                tipo: { type: string, maxLength: 100 }
-                porcentaje: { type: number, format: float, minimum: 0, maximum: 100 }
-      responses:
-        '200':
-          description: Distribución creada
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/TipoHospitalDistribucion'
-  /api/tipos_hospital_distribuciones/{tipos_hospital_distribucione}:
-    get:
-      summary: Ver detalle de distribución
-      tags: [TiposHospitalDistribucion]
-      security:
-        - bearerAuth: []
-      parameters:
-        - in: path
-          name: tipos_hospital_distribucione
-          required: true
-          schema: { type: integer }
-      responses:
-        '200':
-          description: Detalle de distribución
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/TipoHospitalDistribucion'
-    put:
-      summary: Actualizar distribución
-      tags: [TiposHospitalDistribucion]
-      security:
-        - bearerAuth: []
-      parameters:
-        - in: path
-          name: tipos_hospital_distribucione
-          required: true
-          schema: { type: integer }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                tipo: { type: string, maxLength: 100 }
-                porcentaje: { type: number, format: float, minimum: 0, maximum: 100 }
-      responses:
-        '200':
-          description: Distribución actualizada
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/TipoHospitalDistribucion'
-    delete:
-      summary: Eliminar distribución
-      tags: [TiposHospitalDistribucion]
-      security:
-        - bearerAuth: []
-      parameters:
-        - in: path
-          name: tipos_hospital_distribucione
-          required: true
-          schema: { type: integer }
-      responses:
-        '200':
-          description: Distribución eliminada
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StandardResponse'
   /api/insumos/sede/{sede_id}:
     get:
       summary: Listar insumos por sede
@@ -1235,28 +1119,15 @@ paths:
                     properties:
                       data:
                         $ref: '#/components/schemas/PaginatedInsumos'
-  /api/sedes/hospital/{id}:
+  /api/tipos_hospital_distribuciones:
     get:
-      summary: Listar sedes por hospital
-      tags: [Sedes]
+      summary: Obtener configuración de porcentajes por tipo de hospital
+      tags: [TiposHospitalDistribuciones]
       security:
         - bearerAuth: []
-      parameters:
-        - in: path
-          name: id
-          required: true
-          schema: { type: integer }
-        - in: query
-          name: status
-          required: false
-          description: "Filtrar por estado: activo, inactivo o todos. Por defecto activo."
-          schema:
-            type: string
-            enum: [activo, inactivo, todos]
-            default: activo
       responses:
         '200':
-          description: Listado de sedes del hospital (paginado) o error con `status=false`
+          description: Configuración actual
           content:
             application/json:
               schema:
@@ -1265,10 +1136,11 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/PaginatedSedes'
+                        $ref: '#/components/schemas/TipoHospitalDistribucion'
     post:
-      summary: Crear insumo
-      tags: [Insumos]
+      summary: Actualizar porcentajes por tipo de hospital
+      description: Reemplaza los porcentajes de los cuatro tipos fijos. La suma debe ser 100.
+      tags: [TiposHospitalDistribuciones]
       security:
         - bearerAuth: []
       requestBody:
@@ -1276,29 +1148,21 @@ paths:
         content:
           application/json:
             schema:
-              type: object
-              required: [codigo, nombre, tipo, unidad_medida, cantidad_por_paquete]
-              properties:
-                codigo: { type: string }
-                nombre: { type: string }
-                tipo: { type: string }
-                unidad_medida: { type: string }
-                cantidad_por_paquete: { type: integer, minimum: 0 }
-                descripcion: { type: string, nullable: true }
-                presentacion: { type: string, nullable: true }
-                status: { type: string, enum: [activo, inactivo] }
+              $ref: '#/components/schemas/TipoHospitalDistribucionRequest'
+            examples:
+              ejemplo:
+                value:
+                  tipo1: 25
+                  tipo2: 25
+                  tipo3: 25
+                  tipo4: 25
       responses:
         '200':
-          description: Insumo creado
+          description: Configuración actualizada
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/Insumo'
+                $ref: '#/components/schemas/StandardResponseItemTipoHospitalDistribucion'
   /api/insumos/import:
     post:
       summary: Importar insumos desde archivo Excel

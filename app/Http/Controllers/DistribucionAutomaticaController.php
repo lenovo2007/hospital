@@ -40,6 +40,22 @@ class DistribucionAutomaticaController extends Controller
             ->select('id', 'tipo')
             ->get();
 
+        $config = DB::table('tipos_hospital_distribuciones')->first();
+        if (!$config) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'No existe configuración de porcentajes para tipos de hospitales.',
+                'data' => [],
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
+
+        $mapaPorcentajes = [
+            'Tipo 1' => (float) ($config->tipo1 ?? 0),
+            'Tipo 2' => (float) ($config->tipo2 ?? 0),
+            'Tipo 3' => (float) ($config->tipo3 ?? 0),
+            'Tipo 4' => (float) ($config->tipo4 ?? 0),
+        ];
+
         $resultados = [];
         foreach ($data['lote_ids'] as $loteId) {
             // Stock disponible en central para este lote
@@ -50,15 +66,11 @@ class DistribucionAutomaticaController extends Controller
             $disponible = $stockCentral?->cantidad ?? 0;
             if ($disponible <= 0) { continue; }
 
-            // Construir mapa de porcentajes por tipo existente en BD
-            $tipos = DB::table('tipos_hospital_distribuciones')->pluck('porcentaje', 'tipo');
-            if ($tipos->isEmpty()) { continue; }
-
             // Suma total de porcentajes relevantes para hospitales seleccionados
             $sumaPct = 0.0;
             $targets = [];
             foreach ($hospitales as $h) {
-                $pct = (float) ($tipos[$h->tipo] ?? 0);
+                $pct = $mapaPorcentajes[$h->tipo] ?? 0;
                 if ($pct > 0) {
                     $targets[] = ['hospital_id' => $h->id, 'tipo' => $h->tipo, 'pct' => $pct];
                     $sumaPct += $pct;

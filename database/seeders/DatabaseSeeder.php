@@ -52,6 +52,7 @@ class DatabaseSeeder extends Seeder
         $this->call([
             HospitalSeeder::class,
             SedeSeeder::class,
+            AlmacenCentralTestSeeder::class,
         ]);
     }
 }

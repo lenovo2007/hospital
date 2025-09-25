@@ -4,76 +4,58 @@ namespace App\Http\Controllers;
 
 use App\Models\TipoHospitalDistribucion;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 class TipoHospitalDistribucionController extends Controller
 {
-    // GET /api/tipos_hospital_distribuciones
-    public function index(Request $request)
+    protected function obtenerConfiguracion(): TipoHospitalDistribucion
     {
-        $perPage = (int) $request->query('per_page', 50);
-        $items = TipoHospitalDistribucion::orderBy('tipo')->paginate($perPage);
+        return TipoHospitalDistribucion::firstOrCreate([], [
+            'tipo1' => 0,
+            'tipo2' => 0,
+            'tipo3' => 0,
+            'tipo4' => 0,
+        ]);
+    }
+
+    // GET /api/tipos_hospital_distribuciones
+    public function index(): \Illuminate\Http\JsonResponse
+    {
+        $registro = $this->obtenerConfiguracion();
         return response()->json([
             'status' => true,
-            'mensaje' => $items->total() > 0 ? 'Listado de distribución de tipos de hospitales.' : 'No hay registros.',
-            'data' => $items,
+            'mensaje' => 'Distribución de tipos de hospitales.',
+            'data' => $registro,
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }
 
     // POST /api/tipos_hospital_distribuciones
-    public function store(Request $request)
+    public function store(Request $request): \Illuminate\Http\JsonResponse
     {
         $data = $request->validate([
-            'tipo' => ['required','string','max:100','unique:tipos_hospital_distribuciones,tipo'],
-            'porcentaje' => ['required','numeric','min:0','max:100'],
+            'tipo1' => ['required','numeric','min:0','max:100'],
+            'tipo2' => ['required','numeric','min:0','max:100'],
+            'tipo3' => ['required','numeric','min:0','max:100'],
+            'tipo4' => ['required','numeric','min:0','max:100'],
         ]);
 
-        $item = TipoHospitalDistribucion::create($data);
+        $suma = $data['tipo1'] + $data['tipo2'] + $data['tipo3'] + $data['tipo4'];
+        if (abs($suma - 100) > 0.0001) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'La suma de los porcentajes debe ser exactamente 100.',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
 
-        return response()->json([
-            'status' => true,
-            'mensaje' => 'Distribución creada.',
-            'data' => $item,
-        ], 200, [], JSON_UNESCAPED_UNICODE);
-    }
-
-    // GET /api/tipos_hospital_distribuciones/{id}
-    public function show(TipoHospitalDistribucion $tipos_hospital_distribucione)
-    {
-        return response()->json([
-            'status' => true,
-            'mensaje' => 'Detalle de distribución.',
-            'data' => $tipos_hospital_distribucione,
-        ], 200, [], JSON_UNESCAPED_UNICODE);
-    }
-
-    // PUT /api/tipos_hospital_distribuciones/{id}
-    public function update(Request $request, TipoHospitalDistribucion $tipos_hospital_distribucione)
-    {
-        $data = $request->validate([
-            'tipo' => ['sometimes','required','string','max:100', Rule::unique('tipos_hospital_distribuciones','tipo')->ignore($tipos_hospital_distribucione->id)],
-            'porcentaje' => ['sometimes','required','numeric','min:0','max:100'],
-        ]);
-
-        $tipos_hospital_distribucione->update($data);
-        $tipos_hospital_distribucione->refresh();
+        $registro = $this->obtenerConfiguracion();
+        $registro->fill($data);
+        $registro->save();
+        $registro->refresh();
 
         return response()->json([
             'status' => true,
             'mensaje' => 'Distribución actualizada.',
-            'data' => $tipos_hospital_distribucione,
-        ], 200, [], JSON_UNESCAPED_UNICODE);
-    }
-
-    // DELETE /api/tipos_hospital_distribuciones/{id}
-    public function destroy(TipoHospitalDistribucion $tipos_hospital_distribucione)
-    {
-        $tipos_hospital_distribucione->delete();
-
-        return response()->json([
-            'status' => true,
-            'mensaje' => 'Distribución eliminada.',
-            'data' => null,
+            'data' => $registro,
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }
 }

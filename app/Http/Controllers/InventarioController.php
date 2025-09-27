@@ -186,12 +186,22 @@ class InventarioController extends Controller
             // 3) Armar respuesta
             $data = $resumenInsumos->map(function ($row) use ($lotesPorInsumo, $insumos) {
                 $detalleInsumo = $insumos->get($row->insumo_id);
+                $lotes = optional($lotesPorInsumo->get($row->insumo_id))
+                    ? $lotesPorInsumo->get($row->insumo_id)->map(function ($lote) {
+                        return [
+                            'lote_id' => $lote->lote_id,
+                            'numero_lote' => $lote->numero_lote,
+                            'fecha_vencimiento' => $lote->fecha_vencimiento,
+                            'cantidad' => (int) $lote->cantidad,
+                        ];
+                    })->values()->all()
+                    : [];
 
                 return [
-                    'insumo' => $detalleInsumo,
                     'insumo_id' => $row->insumo_id,
+                    'insumo' => $detalleInsumo ? $detalleInsumo->toArray() : null,
                     'cantidad_total' => (int) $row->cantidad_total,
-                    'lotes' => array_values(optional($lotesPorInsumo->get($row->insumo_id))->toArray() ?? []),
+                    'lotes' => $lotes,
                 ];
             });
 

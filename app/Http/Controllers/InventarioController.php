@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Lote;
 use App\Models\LoteAlmacen;
 use App\Models\AlmacenCentral;
+use App\Models\Insumo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -142,21 +143,19 @@ class InventarioController extends Controller
             // Se deriva el insumo a través de lotes.id_insumo
 
             // 1) Totales por insumo en la sede
-            $insumos = DB::table($tabla)
+            $resumenInsumos = DB::table($tabla)
                 ->join('lotes', "$tabla.lote_id", '=', 'lotes.id')
                 ->join('insumos', 'lotes.id_insumo', '=', 'insumos.id')
                 ->where("$tabla.sede_id", $sedeId)
                 ->where("$tabla.status", true)
                 ->select(
                     'insumos.id as insumo_id',
-                    'insumos.codigo',
-                    'insumos.nombre',
                     DB::raw("SUM($tabla.cantidad) as cantidad_total")
                 )
-                ->groupBy('insumos.id', 'insumos.codigo', 'insumos.nombre')
+                ->groupBy('insumos.id')
                 ->get();
 
-            if ($insumos->isEmpty()) {
+            if ($resumenInsumos->isEmpty()) {
                 return response()->json([
                     'status' => false,
                     'mensaje' => 'No hay registros de inventario para la sede especificada.',
@@ -165,7 +164,9 @@ class InventarioController extends Controller
             }
 
             // 2) Lotes por insumo en la sede
-            $insumoIds = $insumos->pluck('insumo_id')->all();
+            $insumoIds = $resumenInsumos->pluck('insumo_id')->all();
+
+            $insumos = Insumo::whereIn('id', $insumoIds)->get()->keyBy('id');
 
             $lotesPorInsumo = DB::table($tabla)
                 ->join('lotes', "$tabla.lote_id", '=', 'lotes.id')
@@ -183,9 +184,15 @@ class InventarioController extends Controller
                 ->groupBy('insumo_id');
 
             // 3) Armar respuesta
-            $data = $insumos->map(function ($row) use ($lotesPorInsumo) {
-                $row->lotes = array_values(optional($lotesPorInsumo->get($row->insumo_id))->toArray() ?? []);
-                return $row;
+            $data = $resumenInsumos->map(function ($row) use ($lotesPorInsumo, $insumos) {
+                $detalleInsumo = $insumos->get($row->insumo_id);
+
+                return [
+                    'insumo' => $detalleInsumo,
+                    'insumo_id' => $row->insumo_id,
+                    'cantidad_total' => (int) $row->cantidad_total,
+                    'lotes' => array_values(optional($lotesPorInsumo->get($row->insumo_id))->toArray() ?? []),
+                ];
             });
 
             return response()->json([

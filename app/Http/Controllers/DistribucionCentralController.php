@@ -30,44 +30,41 @@ class DistribucionCentralController extends Controller
             'tipo_movimiento' => ['required','string','max:50'],
             'fecha_despacho' => ['required','date'],
             'items' => ['required','array','min:1'],
-            'items.*' => ['array','min:1'],
-            'items.*.*.lote_id' => ['required','integer','min:1'],
-            'items.*.*.cantidad' => ['required','integer','min:1'],
+            'items.*.lote_id' => ['required','integer','min:1'],
+            'items.*.cantidad' => ['required','integer','min:1'],
         ]);
 
         $userId = (int) $request->user()->id;
 
         DB::transaction(function () use ($data, $userId) {
-            foreach ($data['items'] as $group) {
-                foreach ($group as $it) {
-                    $loteId = (int) $it['lote_id'];
-                    $cantidad = (int) $it['cantidad'];
+            foreach ($data['items'] as $it) {
+                $loteId = (int) $it['lote_id'];
+                $cantidad = (int) $it['cantidad'];
 
-                    // Transferencia central -> principal
-                    $this->stock->transferir(
-                        loteId: $loteId,
-                        origenTipo: 'central',
-                        origenId: (int) $data['origen_central_id'],
-                        destinoTipo: 'principal',
-                        destinoId: (int) $data['principal_id'],
-                        cantidad: $cantidad,
-                        hospitalIdDestino: (int) $data['hospital_id']
-                    );
+                // Transferencia central -> principal
+                $this->stock->transferir(
+                    loteId: $loteId,
+                    origenTipo: 'central',
+                    origenId: (int) $data['origen_central_id'],
+                    destinoTipo: 'principal',
+                    destinoId: (int) $data['principal_id'],
+                    cantidad: $cantidad,
+                    hospitalIdDestino: (int) $data['hospital_id']
+                );
 
-                    MovimientoStock::create([
-                        'tipo' => 'transferencia',
-                        'tipo_movimiento' => $data['tipo_movimiento'],
-                        'lote_id' => $loteId,
-                        'hospital_id' => (int) $data['hospital_id'],
-                        'origen_almacen_tipo' => 'central',
-                        'origen_almacen_id' => (int) $data['origen_central_id'],
-                        'destino_almacen_tipo' => 'principal',
-                        'destino_almacen_id' => (int) $data['principal_id'],
-                        'cantidad' => $cantidad,
-                        'fecha_despacho' => $data['fecha_despacho'],
-                        'user_id' => $userId,
-                    ]);
-                }
+                MovimientoStock::create([
+                    'tipo' => 'transferencia',
+                    'tipo_movimiento' => $data['tipo_movimiento'],
+                    'lote_id' => $loteId,
+                    'hospital_id' => (int) $data['hospital_id'],
+                    'origen_almacen_tipo' => 'central',
+                    'origen_almacen_id' => (int) $data['origen_central_id'],
+                    'destino_almacen_tipo' => 'principal',
+                    'destino_almacen_id' => (int) $data['principal_id'],
+                    'cantidad' => $cantidad,
+                    'fecha_despacho' => $data['fecha_despacho'],
+                    'user_id' => $userId,
+                ]);
             }
         });
 

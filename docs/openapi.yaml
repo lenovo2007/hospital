@@ -736,14 +736,11 @@ components:
           type: array
           minItems: 1
           items:
-            type: array
-            minItems: 1
-            items:
-              type: object
-              required: [lote_id, cantidad]
-              properties:
-                lote_id: { type: integer }
-                cantidad: { type: integer, minimum: 1 }
+            type: object
+            required: [lote_id, cantidad]
+            properties:
+              lote_id: { type: integer }
+              cantidad: { type: integer, minimum: 1 }
     RegistroInventarioRequest:
       type: object
       required: [insumo_id, lote_cod, fecha_vencimiento, almacen_tipo, cantidad, hospital_id, sede_id]
@@ -1053,11 +1050,9 @@ paths:
                   tipo_movimiento: "despacho"
                   fecha_despacho: "2025-09-28"
                   items:
-                    -
-                      - { lote_id: 10, cantidad: 1000 }
-                      - { lote_id: 11, cantidad: 500 }
-                    -
-                      - { lote_id: 12, cantidad: 400 }
+                    - { lote_id: 12, cantidad: 200 }
+                    - { lote_id: 10, cantidad: 1000 }
+                    - { lote_id: 11, cantidad: 500 }
       responses:
         '200':
           description: Movimiento aplicado

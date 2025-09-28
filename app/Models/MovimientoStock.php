@@ -10,6 +10,7 @@ class MovimientoStock extends Model
 
     protected $fillable = [
         'tipo',
+        'tipo_movimiento',
         'lote_id',
         'hospital_id',
         'origen_almacen_tipo',
@@ -17,10 +18,12 @@ class MovimientoStock extends Model
         'destino_almacen_tipo',
         'destino_almacen_id',
         'cantidad',
+        'fecha_despacho',
         'user_id',
     ];
 
     protected $casts = [
         'cantidad' => 'integer',
+        'fecha_despacho' => 'datetime',
     ];
 }

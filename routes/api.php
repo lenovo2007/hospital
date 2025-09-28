@@ -161,7 +161,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
     Route::post('/tipos_hospital_distribuciones', [TipoHospitalDistribucionController::class, 'store']);
 
     // Distribución desde almacén central hacia principal (hospital)
-    Route::post('/distribucion/central', [DistribucionCentralController::class, 'distribuir']);
+    Route::post('/movimiento/central', [DistribucionCentralController::class, 'distribuir']);
 
     // Distribución interna desde principal hacia farmacia/paralelo/servicios
     Route::post('/distribucion/principal', [DistribucionInternaController::class, 'distribuir']);

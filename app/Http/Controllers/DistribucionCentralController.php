@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\StockException;
 use App\Models\MovimientoStock;
 use App\Services\StockService;
 use Illuminate\Http\Request;
@@ -77,10 +78,16 @@ class DistribucionCentralController extends Controller
                 'mensaje' => 'Movimiento desde central aplicado.',
                 'data' => null,
             ], 200, [], JSON_UNESCAPED_UNICODE);
+        } catch (StockException $e) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => $e->getMessage(),
+                'data' => null,
+            ], 200);
         } catch (QueryException $e) {
             return response()->json([
                 'status' => false,
-                'mensaje' => $e->getPrevious()?->getMessage() ?? 'Error de base de datos durante la transferencia.',
+                'mensaje' => 'Error de base de datos durante la transferencia.',
                 'data' => null,
             ], 200);
         } catch (Throwable $e) {

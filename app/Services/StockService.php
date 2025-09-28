@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\StockException;
 use App\Models\LoteAlmacen;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\QueryException;
@@ -39,10 +40,10 @@ class StockService
                 ->lockForUpdate()
                 ->first();
             if (!$registro) {
-                throw new QueryException('', [], new \Exception('Stock no encontrado para este lote y almacén.'));
+                throw new StockException('Stock no encontrado para este lote y almacén.');
             }
             if ($registro->cantidad < $cantidad) {
-                throw new QueryException('', [], new \Exception('Stock insuficiente. Disponible: ' . $registro->cantidad));
+                throw new StockException('Stock insuficiente. Disponible: ' . $registro->cantidad);
             }
             $registro->cantidad = (int) $registro->cantidad - $cantidad;
             $registro->ultima_actualizacion = now();

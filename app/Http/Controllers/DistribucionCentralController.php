@@ -50,9 +50,9 @@ class DistribucionCentralController extends Controller
                     // Transferencia central -> principal
                     $this->stock->transferir(
                         loteId: $loteId,
-                        origenTipo: 'central',
+                        origenTipo: 'almacenCent',
                         origenId: (int) $data['origen_central_id'],
-                        destinoTipo: 'principal',
+                        destinoTipo: 'almacenPrin',
                         destinoId: (int) $data['principal_id'],
                         cantidad: $cantidad,
                         hospitalIdDestino: (int) $data['hospital_id']
@@ -63,9 +63,9 @@ class DistribucionCentralController extends Controller
                         'tipo_movimiento' => $data['tipo_movimiento'],
                         'lote_id' => $loteId,
                         'hospital_id' => (int) $data['hospital_id'],
-                        'origen_almacen_tipo' => 'central',
+                        'origen_almacen_tipo' => 'almacenCent',
                         'origen_almacen_id' => (int) $data['origen_central_id'],
-                        'destino_almacen_tipo' => 'principal',
+                        'destino_almacen_tipo' => 'almacenPrin',
                         'destino_almacen_id' => (int) $data['principal_id'],
                         'cantidad' => $cantidad,
                         'fecha_despacho' => $data['fecha_despacho'],

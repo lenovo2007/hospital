@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Exceptions\StockException;
+use App\Models\AlmacenPrincipal;
 use App\Models\LoteAlmacen;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Database\QueryException;
@@ -12,15 +13,18 @@ class StockService
     /**
      * Incrementa stock para un lote en un almacén.
      */
-    public function incrementar(int $loteId, string $almacenTipo, int $almacenId, int $cantidad, int $hospitalId): LoteAlmacen
+    public function incrementar(int $loteId, string $almacenTipo, int $almacenId, int $cantidad, int $hospitalId, ?int $sedeId = null): LoteAlmacen
     {
-        return DB::transaction(function () use ($loteId, $almacenTipo, $almacenId, $cantidad, $hospitalId) {
+        return DB::transaction(function () use ($loteId, $almacenTipo, $almacenId, $cantidad, $hospitalId, $sedeId) {
             $registro = LoteAlmacen::firstOrNew([
                 'lote_id' => $loteId,
                 'almacen_tipo' => $almacenTipo,
                 'almacen_id' => $almacenId,
             ]);
             $registro->hospital_id = $hospitalId;
+            if ($sedeId !== null) {
+                $registro->sede_id = $sedeId;
+            }
             $registro->cantidad = max(0, (int) $registro->cantidad + $cantidad);
             $registro->ultima_actualizacion = now();
             $registro->save();
@@ -55,11 +59,22 @@ class StockService
     /**
      * Transfiere stock de un almacén a otro.
      */
-    public function transferir(int $loteId, string $origenTipo, int $origenId, string $destinoTipo, int $destinoId, int $cantidad, int $hospitalIdDestino): void
+    public function transferir(int $loteId, string $origenTipo, int $origenId, string $destinoTipo, int $destinoId, int $cantidad, int $hospitalIdDestino, ?int $sedeDestinoId = null): void
     {
-        DB::transaction(function () use ($loteId, $origenTipo, $origenId, $destinoTipo, $destinoId, $cantidad, $hospitalIdDestino) {
+        DB::transaction(function () use ($loteId, $origenTipo, $origenId, $destinoTipo, $destinoId, $cantidad, $hospitalIdDestino, $sedeDestinoId) {
             $this->disminuir($loteId, $origenTipo, $origenId, $cantidad);
-            $this->incrementar($loteId, $destinoTipo, $destinoId, $cantidad, $hospitalIdDestino);
+            $this->incrementar($loteId, $destinoTipo, $destinoId, $cantidad, $hospitalIdDestino, $sedeDestinoId);
+
+            if ($destinoTipo === 'almacenPrin') {
+                $registroPrincipal = AlmacenPrincipal::firstOrNew([
+                    'sede_id' => $sedeDestinoId,
+                    'lote_id' => $loteId,
+                    'hospital_id' => $hospitalIdDestino,
+                ]);
+                $registroPrincipal->cantidad = max(0, (int) $registroPrincipal->cantidad + $cantidad);
+                $registroPrincipal->status = $registroPrincipal->status ?? true;
+                $registroPrincipal->save();
+            }
         });
     }
 }

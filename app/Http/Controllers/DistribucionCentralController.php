@@ -30,7 +30,7 @@ class DistribucionCentralController extends Controller
         $data = $request->validate([
             'origen_central_id' => ['required','integer','min:1'],
             'hospital_id' => ['required','integer','min:1'],
-            'principal_id' => ['required','integer','min:1'],
+            'sede_id' => ['required','integer','min:1'],
             'tipo_movimiento' => ['required','string','max:50'],
             'fecha_despacho' => ['required','date'],
             'observaciones' => ['nullable','string','max:500'],
@@ -53,9 +53,10 @@ class DistribucionCentralController extends Controller
                         origenTipo: 'almacenCent',
                         origenId: (int) $data['origen_central_id'],
                         destinoTipo: 'almacenPrin',
-                        destinoId: (int) $data['principal_id'],
+                        destinoId: (int) $data['sede_id'],
                         cantidad: $cantidad,
-                        hospitalIdDestino: (int) $data['hospital_id']
+                        hospitalIdDestino: (int) $data['hospital_id'],
+                        sedeDestinoId: (int) $data['sede_id']
                     );
 
                     MovimientoStock::create([
@@ -66,7 +67,7 @@ class DistribucionCentralController extends Controller
                         'origen_almacen_tipo' => 'almacenCent',
                         'origen_almacen_id' => (int) $data['origen_central_id'],
                         'destino_almacen_tipo' => 'almacenPrin',
-                        'destino_almacen_id' => (int) $data['principal_id'],
+                        'destino_almacen_id' => (int) $data['sede_id'],
                         'cantidad' => $cantidad,
                         'fecha_despacho' => $data['fecha_despacho'],
                         'user_id' => $userId,

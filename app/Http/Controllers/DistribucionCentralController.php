@@ -7,6 +7,7 @@ use App\Models\MovimientoStock;
 use App\Services\StockService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Database\QueryException;
 use Throwable;
 
@@ -79,15 +80,25 @@ class DistribucionCentralController extends Controller
                 'data' => null,
             ], 200, [], JSON_UNESCAPED_UNICODE);
         } catch (StockException $e) {
+            Log::warning('Movimiento central falló por StockException', [
+                'mensaje' => $e->getMessage(),
+                'payload' => $data,
+            ]);
             return response()->json([
                 'status' => false,
                 'mensaje' => $e->getMessage(),
                 'data' => null,
             ], 200);
         } catch (QueryException $e) {
+            Log::error('Movimiento central falló por QueryException', [
+                'mensaje' => $e->getMessage(),
+                'code' => $e->getCode(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+            ]);
             return response()->json([
                 'status' => false,
-                'mensaje' => 'Error de base de datos durante la transferencia.',
+                'mensaje' => $e->getMessage(),
                 'data' => null,
             ], 200);
         } catch (Throwable $e) {

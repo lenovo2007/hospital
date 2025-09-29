@@ -4,25 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Exceptions\StockException;
 use App\Models\MovimientoStock;
-use App\Services\StockService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Database\QueryException;
 use Throwable;
 
 class DistribucionCentralController extends Controller
 {
-    public function __construct(private StockService $stock)
-    {
-    }
-
-    // POST /api/distribucion/central
-    // Body esperado:
+    // POST /api/movimiento/central
     // {
     //   "origen_central_id": 1,
-    //   "hospital_id": 10,
-    //   "principal_id": 5, // almacen principal del hospital destino
+    //   "hospital_id": 1,
+    //   "sede_id": 2,
     //   "items": [ { "lote_id": 123, "cantidad": 100 } ]
     // }
     public function distribuir(Request $request)
@@ -47,16 +40,12 @@ class DistribucionCentralController extends Controller
                     $loteId = (int) $it['lote_id'];
                     $cantidad = (int) $it['cantidad'];
 
-                    // Transferencia central -> principal
-                    $this->stock->transferir(
-                        loteId: $loteId,
-                        origenTipo: 'almacenCent',
+                    $this->transferirDesdeCentral(
                         origenId: (int) $data['origen_central_id'],
-                        destinoTipo: 'almacenPrin',
-                        destinoId: (int) $data['sede_id'],
-                        cantidad: $cantidad,
-                        hospitalIdDestino: (int) $data['hospital_id'],
-                        sedeDestinoId: (int) $data['sede_id']
+                        destinoSedeId: (int) $data['sede_id'],
+                        hospitalId: (int) $data['hospital_id'],
+                        loteId: $loteId,
+                        cantidad: $cantidad
                     );
 
                     MovimientoStock::create([
@@ -90,18 +79,6 @@ class DistribucionCentralController extends Controller
                 'mensaje' => $e->getMessage(),
                 'data' => null,
             ], 200);
-        } catch (QueryException $e) {
-            Log::error('Movimiento central falló por QueryException', [
-                'mensaje' => $e->getMessage(),
-                'code' => $e->getCode(),
-                'sql' => $e->getSql(),
-                'bindings' => $e->getBindings(),
-            ]);
-            return response()->json([
-                'status' => false,
-                'mensaje' => $e->getMessage(),
-                'data' => null,
-            ], 200);
         } catch (Throwable $e) {
             report($e);
 
@@ -111,5 +88,66 @@ class DistribucionCentralController extends Controller
                 'data' => null,
             ], 200);
         }
+    }
+
+    private function transferirDesdeCentral(int $origenId, int $destinoSedeId, int $hospitalId, int $loteId, int $cantidad): int
+    {
+        $central = DB::table('almacenes_centrales')
+            ->where('id', $origenId)
+            ->lockForUpdate()
+            ->first();
+
+        if (!$central) {
+            throw new StockException('No se encontró el registro en el almacén central.');
+        }
+
+        if ((int) $central->lote_id !== $loteId) {
+            throw new StockException('El lote indicado no corresponde al registro del almacén central.');
+        }
+
+        if ((int) $central->cantidad < $cantidad) {
+            throw new StockException('Stock insuficiente en el almacén central. Disponible: ' . $central->cantidad);
+        }
+
+        $nuevaCantidadCentral = (int) $central->cantidad - $cantidad;
+
+        DB::table('almacenes_centrales')
+            ->where('id', $central->id)
+            ->update([
+                'cantidad' => $nuevaCantidadCentral,
+                'status' => $nuevaCantidadCentral > 0,
+                'updated_at' => now(),
+            ]);
+
+        $destinoClave = [
+            'sede_id' => $destinoSedeId,
+            'lote_id' => $loteId,
+            'hospital_id' => $hospitalId,
+        ];
+
+        $destino = DB::table('almacenes_principales')
+            ->where($destinoClave)
+            ->lockForUpdate()
+            ->first();
+
+        if ($destino) {
+            $nuevaCantidadDestino = (int) $destino->cantidad + $cantidad;
+            DB::table('almacenes_principales')
+                ->where('id', $destino->id)
+                ->update([
+                    'cantidad' => $nuevaCantidadDestino,
+                    'status' => true,
+                    'updated_at' => now(),
+                ]);
+
+            return (int) $destino->id;
+        }
+
+        return DB::table('almacenes_principales')->insertGetId(array_merge($destinoClave, [
+            'cantidad' => $cantidad,
+            'status' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]));
     }
 }

@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Lote;
-use App\Models\LoteAlmacen;
 use App\Models\AlmacenCentral;
 use App\Models\Insumo;
 use Illuminate\Http\Request;
@@ -42,60 +41,32 @@ class InventarioController extends Controller
             'lote_cod' => 'required|string|max:100',
             'fecha_vencimiento' => 'required|date_format:Y-m-d',
             'fecha_ingreso' => 'nullable|date_format:Y-m-d',
-            // Nuevos tipos de almacén según requerimiento
             'almacen_tipo' => 'required|string|in:almacenCent,almacenPrin,almacenFarm,almacenPar,almacenServAtenciones,almacenServApoyo',
-            // Se deja de requerir almacen_id explícito; se usará sede_id como identificador físico
             'cantidad' => 'required|integer|min:1',
             'hospital_id' => 'required|exists:hospitales,id',
             'sede_id' => 'required|exists:sedes,id',
         ]);
 
         return DB::transaction(function () use ($validated) {
-            // 1. Registrar el lote
             $lote = Lote::create([
                 'id_insumo' => $validated['insumo_id'],
                 'numero_lote' => $validated['lote_cod'],
                 'fecha_vencimiento' => $validated['fecha_vencimiento'],
                 'fecha_ingreso' => $validated['fecha_ingreso'] ?? now(),
-                'hospital_id' => $validated['hospital_id']
+                'hospital_id' => $validated['hospital_id'],
             ]);
 
-            // 2. Registrar en lotes_almacenes
-            // Detectar el nombre correcto de columna para el tipo de almacén según el esquema
-            $tipoCol = Schema::hasColumn('lotes_almacenes', 'almacen_tipo')
-                ? 'almacen_tipo'
-                : (Schema::hasColumn('lotes_almacenes', 'tipo_almacen') ? 'tipo_almacen' : null);
-
-            if ($tipoCol === null) {
-                throw new \RuntimeException('No se encontró columna de tipo de almacén (almacen_tipo/tipo_almacen) en lotes_almacenes');
-            }
-
-            $payload = [
-                'lote_id' => $lote->id,
-                // Usar sede_id como identificador físico (reemplaza a almacen_id)
-                'sede_id' => $validated['sede_id'],
-                'cantidad' => $validated['cantidad'],
-                'hospital_id' => $validated['hospital_id'],
-            ];
-            $payload[$tipoCol] = $validated['almacen_tipo'];
-
-            // Compatibilidad con esquemas donde 'almacen_id' es NOT NULL
-            if (Schema::hasColumn('lotes_almacenes', 'almacen_id')) {
-                $payload['almacen_id'] = $validated['sede_id'];
-            }
-
-            $loteAlmacen = LoteAlmacen::create($payload);
-
-            // 3. Registrar en la tabla del almacén específico correspondiente
-            $this->registrarEnAlmacenEspecifico($validated, $lote->id);
+            $registroAlmacen = $this->registrarEnAlmacenEspecifico($validated, $lote->id);
 
             return response()->json([
                 'status' => true,
                 'mensaje' => 'Inventario registrado exitosamente',
                 'data' => [
                     'lote_id' => $lote->id,
-                    'lote_almacen_id' => $loteAlmacen->id
-                ]
+                    'almacen_tipo' => $validated['almacen_tipo'],
+                    'registro_almacen_id' => $registroAlmacen['id'],
+                    'cantidad_total' => $registroAlmacen['cantidad'],
+                ],
             ], 201);
         });
     }
@@ -228,7 +199,7 @@ class InventarioController extends Controller
     }
 
     // Método opcional para registrar en tablas específicas de almacén
-    protected function registrarEnAlmacenEspecifico(array $data, int $loteId): void
+    protected function registrarEnAlmacenEspecifico(array $data, int $loteId): array
     {
         $tabla = match ($data['almacen_tipo']) {
             'almacenCent' => 'almacenes_centrales',
@@ -241,7 +212,7 @@ class InventarioController extends Controller
         };
 
         if (!$tabla || !Schema::hasTable($tabla)) {
-            return;
+            throw new \RuntimeException("No se encontró la tabla destino para el tipo de almacén {$data['almacen_tipo']}");
         }
 
         $clave = [
@@ -264,14 +235,25 @@ class InventarioController extends Controller
                     'status' => true,
                     'updated_at' => now(),
                 ]);
-            return;
+
+            $nuevoTotal = (int) $registroExistente->cantidad + $cantidad;
+
+            return [
+                'id' => $registroExistente->id,
+                'cantidad' => $nuevoTotal,
+            ];
         }
 
-        DB::table($tabla)->insert(array_merge($clave, [
+        $id = DB::table($tabla)->insertGetId(array_merge($clave, [
             'cantidad' => $cantidad,
             'status' => true,
             'created_at' => now(),
             'updated_at' => now(),
         ]));
+
+        return [
+            'id' => $id,
+            'cantidad' => $cantidad,
+        ];
     }
 }

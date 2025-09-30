@@ -145,8 +145,9 @@ components:
           type: string
           format: date-time
         status:
-          type: boolean
-          example: true
+          type: string
+          enum: [activo, inactivo]
+          example: activo
     Hospital:
       type: object
       properties:
@@ -227,8 +228,9 @@ components:
           type: string
           format: date-time
         status:
-          type: boolean
-          example: true
+          type: string
+          enum: [activo, inactivo]
+          example: activo
     LoginRequest:
       type: object
       required: [email, password]
@@ -435,9 +437,8 @@ components:
           type: string
           format: date-time
         status:
-          type: string
-          enum: [activo, inactivo]
-          example: activo
+          type: boolean
+          example: true
     PaginatedAlmacenesFarmacia:
       type: object
       properties:
@@ -633,22 +634,7 @@ components:
         hospital_id: { type: integer, example: 1 }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
-    PaginatedLotes:
-      type: object
-      properties:
-        data:
-          type: array
-          items:
-            $ref: '#/components/schemas/Lote'
-        current_page: { type: integer }
-        last_page: { type: integer }
-        per_page: { type: integer }
-        total: { type: integer }
-    PaginatedLoteAlmacenes:
-      type: object
-      properties:
-        data:
-          type: array
+    PaginatedLoteGrupos:
           items:
             $ref: '#/components/schemas/LoteAlmacen'
         current_page: { type: integer }
@@ -681,21 +667,36 @@ components:
           properties:
             data:
               $ref: '#/components/schemas/TipoHospitalDistribucion'
-    MovimientoStock:
+    LoteGrupo:
       type: object
       properties:
         id: { type: integer }
-        tipo: { type: string, enum: [entrada, salida, transferencia] }
+        codigo: { type: string, description: "Código único del grupo (cod001, cod002, etc.)" }
         lote_id: { type: integer }
-        hospital_id: { type: integer }
-        origen_almacen_tipo: { type: string, nullable: true }
-        origen_almacen_id: { type: integer, nullable: true }
-        destino_almacen_tipo: { type: string, nullable: true }
-        destino_almacen_id: { type: integer, nullable: true }
         cantidad: { type: integer }
-        user_id: { type: integer }
+        status: { type: string, enum: [activo, inactivo], default: activo }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
+    LoteGrupoRequest:
+      type: object
+      required: [lote_id, cantidad]
+      properties:
+        lote_id: { type: integer, description: "ID del lote" }
+        cantidad: { type: integer, minimum: 1, description: "Cantidad de items en el grupo" }
+        codigo: { type: string, description: "Código único del grupo (opcional, se genera automáticamente)" }
+    LoteGrupoMovimientoRequest:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [lote_id, cantidad]
+            properties:
+              lote_id: { type: integer, description: "ID del lote" }
+              cantidad: { type: integer, minimum: 1, description: "Cantidad" }
     SolicitudFaltante:
       type: object
       properties:
@@ -747,39 +748,34 @@ components:
         insumo_id:
           type: integer
           example: 1
-          description: "ID del insumo existente"
+          description: ID del insumo existente
         lote_cod:
           type: string
           example: "LOT-2024-001"
-          description: "Código de lote (único por insumo)"
+          description: Código de lote (único por insumo)
         fecha_vencimiento:
           type: string
           format: date
           example: "2024-12-31"
-          description: "Fecha de vencimiento del lote (YYYY-MM-DD)"
-        fecha_ingreso:
-          type: string
-          format: date
-          example: "2025-09-22"
-          description: "Fecha de ingreso del lote (YYYY-MM-DD). Si se omite, el backend usa la fecha actual."
+          description: Fecha de vencimiento del lote (YYYY-MM-DD)
         almacen_tipo:
           type: string
-          enum: [almacenCent, almacenPrin, almacenFarm, almacenPar, almacenServAtenciones, almacenServApoyo]
-          example: "almacenCent"
-          description: "Tipo de almacén destino (nuevo esquema). El identificador físico se toma de sede_id."
+          enum: [almacenFarm, almacenPrin, almacenCent, almacenPar, almacenServAtenciones, almacenServApoyo]
+          example: "farmacia"
+          description: Tipo de almacén destino
         cantidad:
           type: integer
           minimum: 1
           example: 100
-          description: "Cantidad a registrar (debe ser mayor a 0)"
+          description: Cantidad a registrar (debe ser mayor a 0)
         hospital_id:
           type: integer
           example: 1
-          description: "ID del hospital al que pertenece el inventario"
+          description: ID del hospital al que pertenece el inventario
         sede_id:
           type: integer
           example: 1
-          description: "ID de la sede del hospital. En el nuevo esquema se usa como identificador físico del almacén (sustituye a almacen_id)."
+          description: ID de la sede del hospital (se usa como identificador físico del almacén en lotes_almacenes)
 
     DistribucionInternaRequest:
       type: object
@@ -813,6 +809,50 @@ components:
 security:
   - bearerAuth: []
 paths:
+  /api/tipos_hospital_distribuciones:
+    get:
+      summary: Obtener configuración de porcentajes por tipo de hospital
+      tags: [TiposHospitalDistribuciones]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Configuración actual
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TipoHospitalDistribucion'
+    post:
+      summary: Actualizar porcentajes por tipo de hospital
+      description: Reemplaza los porcentajes de los cuatro tipos fijos. La suma debe ser 100.
+      tags: [TiposHospitalDistribuciones]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TipoHospitalDistribucionRequest'
+            examples:
+              ejemplo:
+                value:
+                  tipo1: 25
+                  tipo2: 25
+                  tipo3: 25
+                  tipo4: 25
+      responses:
+        '200':
+          description: Configuración actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponseItemTipoHospitalDistribucion'
   /api/users:
     post:
       summary: Crear usuario
@@ -956,30 +996,12 @@ paths:
                     properties:
                       data:
                         $ref: '#/components/schemas/PaginatedInsumos'
-  /api/movimiento/central:
-    post:
-      summary: Distribuir desde almacén central hacia principal del hospital
-      tags: [Distribucion]
-      security:
-        - bearerAuth: []
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/MovimientoCentralRequest'
-            examples:
-              ejemplo:
-                value:
-                  origen_central_id: 1
-                  hospital_id: 1
-                  principal_id: 2
-                  tipo_movimiento: "despacho"
-                  fecha_despacho: "2025-09-28"
-                  items:
-                    - { lote_id: 12, cantidad: 200 }
-                    - { lote_id: 10, cantidad: 1000 }
-                    - { lote_id: 11, cantidad: 500 }
+              $ref: '#/components/schemas/DistribucionCentralRequest'
       responses:
         '200':
           description: Distribución aplicada
@@ -1007,9 +1029,9 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
-  /api/distribucion/principal:
+  /api/movimiento/central:
     post:
-      summary: Distribución interna desde principal a otros almacenes del hospital
+      summary: Distribuir desde almacén central hacia principal del hospital
       tags: [Distribucion]
       security:
         - bearerAuth: []
@@ -1018,32 +1040,26 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/DistribucionInternaRequest'
+              $ref: '#/components/schemas/MovimientoCentralRequest'
+            examples:
+              ejemplo:
+                value:
+                  origen_central_id: 1
+                  hospital_id: 1
+                  principal_id: 2
+                  tipo_movimiento: "despacho"
+                  fecha_despacho: "2025-09-28"
+                  items:
+                    - { lote_id: 12, cantidad: 200 }
+                    - { lote_id: 10, cantidad: 1000 }
+                    - { lote_id: 11, cantidad: 500 }
       responses:
         '200':
-          description: Distribución interna aplicada
+          description: Movimiento aplicado
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
-  /api/solicitudes_faltantes:
-    get:
-      summary: Listar solicitudes de faltantes
-      tags: [SolicitudesFaltantes]
-      security:
-        - bearerAuth: []
-      responses:
-        '200':
-          description: Listado paginado de solicitudes
-          content:
-            application/json:
-              schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/PaginatedSolicitudesFaltantes'
     post:
       summary: Crear solicitud de faltante
       tags: [SolicitudesFaltantes]
@@ -1103,6 +1119,128 @@ paths:
           content:
             application/json:
               schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/SolicitudFaltante'
+  /api/tipos_hospital_distribuciones:
+    get:
+      summary: Listar distribución de tipos de hospitales
+      tags: [TiposHospitalDistribucion]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Listado paginado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedTipoHospitalDistribuciones'
+    post:
+      summary: Crear distribución de tipo de hospital
+      tags: [TiposHospitalDistribucion]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [tipo, porcentaje]
+              properties:
+                tipo: { type: string, maxLength: 100 }
+                porcentaje: { type: number, format: float, minimum: 0, maximum: 100 }
+      responses:
+        '200':
+          description: Distribución creada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TipoHospitalDistribucion'
+  /api/tipos_hospital_distribuciones/{tipos_hospital_distribucione}:
+    get:
+      summary: Ver detalle de distribución
+      tags: [TiposHospitalDistribucion]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: tipos_hospital_distribucione
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Detalle de distribución
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TipoHospitalDistribucion'
+    put:
+      summary: Actualizar distribución
+      tags: [TiposHospitalDistribucion]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: tipos_hospital_distribucione
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                tipo: { type: string, maxLength: 100 }
+                porcentaje: { type: number, format: float, minimum: 0, maximum: 100 }
+      responses:
+        '200':
+          description: Distribución actualizada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/TipoHospitalDistribucion'
+    delete:
+      summary: Eliminar distribución
+      tags: [TiposHospitalDistribucion]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: tipos_hospital_distribucione
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Distribución eliminada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
   /api/insumos/sede/{sede_id}:
     get:
       summary: Listar insumos por sede
@@ -1134,15 +1272,28 @@ paths:
                     properties:
                       data:
                         $ref: '#/components/schemas/PaginatedInsumos'
-  /api/tipos_hospital_distribuciones:
+  /api/sedes/hospital/{id}:
     get:
-      summary: Obtener configuración de porcentajes por tipo de hospital
-      tags: [TiposHospitalDistribuciones]
+      summary: Listar sedes por hospital
+      tags: [Sedes]
       security:
         - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema: { type: integer }
+        - in: query
+          name: status
+          required: false
+          description: "Filtrar por estado: activo, inactivo o todos. Por defecto activo."
+          schema:
+            type: string
+            enum: [activo, inactivo, todos]
+            default: activo
       responses:
         '200':
-          description: Configuración actual
+          description: Listado de sedes del hospital (paginado) o error con `status=false`
           content:
             application/json:
               schema:
@@ -1151,11 +1302,10 @@ paths:
                   - type: object
                     properties:
                       data:
-                        $ref: '#/components/schemas/TipoHospitalDistribucion'
+                        $ref: '#/components/schemas/PaginatedSedes'
     post:
-      summary: Actualizar porcentajes por tipo de hospital
-      description: Reemplaza los porcentajes de los cuatro tipos fijos. La suma debe ser 100.
-      tags: [TiposHospitalDistribuciones]
+      summary: Crear insumo
+      tags: [Insumos]
       security:
         - bearerAuth: []
       requestBody:
@@ -1163,21 +1313,29 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/TipoHospitalDistribucionRequest'
-            examples:
-              ejemplo:
-                value:
-                  tipo1: 25
-                  tipo2: 25
-                  tipo3: 25
-                  tipo4: 25
+              type: object
+              required: [codigo, nombre, tipo, unidad_medida, cantidad_por_paquete]
+              properties:
+                codigo: { type: string }
+                nombre: { type: string }
+                tipo: { type: string }
+                unidad_medida: { type: string }
+                cantidad_por_paquete: { type: integer, minimum: 0 }
+                descripcion: { type: string, nullable: true }
+                presentacion: { type: string, nullable: true }
+                status: { type: string, enum: [activo, inactivo] }
       responses:
         '200':
-          description: Configuración actualizada
+          description: Insumo creado
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponseItemTipoHospitalDistribucion'
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Insumo'
   /api/insumos/import:
     post:
       summary: Importar insumos desde archivo Excel
@@ -1241,6 +1399,48 @@ paths:
                       motivo: "Celda de descripción vacía o con solo espacios"
                     - fila: 15
                       motivo: "Error al procesar: El código de insumo ya ha sido registrado previamente."
+  /api/insumos:
+    post:
+      summary: Importar insumos desde Excel (.xlsx)
+      tags: [Insumos]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Archivo Excel .xlsx con una columna DESCRIPCION
+      responses:
+        '200':
+          description: Resultado de importación
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          creados: { type: integer }
+                          actualizados: { type: integer }
+                          omitidos: { type: integer }
+                          errores:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                row: { type: integer }
+                                descripcion: { type: string }
+                                error: { type: string }
   /api/insumos/codigo/{codigo}:
     get:
       summary: Ver insumo por código
@@ -3124,3 +3324,230 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
+
+  /api/lote-grupo:
+    get:
+      summary: Listar grupos de lote
+      tags: [LoteGrupo]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: codigo
+          in: query
+          required: false
+          schema: { type: string }
+          description: Filtrar por código de grupo
+        - name: lote_id
+          in: query
+          required: false
+          schema: { type: integer }
+          description: Filtrar por ID de lote
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [activo, inactivo]
+          description: Filtrar por estado
+        - name: sort_by
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [codigo, cantidad, status, created_at]
+          description: Campo por el cual ordenar
+        - name: sort_direction
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [asc, desc]
+          description: Dirección del ordenamiento
+        - name: per_page
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 15
+          description: Número de elementos por página
+      responses:
+        '200':
+          description: Lista de grupos de lote
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/PaginatedLoteGrupos'
+    post:
+      summary: Crear grupo de lote
+      tags: [LoteGrupo]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoteGrupoRequest'
+      responses:
+        '201':
+          description: Grupo de lote creado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/LoteGrupo'
+
+  /api/lote-grupo/crear-desde-movimiento:
+    post:
+      summary: Crear grupo de lote desde items de movimiento
+      tags: [LoteGrupo]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoteGrupoMovimientoRequest'
+      responses:
+        '201':
+          description: Grupo de lote creado desde movimiento
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          codigo: { type: string }
+                          items: { type: array, items: { $ref: '#/components/schemas/LoteGrupo' } }
+                          total_items: { type: integer }
+
+  /api/lote-grupo/{codigo}:
+    get:
+      summary: Ver detalle de grupo de lote por código
+      tags: [LoteGrupo]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: codigo
+          in: path
+          required: true
+          schema: { type: string }
+          description: Código del grupo de lote
+      responses:
+        '200':
+          description: Detalle del grupo de lote
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          codigo: { type: string }
+                          items: { type: array, items: { $ref: '#/components/schemas/LoteGrupo' } }
+                          total_items: { type: integer }
+                          cantidad_total: { type: integer }
+
+  /api/lote-grupo/{id}:
+    put:
+      summary: Actualizar grupo de lote
+      tags: [LoteGrupo]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+          description: ID del grupo de lote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cantidad: { type: integer, minimum: 1 }
+                status: { type: string, enum: [activo, inactivo] }
+      responses:
+        '200':
+          description: Grupo de lote actualizado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/LoteGrupo'
+    delete:
+      summary: Eliminar grupo de lote (cambiar estado a inactivo)
+      tags: [LoteGrupo]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+          description: ID del grupo de lote
+      responses:
+        '200':
+          description: Grupo de lote eliminado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/lote-grupo/estadisticas:
+    get:
+      summary: Obtener estadísticas de grupos de lote
+      tags: [LoteGrupo]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [activo, inactivo]
+          description: Filtrar por estado
+      responses:
+        '200':
+          description: Estadísticas de grupos de lote
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          total_grupos: { type: integer }
+                          total_items: { type: integer }
+                          cantidad_total: { type: integer }
+                          grupos_activos: { type: integer }
+                          grupos_inactivos: { type: integer }

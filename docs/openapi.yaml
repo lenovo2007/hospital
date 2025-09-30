@@ -94,6 +94,7 @@ components:
         total: { type: integer }
 security:
   - bearerAuth: []
+paths:
   /api/lote-grupo:
     get:
       summary: Listar grupos de lote

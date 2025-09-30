@@ -41,6 +41,7 @@ components:
         status:
           type: boolean
           example: false
+        mensaje:
           type: string
           example: No autenticado. Token inválido o ausente.
         autenticacion:

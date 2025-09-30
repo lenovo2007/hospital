@@ -59,6 +59,7 @@ class DistribucionCentralController extends Controller
                         'destino_almacen_id' => (int) $data['sede_id'],
                         'cantidad' => $cantidad,
                         'fecha_despacho' => $data['fecha_despacho'],
+                        'estado' => 'pendiente',
                         'user_id' => $userId,
                     ]);
                 }

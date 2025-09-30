@@ -111,6 +111,7 @@ class DistribucionAutomaticaController extends Controller
                         'destino_almacen_tipo' => 'principal',
                         'destino_almacen_id' => (int) $principal->id,
                         'cantidad' => $cantidadAsignada,
+                        'estado' => 'pendiente',
                         'user_id' => (int) $request->user()->id,
                     ]);
 

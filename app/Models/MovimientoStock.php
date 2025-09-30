@@ -19,6 +19,7 @@ class MovimientoStock extends Model
         'destino_almacen_id',
         'cantidad',
         'fecha_despacho',
+        'estado',
         'user_id',
     ];
 

@@ -53,6 +53,7 @@ class DistribucionInternaController extends Controller
                     'destino_almacen_tipo' => (string) $it['destino_tipo'],
                     'destino_almacen_id' => (int) $it['destino_id'],
                     'cantidad' => (int) $it['cantidad'],
+                    'estado' => 'pendiente',
                     'user_id' => (int) $request->user()->id,
                 ]);
             }

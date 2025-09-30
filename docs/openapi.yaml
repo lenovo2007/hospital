@@ -694,6 +694,7 @@ components:
         destino_almacen_tipo: { type: string, nullable: true }
         destino_almacen_id: { type: integer, nullable: true }
         cantidad: { type: integer }
+        estado: { type: string, enum: [completado, cancelado, pendiente], default: pendiente }
         user_id: { type: integer }
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }

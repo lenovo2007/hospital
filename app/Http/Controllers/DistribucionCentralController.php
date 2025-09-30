@@ -55,7 +55,6 @@ class DistribucionCentralController extends Controller
                     MovimientoStock::create([
                         'tipo' => 'transferencia',
                         'tipo_movimiento' => $data['tipo_movimiento'],
-                        'lote_id' => $loteId,
                         'hospital_id' => (int) $data['hospital_id'],
                         'origen_almacen_tipo' => 'almacenCent',
                         'origen_almacen_id' => (int) $data['origen_central_id'],

@@ -104,7 +104,6 @@ class DistribucionAutomaticaController extends Controller
 
                     MovimientoStock::create([
                         'tipo' => 'transferencia',
-                        'lote_id' => (int) $loteId,
                         'hospital_id' => (int) $t['hospital_id'],
                         'origen_almacen_tipo' => 'central',
                         'origen_almacen_id' => (int) $data['origen_central_id'],

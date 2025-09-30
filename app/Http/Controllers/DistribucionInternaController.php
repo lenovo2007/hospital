@@ -46,7 +46,6 @@ class DistribucionInternaController extends Controller
 
                 MovimientoStock::create([
                     'tipo' => 'transferencia',
-                    'lote_id' => (int) $it['lote_id'],
                     'hospital_id' => (int) $data['hospital_id'],
                     'origen_almacen_tipo' => 'principal',
                     'origen_almacen_id' => (int) $data['principal_id'],

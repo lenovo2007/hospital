@@ -11,7 +11,6 @@ class MovimientoStock extends Model
     protected $fillable = [
         'tipo',
         'tipo_movimiento',
-        'lote_id',
         'hospital_id',
         'origen_almacen_tipo',
         'origen_almacen_id',

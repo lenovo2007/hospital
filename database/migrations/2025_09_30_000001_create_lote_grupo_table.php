@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('lote_grupo', function (Blueprint $table) {
+        Schema::create('lotes_grupos', function (Blueprint $table) {
             $table->id();
             $table->string('codigo', 20)->unique(); // cod001, cod002, etc.
             $table->unsignedBigInteger('lote_id');
@@ -20,7 +20,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->foreign('lote_id')->references('id')->on('lotes')->onDelete('cascade');
-            $table->index(['codigo', 'status'], 'lote_grupo_codigo_status_idx');
+            $table->index(['codigo', 'status'], 'lotes_grupos_codigo_status_idx');
         });
     }
 
@@ -29,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('lote_grupo');
+        Schema::dropIfExists('lotes_grupos');
     }
 };

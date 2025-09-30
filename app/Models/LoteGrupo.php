@@ -10,7 +10,7 @@ class LoteGrupo extends Model
 {
     use HasFactory;
 
-    protected $table = 'lote_grupo';
+    protected $table = 'lotes_grupos';
 
     protected $fillable = [
         'codigo',

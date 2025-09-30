@@ -85,7 +85,7 @@ class LoteGrupoController extends Controller
         $validator = Validator::make($request->all(), [
             'lote_id' => 'required|integer|exists:lotes,id',
             'cantidad' => 'required|integer|min:1',
-            'codigo' => 'nullable|string|max:20|unique:lote_grupo,codigo',
+            'codigo' => 'nullable|string|max:20|unique:lotes_grupos,codigo',
         ]);
 
         if ($validator->fails()) {

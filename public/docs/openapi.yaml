@@ -1015,26 +1015,6 @@ paths:
                 $ref: '#/components/schemas/StandardResponse'
   /api/distribucion/automatica/central:
     post:
-      summary: Distribución automática desde central a hospitales por porcentaje
-      description: Distribuye stock disponible en central para los lotes seleccionados hacia el almacén principal de cada hospital según su porcentaje configurado.
-      tags: [Distribucion]
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/DistribucionAutomaticaRequest'
-      responses:
-        '200':
-          description: Distribución automática aplicada
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StandardResponse'
-  /api/movimiento/central:
-    post:
       summary: Distribuir desde almacén central hacia principal del hospital
       tags: [Distribucion]
       security:

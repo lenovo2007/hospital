@@ -18,7 +18,7 @@ use App\Http\Controllers\TipoHospitalDistribucionController;
 use App\Http\Controllers\DistribucionCentralController;
 use App\Http\Controllers\DistribucionInternaController;
 use App\Http\Controllers\SolicitudesFaltantesController;
-use App\Http\Controllers\DistribucionAutomaticaController;
+use App\Http\Controllers\LoteGrupoController;
 
 // Autenticación con token
 // Test route to check if API is working
@@ -168,6 +168,15 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
 
     // Distribución automática desde central por porcentaje (varios hospitales y lotes)
     Route::post('/distribucion/automatica/central', [DistribucionAutomaticaController::class, 'distribuirPorPorcentaje']);
+
+    // Rutas de grupos de lote
+    Route::get('/lote-grupo', [LoteGrupoController::class, 'index']);
+    Route::post('/lote-grupo', [LoteGrupoController::class, 'store']);
+    Route::post('/lote-grupo/crear-desde-movimiento', [LoteGrupoController::class, 'crearDesdeMovimiento']);
+    Route::get('/lote-grupo/{codigo}', [LoteGrupoController::class, 'show']);
+    Route::put('/lote-grupo/{id}', [LoteGrupoController::class, 'update']);
+    Route::delete('/lote-grupo/{id}', [LoteGrupoController::class, 'destroy']);
+    Route::get('/lote-grupo/estadisticas', [LoteGrupoController::class, 'estadisticas']);
 
     // Solicitudes de faltantes (visibilidad de carencias)
     Route::get('/solicitudes_faltantes', [SolicitudesFaltantesController::class, 'index']);

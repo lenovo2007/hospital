@@ -20,6 +20,7 @@ class MovimientoStock extends Model
         'cantidad',
         'fecha_despacho',
         'estado',
+        'codigo_grupo',
         'user_id',
     ];
 

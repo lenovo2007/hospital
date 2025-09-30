@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\StockException;
+use App\Models\LoteGrupo;
 use App\Models\MovimientoStock;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -35,7 +36,10 @@ class DistribucionCentralController extends Controller
         $userId = (int) $request->user()->id;
 
         try {
-            DB::transaction(function () use ($data, $userId) {
+            DB::transaction(function () use ($data, $userId, &$codigoGrupo) {
+                // Crear grupo de lote para los items del movimiento
+                [$codigoGrupo, $grupoItems] = LoteGrupo::crearGrupo($data['items']);
+
                 foreach ($data['items'] as $it) {
                     $loteId = (int) $it['lote_id'];
                     $cantidad = (int) $it['cantidad'];
@@ -60,6 +64,7 @@ class DistribucionCentralController extends Controller
                         'cantidad' => $cantidad,
                         'fecha_despacho' => $data['fecha_despacho'],
                         'estado' => 'pendiente',
+                        'codigo_grupo' => $codigoGrupo,
                         'user_id' => $userId,
                     ]);
                 }
@@ -68,8 +73,11 @@ class DistribucionCentralController extends Controller
             return response()->json([
                 'status' => true,
                 'mensaje' => 'Movimiento desde central aplicado.',
-                'data' => null,
+                'data' => [
+                    'codigo_grupo' => $codigoGrupo,
+                ],
             ], 200, [], JSON_UNESCAPED_UNICODE);
+        } catch (StockException $e) {
         } catch (StockException $e) {
             Log::warning('Movimiento central falló por StockException', [
                 'mensaje' => $e->getMessage(),

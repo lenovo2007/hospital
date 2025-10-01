@@ -24,6 +24,11 @@ return new class extends Migration
                     echo "sedes.id: {$column->Type} {$column->Null} {$column->Key}\n";
                 }
             }
+
+            $sedesInfo = DB::selectOne("SELECT ENGINE, TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sedes'");
+            if ($sedesInfo) {
+                echo "sedes engine: {$sedesInfo->ENGINE}, collation: {$sedesInfo->TABLE_COLLATION}\n";
+            }
         } else {
             echo "sedes table does not exist\n";
         }
@@ -36,6 +41,11 @@ return new class extends Migration
                 if ($column->Field === 'sede_id') {
                     echo "movimientos_stock.sede_id: {$column->Type} {$column->Null} {$column->Key}\n";
                 }
+            }
+
+            $movimientosInfo = DB::selectOne("SELECT ENGINE, TABLE_COLLATION FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'movimientos_stock'");
+            if ($movimientosInfo) {
+                echo "movimientos_stock engine: {$movimientosInfo->ENGINE}, collation: {$movimientosInfo->TABLE_COLLATION}\n";
             }
         } else {
             echo "movimientos_stock table does not exist\n";
@@ -75,6 +85,31 @@ return new class extends Migration
                 AND TABLE_NAME = 'movimientos_stock'
                 AND COLUMN_NAME = 'sede_id'
                 AND REFERENCED_TABLE_NAME = 'sedes'"));
+
+            // Ensure both tables are using InnoDB engine
+            $sedesEngine = isset($sedesInfo) ? strtoupper((string) $sedesInfo->ENGINE) : null;
+            $movimientosEngine = isset($movimientosInfo) ? strtoupper((string) $movimientosInfo->ENGINE) : null;
+
+            if ($sedesEngine !== 'INNODB') {
+                echo "Converting sedes engine from {$sedesEngine} to InnoDB...\n";
+                DB::statement("ALTER TABLE sedes ENGINE=InnoDB");
+            }
+
+            if ($movimientosEngine !== 'INNODB') {
+                echo "Converting movimientos_stock engine from {$movimientosEngine} to InnoDB...\n";
+                DB::statement("ALTER TABLE movimientos_stock ENGINE=InnoDB");
+            }
+
+            // Ensure the column is exactly UNSIGNED BIGINT
+            echo "Ensuring movimientos_stock.sede_id is BIGINT UNSIGNED NULL...\n";
+            DB::statement('ALTER TABLE movimientos_stock MODIFY sede_id BIGINT UNSIGNED NULL');
+
+            // Make sure there is no leftover index/constraint with unexpected name
+            $orphanIndex = DB::selectOne("SELECT INDEX_NAME FROM information_schema.STATISTICS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'movimientos_stock' AND COLUMN_NAME = 'sede_id' AND INDEX_NAME = 'movimientos_stock_sede_id_foreign'");
+            if ($orphanIndex) {
+                echo "Dropping orphan index movimientos_stock_sede_id_foreign...\n";
+                DB::statement('ALTER TABLE movimientos_stock DROP INDEX movimientos_stock_sede_id_foreign');
+            }
 
             if (!$constraintExists) {
                 echo "Adding foreign key constraint...\n";

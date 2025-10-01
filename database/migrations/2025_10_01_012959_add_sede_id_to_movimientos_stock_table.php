@@ -1,4 +1,4 @@
-><?php
+>><?php
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
@@ -14,6 +14,13 @@ return new class extends Migration
         Schema::table('movimientos_stock', function (Blueprint $table) {
             if (!Schema::hasColumn('movimientos_stock', 'sede_id')) {
                 $table->unsignedBigInteger('sede_id')->nullable()->after('hospital_id');
+                $table->index('sede_id');
+            }
+        });
+
+        // Add foreign key constraint in separate operation to avoid issues
+        Schema::table('movimientos_stock', function (Blueprint $table) {
+            if (Schema::hasColumn('movimientos_stock', 'sede_id') && !Schema::hasColumn('movimientos_stock', 'sede_id_foreign')) {
                 $table->foreign('sede_id')->references('id')->on('sedes')->onDelete('set null');
             }
         });

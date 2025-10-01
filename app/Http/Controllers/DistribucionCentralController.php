@@ -56,12 +56,14 @@ class DistribucionCentralController extends Controller
                         'tipo' => 'transferencia',
                         'tipo_movimiento' => $data['tipo_movimiento'],
                         'hospital_id' => (int) $data['hospital_id'],
+                        'sede_id' => (int) $data['sede_id'],
                         'origen_almacen_tipo' => 'almacenCent',
                         'origen_almacen_id' => (int) $data['origen_central_id'],
                         'destino_almacen_tipo' => 'almacenPrin',
                         'destino_almacen_id' => (int) $data['sede_id'],
                         'cantidad' => $cantidad,
                         'fecha_despacho' => $data['fecha_despacho'],
+                        'observaciones' => $data['observaciones'] ?? null,
                         'estado' => 'pendiente',
                         'codigo_grupo' => $codigoGrupo,
                         'user_id' => $userId,
@@ -76,7 +78,6 @@ class DistribucionCentralController extends Controller
                     'codigo_grupo' => $codigoGrupo,
                 ],
             ], 200, [], JSON_UNESCAPED_UNICODE);
-        } catch (StockException $e) {
         } catch (StockException $e) {
             Log::warning('Movimiento central falló por StockException', [
                 'mensaje' => $e->getMessage(),

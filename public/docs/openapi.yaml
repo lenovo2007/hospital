@@ -1,9 +1,10 @@
 openapi: 3.1.0
 info:
-  title: Almacen Principal
+  title: Almacén Principal
   description: |
     API para gestión de usuarios con autenticación por tokens (Laravel Sanctum).
-    Respuestas JSON unificadas `{status, mensaje, data}`.
+    Respuestas JSON unificadas `{estado, mensaje, datos}`.
+    Importante: todos los resultados (éxito y error) devuelven HTTP 200. Los errores se indican con `estado=false` y un `mensaje` descriptivo.
   version: 1.0.0
 servers:
   - url: http://localhost
@@ -21,6 +22,7 @@ paths:
   /api/login:
     post:
       summary: Iniciar sesión
+      description: Permite a los usuarios autenticarse en el sistema
       tags: [Autenticación]
       requestBody:
         required: true
@@ -29,85 +31,52 @@ paths:
             schema:
               type: object
               properties:
-                email: { type: string, format: email }
-                password: { type: string, format: password }
+                email:
+                  type: string
+                  format: email
+                  description: Correo electrónico del usuario
+                password:
+                  type: string
+                  format: password
+                  description: Contraseña del usuario
+              required: [email, password]
       responses:
         '200':
-          description: Sesión iniciada
+          description: Sesión iniciada correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   /api/logout:
     post:
       summary: Cerrar sesión
+      description: Cierra la sesión del usuario autenticado
       tags: [Autenticación]
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: Sesión cerrada
+          description: Sesión cerrada correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   /api/me:
     get:
       summary: Información del usuario autenticado
+      description: Obtiene los datos del usuario actualmente autenticado
       tags: [Autenticación]
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: Datos del usuario
+          description: Datos del usuario obtenidos correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
-
-  /api/users/password/forgot:
-    post:
-      summary: Solicitar restablecimiento de contraseña
-      tags: [Autenticación]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                email: { type: string, format: email }
-      responses:
-        '200':
-          description: Token de restablecimiento enviado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StandardResponse'
-
-  /api/users/password/reset:
-    post:
-      summary: Restablecer contraseña con token
-      tags: [Autenticación]
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                token: { type: string }
-                password: { type: string, format: password }
-                password_confirmation: { type: string, format: password }
-      responses:
-        '200':
-          description: Contraseña restablecida
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   # ========================================
   # USUARIOS
@@ -115,19 +84,21 @@ paths:
   /api/users:
     get:
       summary: Listar usuarios
+      description: Obtiene una lista paginada de todos los usuarios del sistema
       tags: [Usuarios]
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: Listado de usuarios
+          description: Lista de usuarios obtenida correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     post:
       summary: Crear usuario
+      description: Crea un nuevo usuario en el sistema
       tags: [Usuarios]
       security:
         - bearerAuth: []
@@ -136,18 +107,19 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UserRequest'
+              $ref: '#/components/schemas/UsuarioRequest'
       responses:
         '201':
-          description: Usuario creado
+          description: Usuario creado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   /api/users/{id}:
     get:
       summary: Ver detalle de usuario
+      description: Obtiene los detalles completos de un usuario específico
       tags: [Usuarios]
       security:
         - bearerAuth: []
@@ -155,17 +127,21 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único del usuario
       responses:
         '200':
-          description: Detalle del usuario
+          description: Detalle del usuario obtenido correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     put:
       summary: Actualizar usuario
+      description: Actualiza la información de un usuario existente
       tags: [Usuarios]
       security:
         - bearerAuth: []
@@ -173,23 +149,27 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único del usuario
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UserRequest'
+              $ref: '#/components/schemas/UsuarioRequest'
       responses:
         '200':
-          description: Usuario actualizado
+          description: Usuario actualizado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     delete:
       summary: Eliminar usuario
+      description: Elimina permanentemente un usuario del sistema
       tags: [Usuarios]
       security:
         - bearerAuth: []
@@ -197,18 +177,22 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único del usuario
       responses:
         '200':
-          description: Usuario eliminado
+          description: Usuario eliminado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   /api/users/email/{email}:
     get:
-      summary: Ver usuario por email
+      summary: Buscar usuario por email
+      description: Busca y obtiene información de un usuario por su dirección de correo
       tags: [Usuarios]
       security:
         - bearerAuth: []
@@ -216,17 +200,21 @@ paths:
         - name: email
           in: path
           required: true
-          schema: { type: string, format: email }
+          schema:
+            type: string
+            format: email
+          description: Dirección de correo electrónico del usuario
       responses:
         '200':
-          description: Usuario encontrado
+          description: Usuario encontrado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     put:
       summary: Actualizar usuario por email
+      description: Actualiza la información de un usuario usando su email como identificador
       tags: [Usuarios]
       security:
         - bearerAuth: []
@@ -234,24 +222,28 @@ paths:
         - name: email
           in: path
           required: true
-          schema: { type: string, format: email }
+          schema:
+            type: string
+            format: email
+          description: Dirección de correo electrónico del usuario
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UserRequest'
+              $ref: '#/components/schemas/UsuarioRequest'
       responses:
         '200':
-          description: Usuario actualizado
+          description: Usuario actualizado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   /api/users/email/{email}/password:
     put:
       summary: Cambiar contraseña por email
+      description: Permite cambiar la contraseña de un usuario usando su email
       tags: [Usuarios]
       security:
         - bearerAuth: []
@@ -259,7 +251,10 @@ paths:
         - name: email
           in: path
           required: true
-          schema: { type: string, format: email }
+          schema:
+            type: string
+            format: email
+          description: Dirección de correo electrónico del usuario
       requestBody:
         required: true
         content:
@@ -267,18 +262,23 @@ paths:
             schema:
               type: object
               properties:
-                password: { type: string, format: password }
+                password:
+                  type: string
+                  format: password
+                  description: Nueva contraseña del usuario
+              required: [password]
       responses:
         '200':
-          description: Contraseña actualizada
+          description: Contraseña actualizada correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   /api/users/cedula/{cedula}:
     get:
-      summary: Ver usuario por cédula
+      summary: Buscar usuario por cédula
+      description: Busca y obtiene información de un usuario por su número de cédula
       tags: [Usuarios]
       security:
         - bearerAuth: []
@@ -286,17 +286,22 @@ paths:
         - name: cedula
           in: path
           required: true
-          schema: { type: string }
+          schema:
+            type: string
+            minLength: 5
+            maxLength: 20
+          description: Número de cédula del usuario
       responses:
         '200':
-          description: Usuario encontrado
+          description: Usuario encontrado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     put:
       summary: Actualizar usuario por cédula
+      description: Actualiza la información de un usuario usando su cédula como identificador
       tags: [Usuarios]
       security:
         - bearerAuth: []
@@ -304,24 +309,29 @@ paths:
         - name: cedula
           in: path
           required: true
-          schema: { type: string }
+          schema:
+            type: string
+            minLength: 5
+            maxLength: 20
+          description: Número de cédula del usuario
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/UserRequest'
+              $ref: '#/components/schemas/UsuarioRequest'
       responses:
         '200':
-          description: Usuario actualizado
+          description: Usuario actualizado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   /api/users/cedula/{cedula}/password:
     put:
       summary: Cambiar contraseña por cédula
+      description: Permite cambiar la contraseña de un usuario usando su cédula
       tags: [Usuarios]
       security:
         - bearerAuth: []
@@ -329,7 +339,11 @@ paths:
         - name: cedula
           in: path
           required: true
-          schema: { type: string }
+          schema:
+            type: string
+            minLength: 5
+            maxLength: 20
+          description: Número de cédula del usuario
       requestBody:
         required: true
         content:
@@ -337,14 +351,18 @@ paths:
             schema:
               type: object
               properties:
-                password: { type: string, format: password }
+                password:
+                  type: string
+                  format: password
+                  description: Nueva contraseña del usuario
+              required: [password]
       responses:
         '200':
-          description: Contraseña actualizada
+          description: Contraseña actualizada correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   # ========================================
   # HOSPITALES
@@ -352,19 +370,21 @@ paths:
   /api/hospitales:
     get:
       summary: Listar hospitales
+      description: Obtiene una lista de todos los hospitales registrados en el sistema
       tags: [Hospitales]
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: Listado de hospitales
+          description: Lista de hospitales obtenida correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     post:
       summary: Crear hospital
+      description: Registra un nuevo hospital en el sistema
       tags: [Hospitales]
       security:
         - bearerAuth: []
@@ -376,15 +396,16 @@ paths:
               $ref: '#/components/schemas/HospitalRequest'
       responses:
         '201':
-          description: Hospital creado
+          description: Hospital creado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   /api/hospitales/{id}:
     get:
       summary: Ver detalle de hospital
+      description: Obtiene información detallada de un hospital específico
       tags: [Hospitales]
       security:
         - bearerAuth: []
@@ -392,17 +413,21 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único del hospital
       responses:
         '200':
-          description: Detalle del hospital
+          description: Detalle del hospital obtenido correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     put:
       summary: Actualizar hospital
+      description: Actualiza la información de un hospital existente
       tags: [Hospitales]
       security:
         - bearerAuth: []
@@ -410,7 +435,10 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único del hospital
       requestBody:
         required: true
         content:
@@ -419,14 +447,15 @@ paths:
               $ref: '#/components/schemas/HospitalRequest'
       responses:
         '200':
-          description: Hospital actualizado
+          description: Hospital actualizado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     delete:
       summary: Eliminar hospital
+      description: Elimina permanentemente un hospital del sistema
       tags: [Hospitales]
       security:
         - bearerAuth: []
@@ -434,18 +463,22 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único del hospital
       responses:
         '200':
-          description: Hospital eliminado
+          description: Hospital eliminado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   /api/hospitales/rif/{rif}:
     get:
-      summary: Ver hospital por RIF
+      summary: Buscar hospital por RIF
+      description: Busca un hospital específico por su número de RIF
       tags: [Hospitales]
       security:
         - bearerAuth: []
@@ -453,17 +486,22 @@ paths:
         - name: rif
           in: path
           required: true
-          schema: { type: string }
+          schema:
+            type: string
+            minLength: 5
+            maxLength: 20
+          description: Número de RIF del hospital
       responses:
         '200':
-          description: Hospital encontrado
+          description: Hospital encontrado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     put:
       summary: Actualizar hospital por RIF
+      description: Actualiza la información de un hospital usando su RIF como identificador
       tags: [Hospitales]
       security:
         - bearerAuth: []
@@ -471,7 +509,11 @@ paths:
         - name: rif
           in: path
           required: true
-          schema: { type: string }
+          schema:
+            type: string
+            minLength: 5
+            maxLength: 20
+          description: Número de RIF del hospital
       requestBody:
         required: true
         content:
@@ -480,15 +522,16 @@ paths:
               $ref: '#/components/schemas/HospitalRequest'
       responses:
         '200':
-          description: Hospital actualizado
+          description: Hospital actualizado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   /api/hospitales/buscar_por_rif:
     get:
-      summary: Buscar hospital por RIF
+      summary: Buscar hospital por RIF (query)
+      description: Busca un hospital usando el RIF como parámetro de consulta
       tags: [Hospitales]
       security:
         - bearerAuth: []
@@ -496,14 +539,18 @@ paths:
         - name: rif
           in: query
           required: true
-          schema: { type: string }
+          schema:
+            type: string
+            minLength: 5
+            maxLength: 20
+          description: Número de RIF del hospital
       responses:
         '200':
-          description: Hospital encontrado
+          description: Hospital encontrado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   # ========================================
   # SEDES
@@ -511,19 +558,21 @@ paths:
   /api/sedes:
     get:
       summary: Listar sedes
+      description: Obtiene una lista de todas las sedes registradas en el sistema
       tags: [Sedes]
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: Listado de sedes
+          description: Lista de sedes obtenida correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     post:
       summary: Crear sede
+      description: Registra una nueva sede en el sistema
       tags: [Sedes]
       security:
         - bearerAuth: []
@@ -535,15 +584,16 @@ paths:
               $ref: '#/components/schemas/SedeRequest'
       responses:
         '201':
-          description: Sede creada
+          description: Sede creada correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   /api/sedes/{id}:
     get:
       summary: Ver detalle de sede
+      description: Obtiene información detallada de una sede específica
       tags: [Sedes]
       security:
         - bearerAuth: []
@@ -551,17 +601,21 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único de la sede
       responses:
         '200':
-          description: Detalle de la sede
+          description: Detalle de la sede obtenido correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     put:
       summary: Actualizar sede
+      description: Actualiza la información de una sede existente
       tags: [Sedes]
       security:
         - bearerAuth: []
@@ -569,7 +623,10 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único de la sede
       requestBody:
         required: true
         content:
@@ -578,14 +635,15 @@ paths:
               $ref: '#/components/schemas/SedeRequest'
       responses:
         '200':
-          description: Sede actualizada
+          description: Sede actualizada correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     delete:
       summary: Eliminar sede
+      description: Elimina permanentemente una sede del sistema
       tags: [Sedes]
       security:
         - bearerAuth: []
@@ -593,18 +651,22 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único de la sede
       responses:
         '200':
-          description: Sede eliminada
+          description: Sede eliminada correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   /api/sedes/hospital/{id}:
     get:
       summary: Listar sedes por hospital
+      description: Obtiene todas las sedes asociadas a un hospital específico
       tags: [Sedes]
       security:
         - bearerAuth: []
@@ -612,14 +674,17 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único del hospital
       responses:
         '200':
-          description: Sedes del hospital
+          description: Lista de sedes del hospital obtenida correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   # ========================================
   # ALMACENES PRINCIPALES
@@ -627,19 +692,21 @@ paths:
   /api/almacenes_principales:
     get:
       summary: Listar almacenes principales
+      description: Obtiene una lista de todos los almacenes principales del sistema
       tags: [Almacenes Principales]
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: Listado de almacenes principales
+          description: Lista de almacenes principales obtenida correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     post:
       summary: Crear almacén principal
+      description: Registra un nuevo almacén principal en el sistema
       tags: [Almacenes Principales]
       security:
         - bearerAuth: []
@@ -651,15 +718,16 @@ paths:
               $ref: '#/components/schemas/AlmacenPrincipalRequest'
       responses:
         '201':
-          description: Almacén principal creado
+          description: Almacén principal creado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   /api/almacenes_principales/{id}:
     get:
       summary: Ver detalle de almacén principal
+      description: Obtiene información detallada de un almacén principal específico
       tags: [Almacenes Principales]
       security:
         - bearerAuth: []
@@ -667,17 +735,21 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único del almacén principal
       responses:
         '200':
-          description: Detalle del almacén principal
+          description: Detalle del almacén principal obtenido correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     put:
       summary: Actualizar almacén principal
+      description: Actualiza la información de un almacén principal existente
       tags: [Almacenes Principales]
       security:
         - bearerAuth: []
@@ -685,7 +757,10 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único del almacén principal
       requestBody:
         required: true
         content:
@@ -694,14 +769,15 @@ paths:
               $ref: '#/components/schemas/AlmacenPrincipalRequest'
       responses:
         '200':
-          description: Almacén principal actualizado
+          description: Almacén principal actualizado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     delete:
       summary: Eliminar almacén principal
+      description: Elimina permanentemente un almacén principal del sistema
       tags: [Almacenes Principales]
       security:
         - bearerAuth: []
@@ -709,14 +785,17 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único del almacén principal
       responses:
         '200':
-          description: Almacén principal eliminado
+          description: Almacén principal eliminado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   # ========================================
   # ALMACENES CENTRALES
@@ -724,19 +803,21 @@ paths:
   /api/almacenes_centrales:
     get:
       summary: Listar almacenes centrales
+      description: Obtiene una lista de todos los almacenes centrales del sistema
       tags: [Almacenes Centrales]
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: Listado de almacenes centrales
+          description: Lista de almacenes centrales obtenida correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     post:
       summary: Crear almacén central
+      description: Registra un nuevo almacén central en el sistema
       tags: [Almacenes Centrales]
       security:
         - bearerAuth: []
@@ -748,15 +829,16 @@ paths:
               $ref: '#/components/schemas/AlmacenCentralRequest'
       responses:
         '201':
-          description: Almacén central creado
+          description: Almacén central creado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   /api/almacenes_centrales/{id}:
     get:
       summary: Ver detalle de almacén central
+      description: Obtiene información detallada de un almacén central específico
       tags: [Almacenes Centrales]
       security:
         - bearerAuth: []
@@ -764,17 +846,21 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único del almacén central
       responses:
         '200':
-          description: Detalle del almacén central
+          description: Detalle del almacén central obtenido correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     put:
       summary: Actualizar almacén central
+      description: Actualiza la información de un almacén central existente
       tags: [Almacenes Centrales]
       security:
         - bearerAuth: []
@@ -782,7 +868,10 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único del almacén central
       requestBody:
         required: true
         content:
@@ -791,14 +880,15 @@ paths:
               $ref: '#/components/schemas/AlmacenCentralRequest'
       responses:
         '200':
-          description: Almacén central actualizado
+          description: Almacén central actualizado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     delete:
       summary: Eliminar almacén central
+      description: Elimina permanentemente un almacén central del sistema
       tags: [Almacenes Centrales]
       security:
         - bearerAuth: []
@@ -806,14 +896,17 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único del almacén central
       responses:
         '200':
-          description: Almacén central eliminado
+          description: Almacén central eliminado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   # ========================================
   # ALMACENES DE FARMACIA
@@ -821,19 +914,21 @@ paths:
   /api/almacenes_farmacia:
     get:
       summary: Listar almacenes de farmacia
+      description: Obtiene una lista de todos los almacenes de farmacia del sistema
       tags: [Almacenes Farmacia]
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: Listado de almacenes de farmacia
+          description: Lista de almacenes de farmacia obtenida correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     post:
       summary: Crear almacén de farmacia
+      description: Registra un nuevo almacén de farmacia en el sistema
       tags: [Almacenes Farmacia]
       security:
         - bearerAuth: []
@@ -845,15 +940,16 @@ paths:
               $ref: '#/components/schemas/AlmacenFarmaciaRequest'
       responses:
         '201':
-          description: Almacén de farmacia creado
+          description: Almacén de farmacia creado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   /api/almacenes_farmacia/{id}:
     get:
       summary: Ver detalle de almacén de farmacia
+      description: Obtiene información detallada de un almacén de farmacia específico
       tags: [Almacenes Farmacia]
       security:
         - bearerAuth: []
@@ -861,17 +957,21 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único del almacén de farmacia
       responses:
         '200':
-          description: Detalle del almacén de farmacia
+          description: Detalle del almacén de farmacia obtenido correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     put:
       summary: Actualizar almacén de farmacia
+      description: Actualiza la información de un almacén de farmacia existente
       tags: [Almacenes Farmacia]
       security:
         - bearerAuth: []
@@ -879,7 +979,10 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único del almacén de farmacia
       requestBody:
         required: true
         content:
@@ -888,14 +991,15 @@ paths:
               $ref: '#/components/schemas/AlmacenFarmaciaRequest'
       responses:
         '200':
-          description: Almacén de farmacia actualizado
+          description: Almacén de farmacia actualizado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     delete:
       summary: Eliminar almacén de farmacia
+      description: Elimina permanentemente un almacén de farmacia del sistema
       tags: [Almacenes Farmacia]
       security:
         - bearerAuth: []
@@ -903,14 +1007,17 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único del almacén de farmacia
       responses:
         '200':
-          description: Almacén de farmacia eliminado
+          description: Almacén de farmacia eliminado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   # ========================================
   # ALMACENES PARALELOS
@@ -918,19 +1025,21 @@ paths:
   /api/almacenes_paralelo:
     get:
       summary: Listar almacenes paralelos
+      description: Obtiene una lista de todos los almacenes paralelos del sistema
       tags: [Almacenes Paralelos]
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: Listado de almacenes paralelos
+          description: Lista de almacenes paralelos obtenida correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     post:
       summary: Crear almacén paralelo
+      description: Registra un nuevo almacén paralelo en el sistema
       tags: [Almacenes Paralelos]
       security:
         - bearerAuth: []
@@ -942,15 +1051,16 @@ paths:
               $ref: '#/components/schemas/AlmacenParaleloRequest'
       responses:
         '201':
-          description: Almacén paralelo creado
+          description: Almacén paralelo creado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   /api/almacenes_paralelo/{id}:
     get:
       summary: Ver detalle de almacén paralelo
+      description: Obtiene información detallada de un almacén paralelo específico
       tags: [Almacenes Paralelos]
       security:
         - bearerAuth: []
@@ -958,17 +1068,21 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único del almacén paralelo
       responses:
         '200':
-          description: Detalle del almacén paralelo
+          description: Detalle del almacén paralelo obtenido correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     put:
       summary: Actualizar almacén paralelo
+      description: Actualiza la información de un almacén paralelo existente
       tags: [Almacenes Paralelos]
       security:
         - bearerAuth: []
@@ -976,7 +1090,10 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único del almacén paralelo
       requestBody:
         required: true
         content:
@@ -985,14 +1102,15 @@ paths:
               $ref: '#/components/schemas/AlmacenParaleloRequest'
       responses:
         '200':
-          description: Almacén paralelo actualizado
+          description: Almacén paralelo actualizado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     delete:
       summary: Eliminar almacén paralelo
+      description: Elimina permanentemente un almacén paralelo del sistema
       tags: [Almacenes Paralelos]
       security:
         - bearerAuth: []
@@ -1000,14 +1118,17 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único del almacén paralelo
       responses:
         '200':
-          description: Almacén paralelo eliminado
+          description: Almacén paralelo eliminado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   # ========================================
   # ALMACENES SERVICIOS ATENCIONES
@@ -1015,19 +1136,21 @@ paths:
   /api/almacenes_servicios_atenciones:
     get:
       summary: Listar almacenes de servicios de atenciones
+      description: Obtiene una lista de todos los almacenes de servicios de atenciones del sistema
       tags: [Almacenes Servicios Atenciones]
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: Listado de almacenes de servicios de atenciones
+          description: Lista de almacenes de servicios de atenciones obtenida correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     post:
       summary: Crear almacén de servicios de atenciones
+      description: Registra un nuevo almacén de servicios de atenciones en el sistema
       tags: [Almacenes Servicios Atenciones]
       security:
         - bearerAuth: []
@@ -1039,15 +1162,16 @@ paths:
               $ref: '#/components/schemas/AlmacenServiciosAtencionesRequest'
       responses:
         '201':
-          description: Almacén de servicios de atenciones creado
+          description: Almacén de servicios de atenciones creado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   /api/almacenes_servicios_atenciones/{id}:
     get:
       summary: Ver detalle de almacén de servicios de atenciones
+      description: Obtiene información detallada de un almacén de servicios de atenciones específico
       tags: [Almacenes Servicios Atenciones]
       security:
         - bearerAuth: []
@@ -1055,17 +1179,21 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único del almacén de servicios de atenciones
       responses:
         '200':
-          description: Detalle del almacén de servicios de atenciones
+          description: Detalle del almacén de servicios de atenciones obtenido correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     put:
       summary: Actualizar almacén de servicios de atenciones
+      description: Actualiza la información de un almacén de servicios de atenciones existente
       tags: [Almacenes Servicios Atenciones]
       security:
         - bearerAuth: []
@@ -1073,7 +1201,10 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único del almacén de servicios de atenciones
       requestBody:
         required: true
         content:
@@ -1082,14 +1213,15 @@ paths:
               $ref: '#/components/schemas/AlmacenServiciosAtencionesRequest'
       responses:
         '200':
-          description: Almacén de servicios de atenciones actualizado
+          description: Almacén de servicios de atenciones actualizado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     delete:
       summary: Eliminar almacén de servicios de atenciones
+      description: Elimina permanentemente un almacén de servicios de atenciones del sistema
       tags: [Almacenes Servicios Atenciones]
       security:
         - bearerAuth: []
@@ -1097,14 +1229,17 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único del almacén de servicios de atenciones
       responses:
         '200':
-          description: Almacén de servicios de atenciones eliminado
+          description: Almacén de servicios de atenciones eliminado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   # ========================================
   # ALMACENES SERVICIOS APOYO
@@ -1112,19 +1247,21 @@ paths:
   /api/almacenes_servicios_apoyo:
     get:
       summary: Listar almacenes de servicios de apoyo
+      description: Obtiene una lista de todos los almacenes de servicios de apoyo del sistema
       tags: [Almacenes Servicios Apoyo]
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: Listado de almacenes de servicios de apoyo
+          description: Lista de almacenes de servicios de apoyo obtenida correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     post:
       summary: Crear almacén de servicios de apoyo
+      description: Registra un nuevo almacén de servicios de apoyo en el sistema
       tags: [Almacenes Servicios Apoyo]
       security:
         - bearerAuth: []
@@ -1136,15 +1273,16 @@ paths:
               $ref: '#/components/schemas/AlmacenServiciosApoyoRequest'
       responses:
         '201':
-          description: Almacén de servicios de apoyo creado
+          description: Almacén de servicios de apoyo creado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   /api/almacenes_servicios_apoyo/{id}:
     get:
       summary: Ver detalle de almacén de servicios de apoyo
+      description: Obtiene información detallada de un almacén de servicios de apoyo específico
       tags: [Almacenes Servicios Apoyo]
       security:
         - bearerAuth: []
@@ -1152,17 +1290,21 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único del almacén de servicios de apoyo
       responses:
         '200':
-          description: Detalle del almacén de servicios de apoyo
+          description: Detalle del almacén de servicios de apoyo obtenido correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     put:
       summary: Actualizar almacén de servicios de apoyo
+      description: Actualiza la información de un almacén de servicios de apoyo existente
       tags: [Almacenes Servicios Apoyo]
       security:
         - bearerAuth: []
@@ -1170,7 +1312,10 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único del almacén de servicios de apoyo
       requestBody:
         required: true
         content:
@@ -1179,14 +1324,15 @@ paths:
               $ref: '#/components/schemas/AlmacenServiciosApoyoRequest'
       responses:
         '200':
-          description: Almacén de servicios de apoyo actualizado
+          description: Almacén de servicios de apoyo actualizado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     delete:
       summary: Eliminar almacén de servicios de apoyo
+      description: Elimina permanentemente un almacén de servicios de apoyo del sistema
       tags: [Almacenes Servicios Apoyo]
       security:
         - bearerAuth: []
@@ -1194,14 +1340,17 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único del almacén de servicios de apoyo
       responses:
         '200':
-          description: Almacén de servicios de apoyo eliminado
+          description: Almacén de servicios de apoyo eliminado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   # ========================================
   # INSUMOS
@@ -1209,6 +1358,7 @@ paths:
   /api/insumos:
     get:
       summary: Listar insumos
+      description: Obtiene una lista de todos los insumos registrados en el sistema
       tags: [Insumos]
       security:
         - bearerAuth: []
@@ -1220,16 +1370,18 @@ paths:
             type: string
             enum: [activo, inactivo, todos]
             default: activo
+          description: Estado del insumo para filtrar la búsqueda
       responses:
         '200':
-          description: Listado de insumos
+          description: Lista de insumos obtenida correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     post:
       summary: Crear insumo
+      description: Registra un nuevo insumo en el sistema
       tags: [Insumos]
       security:
         - bearerAuth: []
@@ -1241,15 +1393,16 @@ paths:
               $ref: '#/components/schemas/InsumoRequest'
       responses:
         '201':
-          description: Insumo creado
+          description: Insumo creado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   /api/insumos/{id}:
     get:
       summary: Ver detalle de insumo
+      description: Obtiene información detallada de un insumo específico
       tags: [Insumos]
       security:
         - bearerAuth: []
@@ -1257,17 +1410,21 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único del insumo
       responses:
         '200':
-          description: Detalle del insumo
+          description: Detalle del insumo obtenido correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     put:
       summary: Actualizar insumo
+      description: Actualiza la información de un insumo existente
       tags: [Insumos]
       security:
         - bearerAuth: []
@@ -1275,7 +1432,10 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único del insumo
       requestBody:
         required: true
         content:
@@ -1284,14 +1444,15 @@ paths:
               $ref: '#/components/schemas/InsumoRequest'
       responses:
         '200':
-          description: Insumo actualizado
+          description: Insumo actualizado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     delete:
       summary: Eliminar insumo
+      description: Elimina permanentemente un insumo del sistema
       tags: [Insumos]
       security:
         - bearerAuth: []
@@ -1299,18 +1460,22 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único del insumo
       responses:
         '200':
-          description: Insumo eliminado
+          description: Insumo eliminado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   /api/insumos/codigo/{codigo}:
     get:
-      summary: Ver insumo por código
+      summary: Buscar insumo por código
+      description: Busca un insumo específico por su código único
       tags: [Insumos]
       security:
         - bearerAuth: []
@@ -1318,17 +1483,22 @@ paths:
         - name: codigo
           in: path
           required: true
-          schema: { type: string }
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 50
+          description: Código único del insumo
       responses:
         '200':
-          description: Insumo encontrado
+          description: Insumo encontrado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     put:
       summary: Actualizar insumo por código
+      description: Actualiza la información de un insumo usando su código como identificador
       tags: [Insumos]
       security:
         - bearerAuth: []
@@ -1336,7 +1506,11 @@ paths:
         - name: codigo
           in: path
           required: true
-          schema: { type: string }
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 50
+          description: Código único del insumo
       requestBody:
         required: true
         content:
@@ -1345,15 +1519,16 @@ paths:
               $ref: '#/components/schemas/InsumoRequest'
       responses:
         '200':
-          description: Insumo actualizado
+          description: Insumo actualizado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   /api/insumos/sede/{sede_id}:
     get:
       summary: Listar insumos por sede
+      description: Obtiene todos los insumos disponibles en una sede específica
       tags: [Insumos]
       security:
         - bearerAuth: []
@@ -1361,18 +1536,22 @@ paths:
         - name: sede_id
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único de la sede
       responses:
         '200':
-          description: Insumos de la sede
+          description: Lista de insumos de la sede obtenida correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   /api/insumos/import:
     post:
-      summary: Importar insumos desde archivo Excel
+      summary: Importar insumos desde Excel
+      description: Permite importar múltiples insumos desde un archivo Excel (.xlsx)
       tags: [Insumos]
       security:
         - bearerAuth: []
@@ -1387,13 +1566,14 @@ paths:
                 file:
                   type: string
                   format: binary
+                  description: Archivo Excel con los datos de insumos a importar
       responses:
         '200':
-          description: Importación procesada
+          description: Importación procesada correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   # ========================================
   # LOTES
@@ -1401,19 +1581,21 @@ paths:
   /api/lotes:
     get:
       summary: Listar lotes
+      description: Obtiene una lista de todos los lotes registrados en el sistema
       tags: [Lotes]
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: Listado de lotes
+          description: Lista de lotes obtenida correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     post:
       summary: Crear lote
+      description: Registra un nuevo lote en el sistema
       tags: [Lotes]
       security:
         - bearerAuth: []
@@ -1425,15 +1607,16 @@ paths:
               $ref: '#/components/schemas/LoteRequest'
       responses:
         '201':
-          description: Lote creado
+          description: Lote creado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   /api/lotes/{lote}:
     get:
       summary: Ver detalle de lote
+      description: Obtiene información detallada de un lote específico
       tags: [Lotes]
       security:
         - bearerAuth: []
@@ -1441,17 +1624,21 @@ paths:
         - name: lote
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único del lote
       responses:
         '200':
-          description: Detalle del lote
+          description: Detalle del lote obtenido correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     put:
       summary: Actualizar lote
+      description: Actualiza la información de un lote existente
       tags: [Lotes]
       security:
         - bearerAuth: []
@@ -1459,7 +1646,10 @@ paths:
         - name: lote
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único del lote
       requestBody:
         required: true
         content:
@@ -1468,14 +1658,15 @@ paths:
               $ref: '#/components/schemas/LoteRequest'
       responses:
         '200':
-          description: Lote actualizado
+          description: Lote actualizado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     delete:
       summary: Eliminar lote
+      description: Elimina permanentemente un lote del sistema
       tags: [Lotes]
       security:
         - bearerAuth: []
@@ -1483,18 +1674,22 @@ paths:
         - name: lote
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único del lote
       responses:
         '200':
-          description: Lote eliminado
+          description: Lote eliminado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   /api/lotes/{lote}/almacenes:
     get:
       summary: Ver almacenes de un lote
+      description: Obtiene la lista de almacenes donde se encuentra disponible un lote específico
       tags: [Lotes]
       security:
         - bearerAuth: []
@@ -1502,17 +1697,21 @@ paths:
         - name: lote
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único del lote
       responses:
         '200':
-          description: Almacenes del lote
+          description: Lista de almacenes del lote obtenida correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     post:
       summary: Agregar lote a almacén
+      description: Agrega una cantidad específica de un lote a un almacén determinado
       tags: [Lotes]
       security:
         - bearerAuth: []
@@ -1520,27 +1719,40 @@ paths:
         - name: lote
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único del lote
       requestBody:
         required: true
         content:
           application/json:
             schema:
               type: object
+              required: [almacen_id, cantidad]
               properties:
-                almacen_id: { type: integer }
-                cantidad: { type: integer }
+                almacen_id:
+                  type: integer
+                  minimum: 1
+                  description: ID único del almacén destino
+                cantidad:
+                  type: number
+                  format: float
+                  minimum: 0.01
+                  description: Cantidad a agregar al almacén
+              required: [almacen_id, cantidad]
       responses:
         '201':
-          description: Lote agregado al almacén
+          description: Lote agregado al almacén correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   /api/lotes/{lote}/almacenes/{almacen_id}:
     delete:
       summary: Eliminar lote de almacén específico
+      description: Elimina completamente un lote de un almacén específico
       tags: [Lotes]
       security:
         - bearerAuth: []
@@ -1548,18 +1760,24 @@ paths:
         - name: lote
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único del lote
         - name: almacen_id
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único del almacén
       responses:
         '200':
-          description: Lote eliminado del almacén
+          description: Lote eliminado del almacén correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   # ========================================
   # LOTE-GRUPO
@@ -1567,6 +1785,7 @@ paths:
   /api/lote-grupo:
     get:
       summary: Listar grupos de lote
+      description: Obtiene una lista de todos los grupos de lote registrados en el sistema
       tags: [LoteGrupo]
       security:
         - bearerAuth: []
@@ -1574,27 +1793,37 @@ paths:
         - name: codigo
           in: query
           required: false
-          schema: { type: string }
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 50
+          description: Código específico del grupo de lote (opcional)
         - name: lote_id
           in: query
           required: false
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID del lote asociado (opcional)
         - name: status
           in: query
           required: false
           schema:
             type: string
             enum: [activo, inactivo]
+            default: activo
+          description: Estado del grupo de lote (opcional)
       responses:
         '200':
-          description: Lista de grupos de lote
+          description: Lista de grupos de lote obtenida correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     post:
       summary: Crear grupo de lote
+      description: Crea un nuevo grupo de lote con sus items asociados
       tags: [LoteGrupo]
       security:
         - bearerAuth: []
@@ -1606,15 +1835,16 @@ paths:
               $ref: '#/components/schemas/LoteGrupoRequest'
       responses:
         '201':
-          description: Grupo de lote creado
+          description: Grupo de lote creado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   /api/lote-grupo/{id}:
     put:
       summary: Actualizar grupo de lote
+      description: Actualiza la información de un grupo de lote existente
       tags: [LoteGrupo]
       security:
         - bearerAuth: []
@@ -1622,7 +1852,10 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único del grupo de lote
       requestBody:
         required: true
         content:
@@ -1630,18 +1863,26 @@ paths:
             schema:
               type: object
               properties:
-                cantidad: { type: integer, minimum: 1 }
-                status: { type: string, enum: [activo, inactivo] }
+                cantidad:
+                  type: integer
+                  minimum: 1
+                  description: Nueva cantidad del grupo
+                status:
+                  type: string
+                  enum: [activo, inactivo]
+                  description: Nuevo estado del grupo
+              required: [cantidad, status]
       responses:
         '200':
-          description: Grupo de lote actualizado
+          description: Grupo de lote actualizado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     delete:
       summary: Eliminar grupo de lote
+      description: Elimina permanentemente un grupo de lote del sistema
       tags: [LoteGrupo]
       security:
         - bearerAuth: []
@@ -1649,18 +1890,22 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único del grupo de lote
       responses:
         '200':
-          description: Grupo de lote eliminado
+          description: Grupo de lote eliminado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   /api/lote-grupo/{codigo}:
     get:
       summary: Ver detalle de grupo de lote por código
+      description: Obtiene información detallada de un grupo de lote usando su código único
       tags: [LoteGrupo]
       security:
         - bearerAuth: []
@@ -1668,18 +1913,23 @@ paths:
         - name: codigo
           in: path
           required: true
-          schema: { type: string }
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 50
+          description: Código único del grupo de lote
       responses:
         '200':
-          description: Detalle del grupo de lote
+          description: Detalle del grupo de lote obtenido correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   /api/lote-grupo/crear-desde-movimiento:
     post:
       summary: Crear grupo de lote desde movimiento
+      description: Crea un grupo de lote basado en los datos de un movimiento existente
       tags: [LoteGrupo]
       security:
         - bearerAuth: []
@@ -1691,25 +1941,26 @@ paths:
               $ref: '#/components/schemas/LoteGrupoMovimientoRequest'
       responses:
         '201':
-          description: Grupo de lote creado
+          description: Grupo de lote creado desde movimiento correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   /api/lote-grupo/estadisticas:
     get:
       summary: Obtener estadísticas de grupos de lote
+      description: Obtiene estadísticas generales sobre los grupos de lote del sistema
       tags: [LoteGrupo]
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: Estadísticas de grupos de lote
+          description: Estadísticas de grupos de lote obtenidas correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   # ========================================
   # MOVIMIENTOS - SALIDA DESDE ALMACÉN CENTRAL
@@ -1717,7 +1968,9 @@ paths:
   /api/movimiento/central/salida:
     post:
       summary: Registrar movimiento de salida desde almacén central
-      description: Registra la salida de productos desde el almacén central (solo resta cantidades, no suma en destino)
+      description: |
+        Registra la salida de productos desde el almacén central (solo resta cantidades, no suma en destino).
+        Crea un registro de movimiento que debe ser aprobado posteriormente en el destino.
       tags: [Movimientos]
       security:
         - bearerAuth: []
@@ -1729,15 +1982,15 @@ paths:
               $ref: '#/components/schemas/MovimientoSalidaRequest'
       responses:
         '201':
-          description: Movimiento de salida registrado
+          description: Movimiento de salida registrado correctamente
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
+                  - $ref: '#/components/schemas/RespuestaEstandar'
                   - type: object
                     properties:
-                      data:
+                      datos:
                         $ref: '#/components/schemas/MovimientoSalidaResponse'
 
   # ========================================
@@ -1761,15 +2014,15 @@ paths:
               $ref: '#/components/schemas/MovimientoEntradaRequest'
       responses:
         '201':
-          description: Movimiento de entrada aprobado y registrado
+          description: Movimiento de entrada aprobado y registrado correctamente
           content:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
+                  - $ref: '#/components/schemas/RespuestaEstandar'
                   - type: object
                     properties:
-                      data:
+                      datos:
                         $ref: '#/components/schemas/MovimientoEntradaResponse'
         '400':
           description: Error de validación - cantidades no coinciden
@@ -1777,10 +2030,10 @@ paths:
             application/json:
               schema:
                 allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
+                  - $ref: '#/components/schemas/RespuestaEstandar'
                   - type: object
                     properties:
-                      data:
+                      datos:
                         $ref: '#/components/schemas/ReporteDiferencias'
 
   # ========================================
@@ -1789,6 +2042,7 @@ paths:
   /api/inventario/registrar:
     post:
       summary: Registrar inventario
+      description: Registra el inventario de un almacén específico con múltiples items
       tags: [Inventario]
       security:
         - bearerAuth: []
@@ -1798,21 +2052,53 @@ paths:
           application/json:
             schema:
               type: object
+              required: [almacen_id, items]
               properties:
-                almacen_id: { type: integer }
-                items: { type: array }
+                almacen_id:
+                  type: integer
+                  minimum: 1
+                  description: ID único del almacén
+                items:
+                  type: array
+                  minItems: 1
+                  description: Lista de items del inventario
+                  items:
+                    type: object
+                    required: [lote_id, cantidad_contada, ubicacion]
+                    properties:
+                      lote_id:
+                        type: integer
+                        minimum: 1
+                        description: ID único del lote
+                      cantidad_contada:
+                        type: number
+                        format: float
+                        minimum: 0
+                        description: Cantidad contada físicamente
+                      ubicacion:
+                        type: string
+                        maxLength: 100
+                        description: Ubicación física del item
+                      observaciones:
+                        type: string
+                        maxLength: 500
+                        description: Observaciones adicionales
+              required: [almacen_id, items]
       responses:
         '200':
-          description: Inventario registrado
+          description: Inventario registrado correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   /api/inventario/sede/{sede_id}:
     get:
       summary: Obtener inventario por sede
-      description: Devuelve los insumos agrupados por insumo_id desde la tabla almacenCentral, filtrando por sede_id y status=true
+      description: |
+        Devuelve los insumos agrupados por insumo_id desde la tabla almacenCentral,
+        filtrando por sede_id y status=true.
+        Incluye información detallada del inventario disponible.
       tags: [Inventario]
       security:
         - bearerAuth: []
@@ -1822,14 +2108,15 @@ paths:
           required: true
           schema:
             type: integer
-          description: ID de la sede
+            minimum: 1
+          description: ID único de la sede
       responses:
         '200':
-          description: Listado de inventario
+          description: Lista de inventario de la sede obtenida correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   # ========================================
   # SOLICITUDES FALTANTES
@@ -1837,19 +2124,21 @@ paths:
   /api/solicitudes_faltantes:
     get:
       summary: Listar solicitudes de faltantes
+      description: Obtiene una lista de todas las solicitudes de productos faltantes
       tags: [SolicitudesFaltantes]
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: Listado de solicitudes
+          description: Lista de solicitudes de faltantes obtenida correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     post:
       summary: Crear solicitud de faltante
+      description: Crea una nueva solicitud de productos faltantes en un almacén
       tags: [SolicitudesFaltantes]
       security:
         - bearerAuth: []
@@ -1861,21 +2150,49 @@ paths:
               type: object
               required: [hospital_id, almacen_tipo, almacen_id, insumo_id]
               properties:
-                hospital_id: { type: integer }
-                almacen_tipo: { type: string }
-                almacen_id: { type: integer }
-                insumo_id: { type: integer }
+                hospital_id:
+                  type: integer
+                  minimum: 1
+                  description: ID único del hospital solicitante
+                almacen_tipo:
+                  type: string
+                  enum: [principal, central, farmacia, paralelo, servicios_atenciones, servicios_apoyo]
+                  description: Tipo de almacén donde falta el producto
+                almacen_id:
+                  type: integer
+                  minimum: 1
+                  description: ID único del almacén específico
+                insumo_id:
+                  type: integer
+                  minimum: 1
+                  description: ID único del insumo solicitado
+                cantidad_solicitada:
+                  type: number
+                  format: float
+                  minimum: 0.01
+                  description: Cantidad solicitada del insumo
+                prioridad:
+                  type: string
+                  enum: [baja, media, alta, urgente]
+                  default: media
+                  description: Prioridad de la solicitud
+                observaciones:
+                  type: string
+                  maxLength: 500
+                  description: Observaciones adicionales de la solicitud
+              required: [hospital_id, almacen_tipo, almacen_id, insumo_id]
       responses:
         '200':
-          description: Solicitud creada
+          description: Solicitud de faltante creada correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   /api/solicitudes_faltantes/{solicitud}:
     patch:
       summary: Actualizar solicitud de faltante
+      description: Actualiza el estado o información de una solicitud de faltante existente
       tags: [SolicitudesFaltantes]
       security:
         - bearerAuth: []
@@ -1883,7 +2200,10 @@ paths:
         - name: solicitud
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único de la solicitud
       requestBody:
         required: true
         content:
@@ -1892,15 +2212,27 @@ paths:
               type: object
               required: [estado]
               properties:
-                estado: { type: string, enum: [pendiente, atendida, cancelada] }
-                comentario: { type: string, nullable: true }
+                estado:
+                  type: string
+                  enum: [pendiente, atendida, cancelada]
+                  description: Nuevo estado de la solicitud
+                comentario:
+                  type: string
+                  maxLength: 500
+                  description: Comentario sobre el cambio de estado
+                cantidad_atendida:
+                  type: number
+                  format: float
+                  minimum: 0
+                  description: Cantidad efectivamente atendida (si aplica)
+              required: [estado]
       responses:
         '200':
-          description: Solicitud actualizada
+          description: Solicitud de faltante actualizada correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   # ========================================
   # TIPOS HOSPITAL DISTRIBUCIONES
@@ -1908,19 +2240,21 @@ paths:
   /api/tipos_hospital_distribuciones:
     get:
       summary: Listar distribución de tipos de hospitales
+      description: Obtiene la configuración de distribución por tipos de hospitales
       tags: [TiposHospitalDistribucion]
       security:
         - bearerAuth: []
       responses:
         '200':
-          description: Listado de distribuciones
+          description: Lista de distribuciones obtenida correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
     post:
       summary: Crear distribución de tipo de hospital
+      description: Crea una nueva configuración de distribución para un tipo de hospital
       tags: [TiposHospitalDistribucion]
       security:
         - bearerAuth: []
@@ -1932,19 +2266,34 @@ paths:
               type: object
               required: [tipo, porcentaje]
               properties:
-                tipo: { type: string }
-                porcentaje: { type: number, format: float }
+                tipo:
+                  type: string
+                  minLength: 1
+                  maxLength: 100
+                  description: Tipo de hospital para la distribución
+                porcentaje:
+                  type: number
+                  format: float
+                  minimum: 0
+                  maximum: 100
+                  description: Porcentaje de distribución asignado
+                descripcion:
+                  type: string
+                  maxLength: 500
+                  description: Descripción de la distribución
+              required: [tipo, porcentaje]
       responses:
         '200':
-          description: Distribución creada
+          description: Distribución creada correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
   /api/tipos_hospital_distribuciones/{id}:
     get:
       summary: Ver detalle de distribución
+      description: Obtiene información detallada de una configuración de distribución específica
       tags: [TiposHospitalDistribucion]
       security:
         - bearerAuth: []
@@ -1952,17 +2301,20 @@ paths:
         - name: id
           in: path
           required: true
-          schema: { type: integer }
+          schema:
+            type: integer
+            minimum: 1
+          description: ID único de la distribución
       responses:
         '200':
-          description: Detalle de la distribución
+          description: Detalle de la distribución obtenido correctamente
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/RespuestaEstandar'
 
 # ========================================
-# COMPONENTS
+# ESQUEMAS DE COMPONENTES
 # ========================================
 components:
   securitySchemes:
@@ -1970,131 +2322,358 @@ components:
       type: http
       scheme: bearer
       bearerFormat: JWT
+      description: Token de autenticación JWT obtenido desde el endpoint de login
 
   schemas:
-    StandardResponse:
+    RespuestaEstandar:
       type: object
       properties:
-        status:
+        estado:
           type: boolean
-          description: Indica si la operación fue exitosa
+          description: Indica si la operación fue exitosa (true) o falló (false)
+          example: true
         mensaje:
           type: string
-          description: Mensaje descriptivo del resultado
-        data:
+          description: Mensaje descriptivo del resultado de la operación
+          example: "Operación completada exitosamente"
+        datos:
           type: object
           nullable: true
-          description: Datos de la respuesta (opcional)
+          description: Datos de la respuesta (puede ser null si no hay datos)
+          example: {}
 
-    ErrorResponse:
+    RespuestaError:
       type: object
       properties:
-        status:
+        estado:
           type: boolean
+          description: Siempre false para respuestas de error
           example: false
         mensaje:
           type: string
-          example: "Error descriptivo"
-        errors:
+          description: Mensaje descriptivo del error ocurrido
+          example: "Error de validación de datos"
+        errores:
           type: object
           nullable: true
+          description: Detalles específicos de los errores de validación
           example: {"campo": ["El campo es requerido"]}
 
-    UserRequest:
+    UsuarioRequest:
       type: object
       properties:
-        name: { type: string }
-        email: { type: string, format: email }
-        password: { type: string, format: password }
+        nombre:
+          type: string
+          minLength: 2
+          maxLength: 100
+          description: Nombre completo del usuario
+          example: "Juan Pérez"
+        email:
+          type: string
+          format: email
+          description: Dirección de correo electrónico única del usuario
+          example: "juan.perez@hospital.gob.ve"
+        password:
+          type: string
+          format: password
+          minLength: 8
+          description: Contraseña del usuario (mínimo 8 caracteres)
+          example: "contraseña123"
 
     HospitalRequest:
       type: object
       properties:
-        nombre: { type: string }
-        rif: { type: string }
-        direccion: { type: string }
-        telefono: { type: string }
+        nombre:
+          type: string
+          minLength: 2
+          maxLength: 200
+          description: Nombre completo del hospital
+          example: "Hospital Universitario de Caracas"
+        rif:
+          type: string
+          minLength: 5
+          maxLength: 20
+          description: Registro de Información Fiscal del hospital
+          example: "J-123456789"
+        direccion:
+          type: string
+          minLength: 10
+          maxLength: 300
+          description: Dirección física completa del hospital
+          example: "Av. Universidad, Caracas, Venezuela"
+        telefono:
+          type: string
+          minLength: 7
+          maxLength: 20
+          description: Número de teléfono principal del hospital
+          example: "+58-212-555-0123"
 
     SedeRequest:
       type: object
       properties:
-        nombre: { type: string }
-        hospital_id: { type: integer }
-        direccion: { type: string }
-        telefono: { type: string }
+        nombre:
+          type: string
+          minLength: 2
+          maxLength: 200
+          description: Nombre de la sede
+          example: "Sede Principal"
+        hospital_id:
+          type: integer
+          minimum: 1
+          description: ID único del hospital al que pertenece la sede
+          example: 1
+        direccion:
+          type: string
+          minLength: 10
+          maxLength: 300
+          description: Dirección física de la sede
+          example: "Centro de la ciudad"
+        telefono:
+          type: string
+          minLength: 7
+          maxLength: 20
+          description: Número de teléfono de la sede
+          example: "+58-212-555-0456"
 
     AlmacenPrincipalRequest:
       type: object
       properties:
-        nombre: { type: string }
-        sede_id: { type: integer }
-        descripcion: { type: string }
+        nombre:
+          type: string
+          minLength: 2
+          maxLength: 200
+          description: Nombre del almacén principal
+          example: "Almacén Principal Central"
+        sede_id:
+          type: integer
+          minimum: 1
+          description: ID único de la sede a la que pertenece
+          example: 1
+        descripcion:
+          type: string
+          maxLength: 500
+          description: Descripción detallada del almacén
+          example: "Almacén principal para medicamentos e insumos críticos"
 
     AlmacenCentralRequest:
       type: object
       properties:
-        nombre: { type: string }
-        sede_id: { type: integer }
-        descripcion: { type: string }
+        nombre:
+          type: string
+          minLength: 2
+          maxLength: 200
+          description: Nombre del almacén central
+          example: "Almacén Central Regional"
+        sede_id:
+          type: integer
+          minimum: 1
+          description: ID único de la sede a la que pertenece
+          example: 1
+        descripcion:
+          type: string
+          maxLength: 500
+          description: Descripción detallada del almacén
+          example: "Almacén central para distribución regional"
 
     AlmacenFarmaciaRequest:
       type: object
       properties:
-        nombre: { type: string }
-        sede_id: { type: integer }
-        descripcion: { type: string }
+        nombre:
+          type: string
+          minLength: 2
+          maxLength: 200
+          description: Nombre del almacén de farmacia
+          example: "Farmacia Hospitalaria"
+        sede_id:
+          type: integer
+          minimum: 1
+          description: ID único de la sede a la que pertenece
+          example: 1
+        descripcion:
+          type: string
+          maxLength: 500
+          description: Descripción detallada del almacén
+          example: "Almacén exclusivo para medicamentos y productos farmacéuticos"
 
     AlmacenParaleloRequest:
       type: object
       properties:
-        nombre: { type: string }
-        sede_id: { type: integer }
-        descripcion: { type: string }
+        nombre:
+          type: string
+          minLength: 2
+          maxLength: 200
+          description: Nombre del almacén paralelo
+          example: "Almacén Paralelo de Emergencia"
+        sede_id:
+          type: integer
+          minimum: 1
+          description: ID único de la sede a la que pertenece
+          example: 1
+        descripcion:
+          type: string
+          maxLength: 500
+          description: Descripción detallada del almacén
+          example: "Almacén paralelo para situaciones de emergencia"
 
     AlmacenServiciosAtencionesRequest:
       type: object
       properties:
-        nombre: { type: string }
-        sede_id: { type: integer }
-        descripcion: { type: string }
+        nombre:
+          type: string
+          minLength: 2
+          maxLength: 200
+          description: Nombre del almacén de servicios de atenciones
+          example: "Almacén de Atenciones Médicas"
+        sede_id:
+          type: integer
+          minimum: 1
+          description: ID único de la sede a la que pertenece
+          example: 1
+        descripcion:
+          type: string
+          maxLength: 500
+          description: Descripción detallada del almacén
+          example: "Almacén para suministros de atención médica directa"
 
     AlmacenServiciosApoyoRequest:
       type: object
       properties:
-        nombre: { type: string }
-        sede_id: { type: integer }
-        descripcion: { type: string }
+        nombre:
+          type: string
+          minLength: 2
+          maxLength: 200
+          description: Nombre del almacén de servicios de apoyo
+          example: "Almacén de Servicios de Apoyo"
+        sede_id:
+          type: integer
+          minimum: 1
+          description: ID único de la sede a la que pertenece
+          example: 1
+        descripcion:
+          type: string
+          maxLength: 500
+          description: Descripción detallada del almacén
+          example: "Almacén para suministros de apoyo administrativo"
 
     InsumoRequest:
       type: object
       properties:
-        codigo: { type: string }
-        descripcion: { type: string }
-        unidad_medida: { type: string }
-        tipo: { type: string }
+        codigo:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: Código único del insumo
+          example: "MED-001"
+        descripcion:
+          type: string
+          minLength: 3
+          maxLength: 500
+          description: Descripción detallada del insumo
+          example: "Paracetamol 500mg tabletas"
+        unidad_medida:
+          type: string
+          minLength: 1
+          maxLength: 20
+          description: Unidad de medida del insumo
+          example: "tabletas"
+        tipo:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: Tipo o categoría del insumo
+          example: "Medicamento"
 
     LoteRequest:
       type: object
       properties:
-        numero_lote: { type: string }
-        fecha_vencimiento: { type: string, format: date }
-        cantidad_inicial: { type: integer }
+        numero_lote:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: Número único del lote
+          example: "LOT-2024-001"
+        fecha_vencimiento:
+          type: string
+          format: date
+          description: Fecha de vencimiento del lote (YYYY-MM-DD)
+          example: "2025-12-31"
+        cantidad_inicial:
+          type: number
+          format: float
+          minimum: 0.01
+          description: Cantidad inicial del lote
+          example: 1000.5
 
     LoteGrupoRequest:
       type: object
       properties:
-        codigo: { type: string }
-        items: { type: array }
+        codigo:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: Código único del grupo de lote
+          example: "GRP-2024-001"
+        items:
+          type: array
+          minItems: 1
+          description: Lista de items incluidos en el grupo
+          items:
+            type: object
+            properties:
+              lote_id:
+                type: integer
+                minimum: 1
+                description: ID único del lote
+              cantidad:
+                type: number
+                format: float
+                minimum: 0.01
+                description: Cantidad del lote en el grupo
 
     LoteGrupoMovimientoRequest:
       type: object
       properties:
-        origen_central_id: { type: integer }
-        hospital_id: { type: integer }
-        principal_id: { type: integer }
-        tipo_movimiento: { type: string }
-        fecha_despacho: { type: string, format: date }
-        items: { type: array }
+        origen_central_id:
+          type: integer
+          minimum: 1
+          description: ID del almacén central de origen
+          example: 1
+        hospital_id:
+          type: integer
+          minimum: 1
+          description: ID del hospital destino
+          example: 1
+        principal_id:
+          type: integer
+          minimum: 1
+          description: ID del almacén principal destino
+          example: 2
+        tipo_movimiento:
+          type: string
+          enum: [transferencia, distribucion, ajuste]
+          description: Tipo de movimiento realizado
+          example: "transferencia"
+        fecha_despacho:
+          type: string
+          format: date
+          description: Fecha en que se despachó el movimiento
+          example: "2024-01-15"
+        items:
+          type: array
+          minItems: 1
+          description: Lista de items del movimiento
+          items:
+            type: object
+            properties:
+              lote_id:
+                type: integer
+                minimum: 1
+                description: ID único del lote
+              cantidad:
+                type: number
+                format: float
+                minimum: 0.01
+                description: Cantidad del item
 
     MovimientoSalidaRequest:
       type: object
@@ -2102,23 +2681,37 @@ components:
       properties:
         origen_central_id:
           type: integer
+          minimum: 1
           description: ID del almacén central de origen
+          example: 1
         hospital_id:
           type: integer
+          minimum: 1
           description: ID del hospital destino
+          example: 1
         principal_id:
           type: integer
+          minimum: 1
           description: ID del almacén principal destino
+          example: 2
         tipo_movimiento:
           type: string
           enum: [transferencia, distribucion, ajuste]
-          description: Tipo de movimiento
+          description: Tipo de movimiento realizado
+          example: "transferencia"
         fecha_despacho:
           type: string
           format: date
           description: Fecha en que se despacha el movimiento
+          example: "2024-01-15"
+        observaciones:
+          type: string
+          maxLength: 500
+          description: Observaciones adicionales del movimiento
+          example: "Transferencia programada para el primer trimestre"
         items:
           type: array
+          minItems: 1
           description: Lista de items del movimiento
           items:
             type: object
@@ -2126,35 +2719,50 @@ components:
             properties:
               lote_grupo_id:
                 type: integer
+                minimum: 1
                 description: ID del lote-grupo
+                example: 1
               cantidad_solicitada:
                 type: number
                 format: float
+                minimum: 0.01
                 description: Cantidad solicitada para el movimiento
+                example: 100.5
               observaciones:
                 type: string
+                maxLength: 200
                 description: Observaciones específicas del item
+                example: "Item crítico para atención de emergencia"
 
     MovimientoSalidaResponse:
       type: object
       properties:
         id:
           type: integer
-          description: ID del movimiento creado
+          description: ID único del movimiento creado
+          example: 1
         codigo_grupo:
           type: string
           description: Código único del grupo de movimiento
+          example: "MOV-2024-001"
         estado:
           type: string
           enum: [pendiente, en_transito, entregado]
-          description: Estado del movimiento
+          description: Estado actual del movimiento
+          example: "en_transito"
         fecha_creacion:
           type: string
           format: date-time
-          description: Fecha de creación del movimiento
+          description: Fecha y hora de creación del movimiento
+          example: "2024-01-15T08:30:00Z"
         usuario_creador:
           type: string
           description: Usuario que creó el movimiento
+          example: "admin@hospital.gob.ve"
+        total_items:
+          type: integer
+          description: Número total de items en el movimiento
+          example: 3
 
     MovimientoEntradaRequest:
       type: object
@@ -2162,9 +2770,12 @@ components:
       properties:
         movimiento_salida_id:
           type: integer
+          minimum: 1
           description: ID del movimiento de salida relacionado
+          example: 1
         items_recibidos:
           type: array
+          minItems: 1
           description: Lista de items recibidos con cantidades verificadas
           items:
             type: object
@@ -2172,135 +2783,152 @@ components:
             properties:
               lote_grupo_id:
                 type: integer
-                description: ID del lote-grupo
+                minimum: 1
+                description: ID del lote-grupo recibido
+                example: 1
               cantidad_recibida:
                 type: number
                 format: float
-                description: Cantidad física recibida
+                minimum: 0
+                description: Cantidad física recibida durante la verificación
+                example: 98.5
               cantidad_aceptada:
                 type: number
                 format: float
-                description: Cantidad aceptada después de verificación
+                minimum: 0
+                description: Cantidad aceptada después de verificación (puede ser menor que recibida)
+                example: 95.0
               estado_item:
                 type: string
                 enum: [aceptado, rechazado, parcial]
-                description: Estado del item recibido
+                description: Estado final del item recibido
+                example: "aceptado"
               observaciones:
                 type: string
-                description: Observaciones del item recibido
+                maxLength: 200
+                description: Observaciones del item recibido durante la verificación
+                example: "Producto en buen estado"
               motivo_rechazo:
                 type: string
+                maxLength: 200
                 description: Motivo de rechazo (si aplica)
+                example: "Producto dañado durante el transporte"
         usuario_aprobador:
           type: string
+          minLength: 3
+          maxLength: 100
           description: Usuario que aprueba la entrada
+          example: "supervisor@hospital.gob.ve"
         fecha_aprobacion:
           type: string
           format: date-time
           description: Fecha y hora de aprobación
+          example: "2024-01-15T14:30:00Z"
         observaciones_generales:
           type: string
+          maxLength: 500
           description: Observaciones generales del movimiento de entrada
+          example: "Verificación completada, productos recibidos en buen estado"
 
     MovimientoEntradaResponse:
       type: object
       properties:
         id:
           type: integer
-          description: ID del movimiento de entrada creado
+          description: ID único del movimiento de entrada creado
+          example: 1
         movimiento_salida_id:
           type: integer
           description: ID del movimiento de salida relacionado
+          example: 1
         codigo_grupo:
           type: string
           description: Código del grupo de movimiento
+          example: "MOV-2024-001"
         estado:
           type: string
           enum: [aprobado, rechazado, diferencias]
-          description: Estado final del movimiento
+          description: Estado final del movimiento después de la aprobación
+          example: "aprobado"
         fecha_aprobacion:
           type: string
           format: date-time
-          description: Fecha de aprobación
+          description: Fecha y hora de aprobación
+          example: "2024-01-15T14:30:00Z"
         usuario_aprobador:
           type: string
-          description: Usuario que aprobó
+          description: Usuario que aprobó el movimiento
+          example: "supervisor@hospital.gob.ve"
         total_items_procesados:
           type: integer
-          description: Total de items procesados
+          description: Total de items procesados en la verificación
+          example: 3
         total_items_aceptados:
           type: integer
-          description: Total de items aceptados
+          description: Total de items aceptados después de la verificación
+          example: 3
+        total_items_rechazados:
+          type: integer
+          description: Total de items rechazados durante la verificación
+          example: 0
 
     ReporteDiferencias:
       type: object
       properties:
         movimiento_salida_id:
           type: integer
-          description: ID del movimiento de salida
+          description: ID del movimiento de salida relacionado
+          example: 1
         codigo_grupo:
           type: string
-          description: Código del grupo
+          description: Código único del grupo de movimiento
+          example: "MOV-2024-001"
         diferencias:
           type: array
-          description: Lista de diferencias encontradas
+          description: Lista detallada de diferencias encontradas
           items:
             type: object
             properties:
               lote_grupo_id:
                 type: integer
-                description: ID del lote-grupo
+                description: ID del lote-grupo con diferencia
+                example: 1
               cantidad_solicitada:
                 type: number
                 format: float
-                description: Cantidad solicitada en salida
+                description: Cantidad solicitada en el movimiento de salida
+                example: 100.0
               cantidad_recibida:
                 type: number
                 format: float
-                description: Cantidad recibida en entrada
+                description: Cantidad recibida en el movimiento de entrada
+                example: 95.0
               diferencia:
                 type: number
                 format: float
-                description: Diferencia entre cantidades
+                description: Diferencia entre cantidades (positivo = exceso, negativo = falta)
+                example: -5.0
               tipo_diferencia:
                 type: string
-                enum: [falta, exceso, dano]
+                enum: [falta, exceso, dano, calidad]
                 description: Tipo de diferencia encontrada
+                example: "falta"
               descripcion:
                 type: string
-                description: Descripción de la diferencia
+                description: Descripción detallada de la diferencia
+                example: "Faltaron 5 unidades durante el transporte"
         estado_movimiento:
           type: string
           enum: [pendiente_revision, rechazado, aprobado_con_diferencias]
-          description: Estado sugerido del movimiento
+          description: Estado sugerido del movimiento basado en las diferencias
+          example: "aprobado_con_diferencias"
         requiere_accion:
           type: boolean
-          description: Indica si se requiere acción especial
+          description: Indica si se requiere acción especial del supervisor
+          example: false
         recomendaciones:
           type: array
-          description: Lista de recomendaciones para resolver diferencias
+          description: Lista de recomendaciones para resolver las diferencias
           items:
             type: string
-
-    MovimientoCentralRequest:
-      type: object
-      properties:
-        origen_central_id: { type: integer }
-        hospital_id: { type: integer }
-        principal_id: { type: integer }
-        tipo_movimiento: { type: string }
-        fecha_despacho: { type: string, format: date }
-        items: { type: array }
-
-    DistribucionPrincipalRequest:
-      type: object
-      properties:
-        origen_central_id: { type: integer }
-        destino_principal_id: { type: integer }
-        items: { type: array }
-
-    DistribucionAutomaticaRequest:
-      type: object
-      properties:
-        lote_ids: { type: array, items: { type: integer } }
-        estrategia: { type: string, enum: [porcentaje] }
+            example: "Verificar cadena de custodia del transporte"

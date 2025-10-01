@@ -1773,6 +1773,161 @@ paths:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
 
+  /api/movimientos-stock:
+    get:
+      summary: Listar movimientos de stock
+      tags: [Movimientos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: per_page
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 100 }
+          description: Tamaño de página para la paginación (por defecto 50, máximo 100)
+        - name: estado
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [pendiente, completado, inconsistente, cancelado]
+        - name: hospital_id
+          in: query
+          required: false
+          schema: { type: integer }
+        - name: sede_id
+          in: query
+          required: false
+          schema: { type: integer }
+        - name: codigo_grupo
+          in: query
+          required: false
+          schema: { type: string }
+      responses:
+        '200':
+          description: Listado paginado de movimientos de stock
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+    post:
+      summary: Crear movimiento de stock
+      tags: [Movimientos]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MovimientoStockRequest'
+            examples:
+              crear-movimiento:
+                value:
+                  tipo: transferencia
+                  tipo_movimiento: ajuste
+                  hospital_id: 1
+                  sede_id: 1
+                  origen_almacen_tipo: almacenCent
+                  origen_almacen_id: 1
+                  destino_almacen_tipo: almacenPrin
+                  destino_almacen_id: 2
+                  cantidad: 50
+                  fecha_despacho: '2025-10-01'
+                  observaciones: 'Movimiento manual'
+                  estado: pendiente
+      responses:
+        '201':
+          description: Movimiento creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/movimientos-stock/{id}:
+    get:
+      summary: Obtener detalle de movimiento de stock
+      tags: [Movimientos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Movimiento encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+        '404':
+          description: Movimiento no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      summary: Actualizar movimiento de stock
+      tags: [Movimientos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MovimientoStockRequest'
+            examples:
+              actualizar-estado:
+                value:
+                  estado: completado
+                  observaciones_recepcion: 'Recepción confirmada'
+                  fecha_recepcion: '2025-10-02T10:00:00'
+                  user_id_receptor: 5
+      responses:
+        '200':
+          description: Movimiento actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+        '404':
+          description: Movimiento no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      summary: Eliminar movimiento de stock
+      tags: [Movimientos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Movimiento eliminado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+        '404':
+          description: Movimiento no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/distribucion/automatica/central:
     post:
       summary: Distribución automática desde central
@@ -2201,11 +2356,71 @@ components:
                   cantidad_recibida:
                     type: integer
 
+    MovimientoStockRequest:
+      type: object
+      properties:
+        tipo:
+          type: string
+          example: transferencia
+        tipo_movimiento:
+          type: string
+          example: despacho
+        hospital_id:
+          type: integer
+          minimum: 1
+        sede_id:
+          type: integer
+          minimum: 1
+        origen_almacen_tipo:
+          type: string
+          example: almacenCent
+        origen_almacen_id:
+          type: integer
+          minimum: 0
+        destino_almacen_tipo:
+          type: string
+          example: almacenPrin
+        destino_almacen_id:
+          type: integer
+          minimum: 0
+        cantidad:
+          type: integer
+          minimum: 0
+        fecha_despacho:
+          type: string
+          format: date
+        observaciones:
+          type: string
+          nullable: true
+          maxLength: 500
+        fecha_recepcion:
+          type: string
+          format: date-time
+          nullable: true
+        observaciones_recepcion:
+          type: string
+          nullable: true
+          maxLength: 500
+        estado:
+          type: string
+          enum: [pendiente, completado, inconsistente, cancelado]
+        codigo_grupo:
+          type: string
+          nullable: true
+          maxLength: 50
+        user_id:
+          type: integer
+          minimum: 1
+          nullable: true
+        user_id_receptor:
+          type: integer
+          minimum: 1
+          nullable: true
+
     DistribucionPrincipalRequest:
       type: object
       properties:
         origen_central_id: { type: integer }
-        destino_principal_id: { type: integer }
         items: { type: array }
 
     DistribucionAutomaticaRequest:

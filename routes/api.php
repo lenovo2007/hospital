@@ -17,6 +17,7 @@ use App\Http\Controllers\LoteController;
 use App\Http\Controllers\TipoHospitalDistribucionController;
 use App\Http\Controllers\DistribucionCentralController;
 use App\Http\Controllers\DistribucionInternaController;
+use App\Http\Controllers\MovimientoStockController;
 use App\Http\Controllers\RecepcionPrincipalController;
 use App\Http\Controllers\SolicitudesFaltantesController;
 use App\Http\Controllers\LoteGrupoController;
@@ -119,6 +120,13 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
     Route::get('/inventario/sede/{sedeId}', [\App\Http\Controllers\InventarioController::class, 'listarPorSede'])
         ->where('sedeId', '[0-9]+')
         ->withoutMiddleware(\App\Http\Middleware\CheckCrudPermissions::class);
+
+    // Movimientos de stock CRUD
+    Route::get('/movimientos-stock', [MovimientoStockController::class, 'index']);
+    Route::post('/movimientos-stock', [MovimientoStockController::class, 'store']);
+    Route::get('/movimientos-stock/{movimientos_stock}', [MovimientoStockController::class, 'show']);
+    Route::put('/movimientos-stock/{movimientos_stock}', [MovimientoStockController::class, 'update']);
+    Route::delete('/movimientos-stock/{movimientos_stock}', [MovimientoStockController::class, 'destroy']);
 
     // Inventario - Registro de lotes y almacenamiento
     Route::post('/inventario/registrar', [\App\Http\Controllers\InventarioController::class, 'registrar']);

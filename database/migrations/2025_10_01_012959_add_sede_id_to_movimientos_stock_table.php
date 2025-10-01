@@ -12,19 +12,32 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Check if sede_id column exists
-        if (!Schema::hasColumn('movimientos_stock', 'sede_id')) {
+        // First, let's check what we're working with
+        $columnExists = Schema::hasColumn('movimientos_stock', 'sede_id');
+        $tableInfo = DB::select("DESCRIBE movimientos_stock");
+        $sedeColumn = collect($tableInfo)->firstWhere('Field', 'sede_id');
+
+        if (!$columnExists) {
+            // Column doesn't exist, create it
             Schema::table('movimientos_stock', function (Blueprint $table) {
                 $table->unsignedBigInteger('sede_id')->nullable()->after('hospital_id');
             });
+        } else {
+            // Column exists, check if it needs to be modified
+            if ($sedeColumn && ($sedeColumn->Type !== 'bigint unsigned' || $sedeColumn->Null !== 'YES')) {
+                // Need to modify the column
+                DB::statement('ALTER TABLE movimientos_stock MODIFY sede_id BIGINT UNSIGNED NULL');
+            }
         }
 
-        // Check if foreign key constraint already exists
-        $foreignKeys = DB::select("SHOW CREATE TABLE movimientos_stock");
-        $createTableSQL = $foreignKeys[0]->{'Create Table'} ?? '';
+        // Now add the foreign key constraint if it doesn't exist
+        $constraints = DB::select("SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE
+            WHERE TABLE_SCHEMA = DATABASE()
+            AND TABLE_NAME = 'movimientos_stock'
+            AND COLUMN_NAME = 'sede_id'
+            AND REFERENCED_TABLE_NAME = 'sedes'");
 
-        if (Schema::hasColumn('movimientos_stock', 'sede_id') &&
-            !str_contains($createTableSQL, 'movimientos_stock_sede_id_foreign')) {
+        if (empty($constraints)) {
             Schema::table('movimientos_stock', function (Blueprint $table) {
                 $table->foreign('sede_id')->references('id')->on('sedes')->onDelete('set null');
             });
@@ -37,8 +50,20 @@ return new class extends Migration
     public function down(): void
     {
         if (Schema::hasColumn('movimientos_stock', 'sede_id')) {
+            // Drop foreign key constraint first
+            $constraints = DB::select("SELECT CONSTRAINT_NAME FROM information_schema.KEY_COLUMN_USAGE
+                WHERE TABLE_SCHEMA = DATABASE()
+                AND TABLE_NAME = 'movimientos_stock'
+                AND COLUMN_NAME = 'sede_id'
+                AND REFERENCED_TABLE_NAME = 'sedes'");
+
+            if (!empty($constraints)) {
+                $constraintName = $constraints[0]->CONSTRAINT_NAME;
+                DB::statement("ALTER TABLE movimientos_stock DROP FOREIGN KEY {$constraintName}");
+            }
+
+            // Then drop the column
             Schema::table('movimientos_stock', function (Blueprint $table) {
-                $table->dropForeign(['sede_id']);
                 $table->dropColumn('sede_id');
             });
         }

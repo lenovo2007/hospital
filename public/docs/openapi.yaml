@@ -1753,29 +1753,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
 
-  # ========================================
-  # MOVIMIENTOS Y DISTRIBUCIÓN
-  # ========================================
-  /api/movimiento/central:
-    post:
-      summary: Crear movimiento desde almacén central
-      tags: [Movimientos]
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/MovimientoCentralRequest'
-      responses:
-        '200':
-          description: Movimiento creado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StandardResponse'
-
   /api/distribucion/principal:
     post:
       summary: Distribución hacia almacén principal

@@ -146,43 +146,9 @@ class DistribucionCentralController extends Controller
                 'updated_at' => now(),
             ]);
 
-        $destinoClave = [
-            'sede_id' => $destinoSedeId,
-            'lote_id' => $loteId,
-            'hospital_id' => $hospitalId,
-        ];
-
-        $destino = DB::table('almacenes_principales')
-            ->where($destinoClave)
-            ->lockForUpdate()
-            ->first();
-
-        if ($destino) {
-            $nuevaCantidadDestino = (int) $destino->cantidad + $cantidad;
-            DB::table('almacenes_principales')
-                ->where('id', $destino->id)
-                ->update([
-                    'cantidad' => $nuevaCantidadDestino,
-                    'status' => $nuevaCantidadDestino > 0 ? 1 : 0,
-                    'updated_at' => now(),
-                ]);
-
-            return [
-                'central_id' => (int) $central->id,
-                'destino_id' => (int) $destino->id,
-            ];
-        }
-
-        $destinoId = DB::table('almacenes_principales')->insertGetId(array_merge($destinoClave, [
-            'cantidad' => $cantidad,
-            'status' => 1,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]));
-
         return [
             'central_id' => (int) $central->id,
-            'destino_id' => (int) $destinoId,
+            'destino_id' => null,
         ];
     }
 }

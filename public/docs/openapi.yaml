@@ -1961,6 +1961,142 @@ paths:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
 
+  /api/movimientos-stock/discrepancias:
+    get:
+      summary: Listar discrepancias de movimientos
+      tags: [Movimientos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: per_page
+          in: query
+          required: false
+          schema: { type: integer, minimum: 1, maximum: 100 }
+        - name: movimiento_stock_id
+          in: query
+          required: false
+          schema: { type: integer }
+        - name: lote_id
+          in: query
+          required: false
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Listado paginado de discrepancias
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+    post:
+      summary: Registrar discrepancia de movimiento
+      tags: [Movimientos]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MovimientoDiscrepanciaRequest'
+            examples:
+              nueva-discrepancia:
+                value:
+                  movimiento_stock_id: 15
+                  lote_id: 4
+                  cantidad_esperada: 100
+                  cantidad_recibida: 90
+                  observaciones: 'Faltaron 10 unidades'
+      responses:
+        '201':
+          description: Discrepancia registrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/movimientos-stock/discrepancias/{id}:
+    get:
+      summary: Obtener detalle de discrepancia
+      tags: [Movimientos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Discrepancia encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+        '404':
+          description: Discrepancia no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    put:
+      summary: Actualizar discrepancia
+      tags: [Movimientos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MovimientoDiscrepanciaRequest'
+            examples:
+              actualizar-discrepancia:
+                value:
+                  cantidad_recibida: 95
+                  observaciones: 'Se ajustó tras reconteo'
+      responses:
+        '200':
+          description: Discrepancia actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+        '404':
+          description: Discrepancia no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    delete:
+      summary: Eliminar discrepancia
+      tags: [Movimientos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Discrepancia eliminada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+        '404':
+          description: Discrepancia no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+
   /api/distribucion/automatica/central:
     post:
       summary: Distribución automática desde central

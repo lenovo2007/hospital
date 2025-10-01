@@ -18,6 +18,7 @@ use App\Http\Controllers\TipoHospitalDistribucionController;
 use App\Http\Controllers\DistribucionCentralController;
 use App\Http\Controllers\DistribucionInternaController;
 use App\Http\Controllers\MovimientoStockController;
+use App\Http\Controllers\MovimientoDiscrepanciaController;
 use App\Http\Controllers\RecepcionPrincipalController;
 use App\Http\Controllers\SolicitudesFaltantesController;
 use App\Http\Controllers\LoteGrupoController;
@@ -129,6 +130,13 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
     Route::delete('/movimientos-stock/{movimientos_stock}', [MovimientoStockController::class, 'destroy']);
     Route::get('/movimientos-stock/sede/{sedeId}', [MovimientoStockController::class, 'porSede'])
         ->where('sedeId', '[0-9]+');
+
+    // Discrepancias de movimientos CRUD
+    Route::get('/movimientos-stock/discrepancias', [MovimientoDiscrepanciaController::class, 'index']);
+    Route::post('/movimientos-stock/discrepancias', [MovimientoDiscrepanciaController::class, 'store']);
+    Route::get('/movimientos-stock/discrepancias/{movimientos_discrepancia}', [MovimientoDiscrepanciaController::class, 'show']);
+    Route::put('/movimientos-stock/discrepancias/{movimientos_discrepancia}', [MovimientoDiscrepanciaController::class, 'update']);
+    Route::delete('/movimientos-stock/discrepancias/{movimientos_discrepancia}', [MovimientoDiscrepanciaController::class, 'destroy']);
 
     // Inventario - Registro de lotes y almacenamiento
     Route::post('/inventario/registrar', [\App\Http\Controllers\InventarioController::class, 'registrar']);

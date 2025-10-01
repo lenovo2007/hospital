@@ -44,7 +44,7 @@ class DistribucionCentralController extends Controller
                     $loteId = (int) $it['lote_id'];
                     $cantidad = (int) $it['cantidad'];
 
-                    $this->transferirDesdeCentral(
+                    $transferResult = $this->transferirDesdeCentral(
                         origenId: (int) $data['origen_central_id'],
                         destinoSedeId: (int) $data['sede_id'],
                         hospitalId: (int) $data['hospital_id'],
@@ -58,7 +58,7 @@ class DistribucionCentralController extends Controller
                         'hospital_id' => (int) $data['hospital_id'],
                         'sede_id' => (int) $data['sede_id'],
                         'origen_almacen_tipo' => 'almacenCent',
-                        'origen_almacen_id' => (int) $data['origen_central_id'],
+                        'origen_almacen_id' => $transferResult['central_id'],
                         'destino_almacen_tipo' => 'almacenPrin',
                         'destino_almacen_id' => (int) $data['sede_id'],
                         'cantidad' => $cantidad,
@@ -99,19 +99,25 @@ class DistribucionCentralController extends Controller
         }
     }
 
-    private function transferirDesdeCentral(int $origenId, int $destinoSedeId, int $hospitalId, int $loteId, int $cantidad): int
+    private function transferirDesdeCentral(int $origenId, int $destinoSedeId, int $hospitalId, int $loteId, int $cantidad): array
     {
         $central = DB::table('almacenes_centrales')
             ->where('id', $origenId)
+            ->where('lote_id', $loteId)
             ->lockForUpdate()
             ->first();
 
         if (!$central) {
-            throw new StockException('No se encontró el registro en el almacén central.');
+            $central = DB::table('almacenes_centrales')
+                ->where('hospital_id', $hospitalId)
+                ->where('sede_id', $destinoSedeId)
+                ->where('lote_id', $loteId)
+                ->lockForUpdate()
+                ->first();
         }
 
-        if ((int) $central->lote_id !== $loteId) {
-            throw new StockException('El lote indicado no corresponde al registro del almacén central.');
+        if (!$central) {
+            throw new StockException('No se encontró el registro en el almacén central para el lote especificado.');
         }
 
         if ((int) $central->cantidad < $cantidad) {
@@ -149,14 +155,22 @@ class DistribucionCentralController extends Controller
                     'updated_at' => now(),
                 ]);
 
-            return (int) $destino->id;
+            return [
+                'central_id' => (int) $central->id,
+                'destino_id' => (int) $destino->id,
+            ];
         }
 
-        return DB::table('almacenes_principales')->insertGetId(array_merge($destinoClave, [
+        $destinoId = DB::table('almacenes_principales')->insertGetId(array_merge($destinoClave, [
             'cantidad' => $cantidad,
             'status' => true,
             'created_at' => now(),
             'updated_at' => now(),
         ]));
+
+        return [
+            'central_id' => (int) $central->id,
+            'destino_id' => (int) $destinoId,
+        ];
     }
 }

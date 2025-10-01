@@ -35,10 +35,15 @@ class DistribucionCentralController extends Controller
 
         $userId = (int) $request->user()->id;
 
+        $codigoGrupo = null;
+
         try {
             DB::transaction(function () use ($data, $userId, &$codigoGrupo) {
                 // Crear grupo de lote para los items del movimiento
                 [$codigoGrupo, $grupoItems] = LoteGrupo::crearGrupo($data['items']);
+
+                $totalCantidad = 0;
+                $centralIds = [];
 
                 foreach ($data['items'] as $it) {
                     $loteId = (int) $it['lote_id'];
@@ -52,23 +57,30 @@ class DistribucionCentralController extends Controller
                         cantidad: $cantidad
                     );
 
-                    MovimientoStock::create([
-                        'tipo' => 'transferencia',
-                        'tipo_movimiento' => $data['tipo_movimiento'],
-                        'hospital_id' => (int) $data['hospital_id'],
-                        'sede_id' => (int) $data['sede_id'],
-                        'origen_almacen_tipo' => 'almacenCent',
-                        'origen_almacen_id' => $transferResult['central_id'],
-                        'destino_almacen_tipo' => 'almacenPrin',
-                        'destino_almacen_id' => (int) $data['sede_id'],
-                        'cantidad' => $cantidad,
-                        'fecha_despacho' => $data['fecha_despacho'],
-                        'observaciones' => $data['observaciones'] ?? null,
-                        'estado' => 'pendiente',
-                        'codigo_grupo' => $codigoGrupo,
-                        'user_id' => $userId,
-                    ]);
+                    $totalCantidad += $cantidad;
+                    $centralIds[] = $transferResult['central_id'];
                 }
+
+                $origenAlmacenId = !empty($centralIds)
+                    ? (count(array_unique($centralIds)) === 1 ? $centralIds[0] : (int) $data['origen_central_id'])
+                    : (int) $data['origen_central_id'];
+
+                MovimientoStock::create([
+                    'tipo' => 'transferencia',
+                    'tipo_movimiento' => $data['tipo_movimiento'],
+                    'hospital_id' => (int) $data['hospital_id'],
+                    'sede_id' => (int) $data['sede_id'],
+                    'origen_almacen_tipo' => 'almacenCent',
+                    'origen_almacen_id' => $origenAlmacenId,
+                    'destino_almacen_tipo' => 'almacenPrin',
+                    'destino_almacen_id' => (int) $data['sede_id'],
+                    'cantidad' => $totalCantidad,
+                    'fecha_despacho' => $data['fecha_despacho'],
+                    'observaciones' => $data['observaciones'] ?? null,
+                    'estado' => 'pendiente',
+                    'codigo_grupo' => $codigoGrupo,
+                    'user_id' => $userId,
+                ]);
             });
 
             return response()->json([

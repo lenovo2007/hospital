@@ -1228,9 +1228,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
 
+  /api/movimiento/central/salida:
     post:
-      summary: Crear insumo
-      tags: [Insumos]
+      summary: Registrar salida desde almacén central
+      description: Genera un único movimiento de salida y agrupa los ítems en `lotes_grupos` con un mismo `codigo_grupo`.
+      tags: [Movimientos]
       security:
         - bearerAuth: []
       requestBody:
@@ -1238,75 +1240,115 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/InsumoRequest'
-      responses:
-        '201':
-          description: Insumo creado
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StandardResponse'
-
-  /api/insumos/{id}:
-    get:
-      summary: Ver detalle de insumo
-      tags: [Insumos]
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: integer }
+              $ref: '#/components/schemas/MovimientoCentralSalidaRequest'
+            examples:
+              despacho-multiple:
+                value:
+                  origen_central_id: 1
+                  hospital_id: 1
+                  sede_id: 1
+                  tipo_movimiento: despacho
+                  fecha_despacho: '2025-09-29'
+                  observaciones: ''
+                  items:
+                    - lote_id: 1
+                      cantidad: 200
+                    - lote_id: 2
+                      cantidad: 500
       responses:
         '200':
-          description: Detalle del insumo
+          description: Salida registrada
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
+              examples:
+                exito:
+                  value:
+                    status: true
+                    mensaje: Movimiento desde central aplicado.
+                    data:
+                      codigo_grupo: cod001
+        '422':
+          description: Datos inválidos o stock insuficiente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
-    put:
-      summary: Actualizar insumo
-      tags: [Insumos]
+  /api/movimiento/principal/entrada:
+    post:
+      summary: Confirmar recepción en almacén principal
+      description: Valida las cantidades recibidas, actualiza el estado del movimiento y registra discrepancias automáticas.
+      tags: [Movimientos]
       security:
         - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: integer }
       requestBody:
         required: true
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/InsumoRequest'
+              $ref: '#/components/schemas/MovimientoPrincipalEntradaRequest'
+            examples:
+              recepcion-completa:
+                value:
+                  codigo_grupo: cod001
+                  hospital_id: 1
+                  sede_id: 1
+                  observaciones_recepcion: ''
+                  items:
+                    - lote_id: 1
+                      cantidad: 200
+                    - lote_id: 2
+                      cantidad: 500
+              recepcion-con-discrepancia:
+                value:
+                  codigo_grupo: cod001
+                  hospital_id: 1
+                  sede_id: 1
+                  observaciones_recepcion: 'Faltó una caja del lote 2'
+                  items:
+                    - lote_id: 1
+                      cantidad: 200
+                    - lote_id: 2
+                      cantidad: 450
       responses:
         '200':
-          description: Insumo actualizado
+          description: Recepción registrada (con o sin discrepancias)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
-
-    delete:
-      summary: Eliminar insumo
-      tags: [Insumos]
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: integer }
-      responses:
-        '200':
-          description: Insumo eliminado
+                $ref: '#/components/schemas/MovimientoPrincipalEntradaResponse'
+              examples:
+                completado:
+                  value:
+                    status: true
+                    mensaje: Recepción confirmada y stock actualizado.
+                    data:
+                      estado: completado
+                      discrepancias: []
+                inconsistencias:
+                  value:
+                    status: true
+                    mensaje: Recepción registrada con discrepancias. Se generó un reporte automático.
+                    data:
+                      estado: inconsistente
+                      discrepancias:
+                        - lote_id: 2
+                          cantidad_esperada: 500
+                          cantidad_recibida: 450
+        '422':
+          description: Validaciones fallidas o movimiento no encontrado
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error inesperado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
 
   /api/insumos/codigo/{codigo}:
     get:
@@ -2087,15 +2129,100 @@ components:
         fecha_despacho: { type: string, format: date }
         items: { type: array }
 
-    MovimientoCentralRequest:
+    MovimientoCentralSalidaRequest:
+      type: object
+      required: [origen_central_id, hospital_id, sede_id, tipo_movimiento, fecha_despacho, items]
+      properties:
+        origen_central_id:
+          type: integer
+          minimum: 1
+        hospital_id:
+          type: integer
+          minimum: 1
+        sede_id:
+          type: integer
+          minimum: 1
+        tipo_movimiento:
+          type: string
+          example: despacho
+        fecha_despacho:
+          type: string
+          format: date
+        observaciones:
+          type: string
+          nullable: true
+          maxLength: 500
+        items:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [lote_id, cantidad]
+            properties:
+              lote_id:
+                type: integer
+                minimum: 1
+              cantidad:
+                type: integer
+                minimum: 1
+
+    MovimientoPrincipalEntradaRequest:
+      type: object
+      required: [codigo_grupo, hospital_id, sede_id]
+      properties:
+        codigo_grupo:
+          type: string
+          maxLength: 50
+        hospital_id:
+          type: integer
+          minimum: 1
+        sede_id:
+          type: integer
+          minimum: 1
+        observaciones_recepcion:
+          type: string
+          nullable: true
+          maxLength: 500
+        items:
+          type: array
+          description: Si se omite, se asumirán las cantidades esperadas del despacho.
+          items:
+            type: object
+            required: [lote_id, cantidad]
+            properties:
+              lote_id:
+                type: integer
+                minimum: 1
+              cantidad:
+                type: integer
+                minimum: 0
+
+    MovimientoPrincipalEntradaResponse:
       type: object
       properties:
-        origen_central_id: { type: integer }
-        hospital_id: { type: integer }
-        principal_id: { type: integer }
-        tipo_movimiento: { type: string }
-        fecha_despacho: { type: string, format: date }
-        items: { type: array }
+        status:
+          type: boolean
+          example: true
+        mensaje:
+          type: string
+          example: Recepción confirmada y stock actualizado.
+        data:
+          type: object
+          properties:
+            estado:
+              type: string
+              enum: [completado, inconsistente]
+            discrepancias:
+              type: array
+              items:
+                type: object
+                properties:
+                  lote_id:
+                    type: integer
+                  cantidad_esperada:
+                    type: integer
+                  cantidad_recibida:
+                    type: integer
 
     DistribucionPrincipalRequest:
       type: object

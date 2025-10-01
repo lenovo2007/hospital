@@ -163,7 +163,7 @@ class DistribucionCentralController extends Controller
                 ->where('id', $destino->id)
                 ->update([
                     'cantidad' => $nuevaCantidadDestino,
-                    'status' => 'activo',
+                    'status' => $nuevaCantidadDestino > 0 ? 1 : 0,
                     'updated_at' => now(),
                 ]);
 
@@ -175,7 +175,7 @@ class DistribucionCentralController extends Controller
 
         $destinoId = DB::table('almacenes_principales')->insertGetId(array_merge($destinoClave, [
             'cantidad' => $cantidad,
-            'status' => 'activo',
+            'status' => 1,
             'created_at' => now(),
             'updated_at' => now(),
         ]));

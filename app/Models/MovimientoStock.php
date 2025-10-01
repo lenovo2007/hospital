@@ -20,13 +20,17 @@ class MovimientoStock extends Model
         'cantidad',
         'fecha_despacho',
         'observaciones',
+        'fecha_recepcion',
+        'observaciones_recepcion',
         'estado',
         'codigo_grupo',
         'user_id',
+        'user_id_receptor',
     ];
 
     protected $casts = [
         'cantidad' => 'integer',
         'fecha_despacho' => 'datetime',
+        'fecha_recepcion' => 'datetime',
     ];
 }

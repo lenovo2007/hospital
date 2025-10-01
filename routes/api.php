@@ -17,6 +17,7 @@ use App\Http\Controllers\LoteController;
 use App\Http\Controllers\TipoHospitalDistribucionController;
 use App\Http\Controllers\DistribucionCentralController;
 use App\Http\Controllers\DistribucionInternaController;
+use App\Http\Controllers\RecepcionPrincipalController;
 use App\Http\Controllers\SolicitudesFaltantesController;
 use App\Http\Controllers\LoteGrupoController;
 
@@ -161,7 +162,10 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
     Route::post('/tipos_hospital_distribuciones', [TipoHospitalDistribucionController::class, 'store']);
 
     // Distribución desde almacén central hacia principal (hospital)
-    Route::post('/movimiento/central', [DistribucionCentralController::class, 'distribuir']);
+    Route::post('/movimiento/central/salida', [DistribucionCentralController::class, 'salida']);
+
+    // Recepción en almacén principal de una distribución central
+    Route::post('/movimiento/principal/entrada', [RecepcionPrincipalController::class, 'recibir']);
 
     // Distribución interna desde principal hacia farmacia/paralelo/servicios
     Route::post('/distribucion/principal', [DistribucionInternaController::class, 'distribuir']);

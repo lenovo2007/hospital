@@ -12,14 +12,14 @@ use Throwable;
 
 class DistribucionCentralController extends Controller
 {
-    // POST /api/movimiento/central
+    // POST /api/movimiento/central/salida
     // {
     //   "origen_central_id": 1,
     //   "hospital_id": 1,
     //   "sede_id": 2,
     //   "items": [ { "lote_id": 123, "cantidad": 100 } ]
     // }
-    public function distribuir(Request $request)
+    public function salida(Request $request)
     {
         $data = $request->validate([
             'origen_central_id' => ['required','integer','min:1'],

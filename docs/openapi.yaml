@@ -1712,12 +1712,11 @@ paths:
                 $ref: '#/components/schemas/StandardResponse'
 
   # ========================================
-  # MOVIMIENTOS - SALIDA DESDE ALMACÉN CENTRAL
+  # MOVIMIENTOS Y DISTRIBUCIÓN
   # ========================================
-  /api/movimiento/central/salida:
+  /api/movimiento/central:
     post:
-      summary: Registrar movimiento de salida desde almacén central
-      description: Registra la salida de productos desde el almacén central (solo resta cantidades, no suma en destino)
+      summary: Crear movimiento desde almacén central
       tags: [Movimientos]
       security:
         - bearerAuth: []
@@ -1726,31 +1725,19 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/MovimientoSalidaRequest'
+              $ref: '#/components/schemas/MovimientoCentralRequest'
       responses:
-        '201':
-          description: Movimiento de salida registrado
+        '200':
+          description: Movimiento creado
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/MovimientoSalidaResponse'
+                $ref: '#/components/schemas/StandardResponse'
 
-  # ========================================
-  # MOVIMIENTOS - ENTRADA A ALMACÉN PRINCIPAL
-  # ========================================
-  /api/movimiento/principal/entrada:
+  /api/distribucion/principal:
     post:
-      summary: Registrar y aprobar entrada en almacén principal
-      description: |
-        Registra la entrada de productos en almacén principal después de verificación.
-        Verifica que las cantidades coincidan con el movimiento de salida.
-        Si hay diferencias, crea reporte de diferencias o rechaza el movimiento.
-      tags: [Movimientos]
+      summary: Distribución hacia almacén principal
+      tags: [Distribución]
       security:
         - bearerAuth: []
       requestBody:
@@ -1758,30 +1745,34 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/MovimientoEntradaRequest'
+              $ref: '#/components/schemas/DistribucionPrincipalRequest'
       responses:
-        '201':
-          description: Movimiento de entrada aprobado y registrado
+        '200':
+          description: Distribución aplicada
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/MovimientoEntradaResponse'
-        '400':
-          description: Error de validación - cantidades no coinciden
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/distribucion/automatica/central:
+    post:
+      summary: Distribución automática desde central
+      tags: [Distribución]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DistribucionAutomaticaRequest'
+      responses:
+        '200':
+          description: Distribución automática aplicada
           content:
             application/json:
               schema:
-                allOf:
-                  - $ref: '#/components/schemas/StandardResponse'
-                  - type: object
-                    properties:
-                      data:
-                        $ref: '#/components/schemas/ReporteDiferencias'
+                $ref: '#/components/schemas/StandardResponse'
 
   # ========================================
   # INVENTARIO
@@ -2095,192 +2086,6 @@ components:
         tipo_movimiento: { type: string }
         fecha_despacho: { type: string, format: date }
         items: { type: array }
-
-    MovimientoSalidaRequest:
-      type: object
-      required: [origen_central_id, hospital_id, principal_id, tipo_movimiento, fecha_despacho, items]
-      properties:
-        origen_central_id:
-          type: integer
-          description: ID del almacén central de origen
-        hospital_id:
-          type: integer
-          description: ID del hospital destino
-        principal_id:
-          type: integer
-          description: ID del almacén principal destino
-        tipo_movimiento:
-          type: string
-          enum: [transferencia, distribucion, ajuste]
-          description: Tipo de movimiento
-        fecha_despacho:
-          type: string
-          format: date
-          description: Fecha en que se despacha el movimiento
-        items:
-          type: array
-          description: Lista de items del movimiento
-          items:
-            type: object
-            required: [lote_grupo_id, cantidad_solicitada]
-            properties:
-              lote_grupo_id:
-                type: integer
-                description: ID del lote-grupo
-              cantidad_solicitada:
-                type: number
-                format: float
-                description: Cantidad solicitada para el movimiento
-              observaciones:
-                type: string
-                description: Observaciones específicas del item
-
-    MovimientoSalidaResponse:
-      type: object
-      properties:
-        id:
-          type: integer
-          description: ID del movimiento creado
-        codigo_grupo:
-          type: string
-          description: Código único del grupo de movimiento
-        estado:
-          type: string
-          enum: [pendiente, en_transito, entregado]
-          description: Estado del movimiento
-        fecha_creacion:
-          type: string
-          format: date-time
-          description: Fecha de creación del movimiento
-        usuario_creador:
-          type: string
-          description: Usuario que creó el movimiento
-
-    MovimientoEntradaRequest:
-      type: object
-      required: [movimiento_salida_id, items_recibidos, usuario_aprobador]
-      properties:
-        movimiento_salida_id:
-          type: integer
-          description: ID del movimiento de salida relacionado
-        items_recibidos:
-          type: array
-          description: Lista de items recibidos con cantidades verificadas
-          items:
-            type: object
-            required: [lote_grupo_id, cantidad_recibida, cantidad_aceptada, estado_item]
-            properties:
-              lote_grupo_id:
-                type: integer
-                description: ID del lote-grupo
-              cantidad_recibida:
-                type: number
-                format: float
-                description: Cantidad física recibida
-              cantidad_aceptada:
-                type: number
-                format: float
-                description: Cantidad aceptada después de verificación
-              estado_item:
-                type: string
-                enum: [aceptado, rechazado, parcial]
-                description: Estado del item recibido
-              observaciones:
-                type: string
-                description: Observaciones del item recibido
-              motivo_rechazo:
-                type: string
-                description: Motivo de rechazo (si aplica)
-        usuario_aprobador:
-          type: string
-          description: Usuario que aprueba la entrada
-        fecha_aprobacion:
-          type: string
-          format: date-time
-          description: Fecha y hora de aprobación
-        observaciones_generales:
-          type: string
-          description: Observaciones generales del movimiento de entrada
-
-    MovimientoEntradaResponse:
-      type: object
-      properties:
-        id:
-          type: integer
-          description: ID del movimiento de entrada creado
-        movimiento_salida_id:
-          type: integer
-          description: ID del movimiento de salida relacionado
-        codigo_grupo:
-          type: string
-          description: Código del grupo de movimiento
-        estado:
-          type: string
-          enum: [aprobado, rechazado, diferencias]
-          description: Estado final del movimiento
-        fecha_aprobacion:
-          type: string
-          format: date-time
-          description: Fecha de aprobación
-        usuario_aprobador:
-          type: string
-          description: Usuario que aprobó
-        total_items_procesados:
-          type: integer
-          description: Total de items procesados
-        total_items_aceptados:
-          type: integer
-          description: Total de items aceptados
-
-    ReporteDiferencias:
-      type: object
-      properties:
-        movimiento_salida_id:
-          type: integer
-          description: ID del movimiento de salida
-        codigo_grupo:
-          type: string
-          description: Código del grupo
-        diferencias:
-          type: array
-          description: Lista de diferencias encontradas
-          items:
-            type: object
-            properties:
-              lote_grupo_id:
-                type: integer
-                description: ID del lote-grupo
-              cantidad_solicitada:
-                type: number
-                format: float
-                description: Cantidad solicitada en salida
-              cantidad_recibida:
-                type: number
-                format: float
-                description: Cantidad recibida en entrada
-              diferencia:
-                type: number
-                format: float
-                description: Diferencia entre cantidades
-              tipo_diferencia:
-                type: string
-                enum: [falta, exceso, dano]
-                description: Tipo de diferencia encontrada
-              descripcion:
-                type: string
-                description: Descripción de la diferencia
-        estado_movimiento:
-          type: string
-          enum: [pendiente_revision, rechazado, aprobado_con_diferencias]
-          description: Estado sugerido del movimiento
-        requiere_accion:
-          type: boolean
-          description: Indica si se requiere acción especial
-        recomendaciones:
-          type: array
-          description: Lista de recomendaciones para resolver diferencias
-          items:
-            type: string
 
     MovimientoCentralRequest:
       type: object

@@ -127,6 +127,8 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
     Route::get('/movimientos-stock/{movimientos_stock}', [MovimientoStockController::class, 'show']);
     Route::put('/movimientos-stock/{movimientos_stock}', [MovimientoStockController::class, 'update']);
     Route::delete('/movimientos-stock/{movimientos_stock}', [MovimientoStockController::class, 'destroy']);
+    Route::get('/movimientos-stock/sede/{sedeId}', [MovimientoStockController::class, 'porSede'])
+        ->where('sedeId', '[0-9]+');
 
     // Inventario - Registro de lotes y almacenamiento
     Route::post('/inventario/registrar', [\App\Http\Controllers\InventarioController::class, 'registrar']);

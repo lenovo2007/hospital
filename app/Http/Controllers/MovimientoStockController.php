@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\LoteGrupo;
 use App\Models\MovimientoStock;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -27,6 +28,41 @@ class MovimientoStockController extends Controller
         return response()->json([
             'status' => true,
             'mensaje' => 'Listado de movimientos de stock.',
+            'data' => $movimientos,
+        ]);
+    }
+
+    public function porSede(int $sedeId, Request $request)
+    {
+        $perPage = (int) $request->query('per_page', 50);
+        $perPage = $perPage > 0 ? min($perPage, 100) : 50;
+
+        $query = MovimientoStock::where('sede_id', $sedeId)
+            ->when($request->filled('estado'), fn ($q) => $q->where('estado', $request->estado))
+            ->when($request->filled('hospital_id'), fn ($q) => $q->where('hospital_id', $request->hospital_id))
+            ->orderByDesc('created_at');
+
+        $movimientos = $query->paginate($perPage);
+
+        $codigos = $movimientos->getCollection()
+            ->pluck('codigo_grupo')
+            ->filter()
+            ->unique()
+            ->values();
+
+        $lotesPorCodigo = $codigos->isNotEmpty()
+            ? LoteGrupo::whereIn('codigo', $codigos)->get()->groupBy('codigo')
+            : collect();
+
+        $movimientos->getCollection()->transform(function ($movimiento) use ($lotesPorCodigo) {
+            $codigo = $movimiento->codigo_grupo;
+            $movimiento->lotes_grupos = $codigo ? ($lotesPorCodigo->get($codigo) ?? collect()) : collect();
+            return $movimiento;
+        });
+
+        return response()->json([
+            'status' => true,
+            'mensaje' => 'Movimientos de stock por sede.',
             'data' => $movimientos,
         ]);
     }

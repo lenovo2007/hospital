@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -11,19 +12,23 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('movimientos_stock', function (Blueprint $table) {
-            if (!Schema::hasColumn('movimientos_stock', 'sede_id')) {
+        // Check if sede_id column exists
+        if (!Schema::hasColumn('movimientos_stock', 'sede_id')) {
+            Schema::table('movimientos_stock', function (Blueprint $table) {
                 $table->unsignedBigInteger('sede_id')->nullable()->after('hospital_id');
-                $table->index('sede_id');
-            }
-        });
+            });
+        }
 
-        // Add foreign key constraint in separate operation to avoid issues
-        Schema::table('movimientos_stock', function (Blueprint $table) {
-            if (Schema::hasColumn('movimientos_stock', 'sede_id') && !Schema::hasColumn('movimientos_stock', 'sede_id_foreign')) {
+        // Check if foreign key constraint already exists
+        $foreignKeys = DB::select("SHOW CREATE TABLE movimientos_stock");
+        $createTableSQL = $foreignKeys[0]->{'Create Table'} ?? '';
+
+        if (Schema::hasColumn('movimientos_stock', 'sede_id') &&
+            !str_contains($createTableSQL, 'movimientos_stock_sede_id_foreign')) {
+            Schema::table('movimientos_stock', function (Blueprint $table) {
                 $table->foreign('sede_id')->references('id')->on('sedes')->onDelete('set null');
-            }
-        });
+            });
+        }
     }
 
     /**
@@ -31,11 +36,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('movimientos_stock', function (Blueprint $table) {
-            if (Schema::hasColumn('movimientos_stock', 'sede_id')) {
+        if (Schema::hasColumn('movimientos_stock', 'sede_id')) {
+            Schema::table('movimientos_stock', function (Blueprint $table) {
                 $table->dropForeign(['sede_id']);
                 $table->dropColumn('sede_id');
-            }
-        });
+            });
+        }
     }
 };

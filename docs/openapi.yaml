@@ -635,8 +635,12 @@ components:
         created_at: { type: string, format: date-time }
         updated_at: { type: string, format: date-time }
     PaginatedLoteGrupos:
+      type: object
+      properties:
+        data:
+          type: array
           items:
-            $ref: '#/components/schemas/LoteAlmacen'
+            $ref: '#/components/schemas/LoteGrupo'
         current_page: { type: integer }
         last_page: { type: integer }
         per_page: { type: integer }

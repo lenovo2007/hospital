@@ -17,6 +17,7 @@ use App\Http\Controllers\LoteController;
 use App\Http\Controllers\TipoHospitalDistribucionController;
 use App\Http\Controllers\DistribucionCentralController;
 use App\Http\Controllers\DistribucionInternaController;
+use App\Http\Controllers\FichaInsumoController;
 use App\Http\Controllers\MovimientoStockController;
 use App\Http\Controllers\MovimientoDiscrepanciaController;
 use App\Http\Controllers\RecepcionPrincipalController;
@@ -137,6 +138,13 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
     Route::get('/movimientos-stock/discrepancias/{movimientos_discrepancia}', [MovimientoDiscrepanciaController::class, 'show']);
     Route::put('/movimientos-stock/discrepancias/{movimientos_discrepancia}', [MovimientoDiscrepanciaController::class, 'update']);
     Route::delete('/movimientos-stock/discrepancias/{movimientos_discrepancia}', [MovimientoDiscrepanciaController::class, 'destroy']);
+
+    // Ficha de insumos CRUD
+    Route::get('/ficha-insumos', [FichaInsumoController::class, 'index']);
+    Route::post('/ficha-insumos', [FichaInsumoController::class, 'store']);
+    Route::get('/ficha-insumos/{ficha_insumo}', [FichaInsumoController::class, 'show']);
+    Route::put('/ficha-insumos/{ficha_insumo}', [FichaInsumoController::class, 'update']);
+    Route::delete('/ficha-insumos/{ficha_insumo}', [FichaInsumoController::class, 'destroy']);
 
     // Inventario - Registro de lotes y almacenamiento
     Route::post('/inventario/registrar', [\App\Http\Controllers\InventarioController::class, 'registrar']);

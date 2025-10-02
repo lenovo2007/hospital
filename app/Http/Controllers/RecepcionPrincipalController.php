@@ -44,12 +44,22 @@ class RecepcionPrincipalController extends Controller
 
                 // Buscar los lotes grupos asociados al movimiento
                 $itemsEsperados = LoteGrupo::where('codigo', $movimiento->codigo_grupo)
-                    ->where('status', 'activo')
                     ->lockForUpdate()
                     ->get();
 
                 if ($itemsEsperados->isEmpty()) {
-                    throw new InvalidArgumentException('No se encontraron items pendientes asociados al código de grupo.');
+                    throw new InvalidArgumentException('No se encontraron items asociados al código de grupo.');
+                }
+
+                // Validar que los items estén en status 'entregado'
+                $itemsPendientes = $itemsEsperados->where('status', 'activo');
+                if ($itemsPendientes->isNotEmpty()) {
+                    throw new InvalidArgumentException('Los items deben estar en estado "entregado" antes de poder ser recibidos. Estado actual: activo (pendiente).');
+                }
+
+                $itemsEntregados = $itemsEsperados->where('status', 'entregado');
+                if ($itemsEntregados->isEmpty()) {
+                    throw new InvalidArgumentException('No se encontraron items en estado "entregado" para recibir.');
                 }
 
                 $mapaEsperado = [];
@@ -95,9 +105,21 @@ class RecepcionPrincipalController extends Controller
                     }
                 }
 
-                foreach ($aceptados as $loteId => $info) {
-                    $cantidad = $info['cantidad'];
+                // Procesar todos los items recibidos (aceptados y con discrepancia)
+                foreach ($itemsRecibidos as $item) {
+                    $loteId = (int) $item['lote_id'];
+                    $cantidadRecibida = (int) $item['cantidad'];
+                    
+                    // Buscar el modelo del lote grupo
+                    $loteGrupo = $itemsEsperados->firstWhere('lote_id', $loteId);
+                    if (!$loteGrupo) {
+                        continue; // Skip items no esperados
+                    }
+                    
+                    $cantidadEsperada = (int) $loteGrupo->cantidad_salida;
+                    $tieneDiscrepancia = $cantidadRecibida !== $cantidadEsperada;
 
+                    // Actualizar stock en almacenes_principales
                     $registroDestino = DB::table('almacenes_principales')
                         ->where([
                             'hospital_id' => $movimiento->destino_hospital_id,
@@ -108,7 +130,7 @@ class RecepcionPrincipalController extends Controller
                         ->first();
 
                     if ($registroDestino) {
-                        $nuevaCantidad = (int) $registroDestino->cantidad + $cantidad;
+                        $nuevaCantidad = (int) $registroDestino->cantidad + $cantidadRecibida;
                         DB::table('almacenes_principales')
                             ->where('id', $registroDestino->id)
                             ->update([
@@ -121,17 +143,18 @@ class RecepcionPrincipalController extends Controller
                             'hospital_id' => $movimiento->destino_hospital_id,
                             'sede_id' => $movimiento->destino_sede_id,
                             'lote_id' => $loteId,
-                            'cantidad' => $cantidad,
-                            'status' => $cantidad > 0 ? 1 : 0,
+                            'cantidad' => $cantidadRecibida,
+                            'status' => $cantidadRecibida > 0 ? 1 : 0,
                             'created_at' => now(),
                             'updated_at' => now(),
                         ]);
                     }
 
-                    // Actualizar cantidad_entrada en el lote grupo
-                    $info['modelo']->update([
-                        'cantidad_entrada' => $cantidad,
-                        'status' => 'completado'
+                    // Actualizar lote grupo con cantidad_entrada, discrepancia y status
+                    $loteGrupo->update([
+                        'cantidad_entrada' => $cantidadRecibida,
+                        'discrepancia' => $tieneDiscrepancia,
+                        'status' => 'recibido'
                     ]);
                 }
 

@@ -191,6 +191,9 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
 
     // Distribución desde almacén central hacia principal (hospital)
     Route::post('/movimiento/central/salida', [DistribucionCentralController::class, 'salida']);
+    
+    // Marcar movimiento como entregado
+    Route::post('/movimiento/central/entregado', [DistribucionCentralController::class, 'marcarEntregado']);
 
     // Recepción en almacén principal de una distribución central
     Route::post('/movimiento/principal/entrada', [RecepcionPrincipalController::class, 'recibir']);

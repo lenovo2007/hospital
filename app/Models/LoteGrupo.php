@@ -17,12 +17,14 @@ class LoteGrupo extends Model
         'lote_id',
         'cantidad_salida',
         'cantidad_entrada',
+        'discrepancia',
         'status',
     ];
 
     protected $casts = [
         'cantidad_salida' => 'integer',
         'cantidad_entrada' => 'integer',
+        'discrepancia' => 'boolean',
     ];
 
     /**
@@ -65,6 +67,7 @@ class LoteGrupo extends Model
                 'lote_id' => $item['lote_id'],
                 'cantidad_salida' => $item['cantidad'],
                 'cantidad_entrada' => 0,
+                'discrepancia' => false,
                 'status' => 'activo',
             ]);
 

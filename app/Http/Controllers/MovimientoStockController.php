@@ -8,6 +8,7 @@ use App\Models\AlmacenParalelo;
 use App\Models\AlmacenPrincipal;
 use App\Models\AlmacenServiciosApoyo;
 use App\Models\AlmacenServiciosAtenciones;
+use App\Models\Lote;
 use App\Models\Hospital;
 use App\Models\LoteGrupo;
 use App\Models\MovimientoStock;
@@ -64,11 +65,24 @@ class MovimientoStockController extends Controller
             ? LoteGrupo::whereIn('codigo', $codigos)->get()->groupBy('codigo')
             : collect();
 
-        $movimientos->getCollection()->transform(function (MovimientoStock $movimiento) use ($lotesPorCodigo) {
+        $loteIds = $lotesPorCodigo->isNotEmpty()
+            ? $lotesPorCodigo->flatten(1)->pluck('lote_id')->filter()->unique()
+            : collect();
+
+        $lotesPorId = $loteIds->isNotEmpty()
+            ? Lote::whereIn('id', $loteIds)->get()->keyBy('id')
+            : collect();
+
+        $movimientos->getCollection()->transform(function (MovimientoStock $movimiento) use ($lotesPorCodigo, $lotesPorId) {
             $codigo = $movimiento->codigo_grupo;
             $movimiento->lotes_grupos = $codigo
                 ? ($lotesPorCodigo->get($codigo)?->values() ?? collect())
                 : collect();
+
+            $movimiento->lotes_grupos = $movimiento->lotes_grupos->map(function (LoteGrupo $grupo) use ($lotesPorId) {
+                $grupo->lote = $lotesPorId->get($grupo->lote_id);
+                return $grupo;
+            });
 
             $almacenOrigen = $this->resolveAlmacenInfo($movimiento->origen_almacen_tipo, $movimiento->origen_almacen_id);
             $almacenDestino = $this->resolveAlmacenInfo($movimiento->destino_almacen_tipo, $movimiento->destino_almacen_id);

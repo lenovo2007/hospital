@@ -2000,11 +2000,17 @@ paths:
                               lote_id: 2
                               cantidad: 500
                               status: activo
+                              lote:
+                                id: 2
+                                codigo: LOTE-002
+                                insumo_id: 45
+                                fecha_vencimiento: '2026-01-31'
                       total: 1
                       per_page: 15
                       last_page: 1
                       from: 1
                       to: 1
+
   /api/movimientos-stock/discrepancias:
     get:
       summary: Listar discrepancias de movimientos

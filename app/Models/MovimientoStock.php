@@ -12,8 +12,10 @@ class MovimientoStock extends Model
     protected $fillable = [
         'tipo',
         'tipo_movimiento',
-        'hospital_id',
-        'sede_id',
+        'origen_hospital_id',
+        'origen_sede_id',
+        'destino_hospital_id',
+        'destino_sede_id',
         'origen_almacen_tipo',
         'origen_almacen_id',
         'destino_almacen_tipo',
@@ -37,12 +39,32 @@ class MovimientoStock extends Model
 
     public function hospital(): BelongsTo
     {
-        return $this->belongsTo(Hospital::class);
+        return $this->belongsTo(Hospital::class, 'destino_hospital_id');
     }
 
     public function sede(): BelongsTo
     {
-        return $this->belongsTo(Sede::class);
+        return $this->belongsTo(Sede::class, 'destino_sede_id');
+    }
+
+    public function destinoHospital(): BelongsTo
+    {
+        return $this->belongsTo(Hospital::class, 'destino_hospital_id');
+    }
+
+    public function destinoSede(): BelongsTo
+    {
+        return $this->belongsTo(Sede::class, 'destino_sede_id');
+    }
+
+    public function origenHospital(): BelongsTo
+    {
+        return $this->belongsTo(Hospital::class, 'origen_hospital_id');
+    }
+
+    public function origenSede(): BelongsTo
+    {
+        return $this->belongsTo(Sede::class, 'origen_sede_id');
     }
 
     public function usuario(): BelongsTo

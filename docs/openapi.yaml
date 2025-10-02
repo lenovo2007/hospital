@@ -1734,6 +1734,26 @@ paths:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
 
+  /api/movimiento/central/salida:
+    post:
+      summary: Registrar salida desde almacén central
+      tags: [Movimientos]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MovimientoCentralSalidaRequest'
+      responses:
+        '200':
+          description: Resultado del movimiento de salida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
   /api/distribucion/principal:
     post:
       summary: Distribución hacia almacén principal
@@ -2094,8 +2114,61 @@ components:
         hospital_id: { type: integer }
         principal_id: { type: integer }
         tipo_movimiento: { type: string }
-        fecha_despacho: { type: string, format: date }
-        items: { type: array }
+
+    MovimientoCentralSalidaRequest:
+      type: object
+      required:
+        - origen_almacen_id
+        - origen_hospital_id
+        - origen_sede_id
+        - destino_hospital_id
+        - destino_sede_id
+        - destino_almacen_tipo
+        - tipo_movimiento
+        - fecha_despacho
+        - items
+      properties:
+        origen_almacen_id:
+          type: integer
+          minimum: 1
+        origen_hospital_id:
+          type: integer
+          minimum: 1
+        origen_sede_id:
+          type: integer
+          minimum: 1
+        destino_hospital_id:
+          type: integer
+          minimum: 1
+        destino_sede_id:
+          type: integer
+          minimum: 1
+        destino_almacen_tipo:
+          type: string
+          maxLength: 100
+        tipo_movimiento:
+          type: string
+          maxLength: 50
+        fecha_despacho:
+          type: string
+          format: date
+        observaciones:
+          type: string
+          maxLength: 500
+          nullable: true
+        items:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            required: [lote_id, cantidad]
+            properties:
+              lote_id:
+                type: integer
+                minimum: 1
+              cantidad:
+                type: integer
+                minimum: 1
 
     DistribucionPrincipalRequest:
       type: object

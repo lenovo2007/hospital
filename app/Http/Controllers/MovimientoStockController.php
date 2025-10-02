@@ -28,8 +28,10 @@ class MovimientoStockController extends Controller
 
         $query = MovimientoStock::query()
             ->when($request->filled('estado'), fn ($q) => $q->where('estado', $request->estado))
-            ->when($request->filled('hospital_id'), fn ($q) => $q->where('hospital_id', $request->hospital_id))
-            ->when($request->filled('sede_id'), fn ($q) => $q->where('sede_id', $request->sede_id))
+            ->when($request->filled('destino_hospital_id'), fn ($q) => $q->where('destino_hospital_id', $request->destino_hospital_id))
+            ->when($request->filled('destino_sede_id'), fn ($q) => $q->where('destino_sede_id', $request->destino_sede_id))
+            ->when($request->filled('origen_hospital_id'), fn ($q) => $q->where('origen_hospital_id', $request->origen_hospital_id))
+            ->when($request->filled('origen_sede_id'), fn ($q) => $q->where('origen_sede_id', $request->origen_sede_id))
             ->when($request->filled('codigo_grupo'), fn ($q) => $q->where('codigo_grupo', $request->codigo_grupo))
             ->orderByDesc('created_at');
 
@@ -42,15 +44,15 @@ class MovimientoStockController extends Controller
         ]);
     }
 
-    public function porSede(int $sedeId, Request $request)
+    public function porDestinoSede(int $destinoSedeId, Request $request)
     {
         $perPage = (int) $request->query('per_page', 50);
         $perPage = $perPage > 0 ? min($perPage, 100) : 50;
 
-        $query = MovimientoStock::with(['hospital', 'sede', 'usuario', 'usuarioReceptor'])
-            ->where('sede_id', $sedeId)
+        $query = MovimientoStock::with(['destinoHospital', 'destinoSede', 'origenHospital', 'origenSede', 'usuario', 'usuarioReceptor'])
+            ->where('destino_sede_id', $destinoSedeId)
             ->when($request->filled('estado'), fn ($q) => $q->where('estado', $request->estado))
-            ->when($request->filled('hospital_id'), fn ($q) => $q->where('hospital_id', $request->hospital_id))
+            ->when($request->filled('destino_hospital_id'), fn ($q) => $q->where('destino_hospital_id', $request->destino_hospital_id))
             ->orderByDesc('created_at');
 
         $movimientos = $query->paginate($perPage);
@@ -92,12 +94,88 @@ class MovimientoStockController extends Controller
             $movimiento->destino_almacen_nombre = $almacenDestino['nombre'] ?? null;
             $movimiento->destino_almacen_detalle = $almacenDestino['detalle'];
 
+            $movimiento->destino_hospital = $movimiento->destinoHospital;
+            $movimiento->destino_sede = $movimiento->destinoSede;
+            $movimiento->origen_hospital = $movimiento->origenHospital;
+            $movimiento->origen_sede = $movimiento->origenSede;
+
+            $movimiento->hospital = $movimiento->destinoHospital;
+            $movimiento->sede = $movimiento->destinoSede;
+
             return $movimiento;
         });
 
         return response()->json([
             'status' => true,
-            'mensaje' => 'Movimientos de stock por sede.',
+            'mensaje' => 'Movimientos de stock por sede destino.',
+            'data' => $movimientos,
+        ]);
+    }
+
+    public function porOrigenSede(int $origenSedeId, Request $request)
+    {
+        $perPage = (int) $request->query('per_page', 50);
+        $perPage = $perPage > 0 ? min($perPage, 100) : 50;
+
+        $query = MovimientoStock::with(['destinoHospital', 'destinoSede', 'origenHospital', 'origenSede', 'usuario', 'usuarioReceptor'])
+            ->where('origen_sede_id', $origenSedeId)
+            ->when($request->filled('estado'), fn ($q) => $q->where('estado', $request->estado))
+            ->when($request->filled('origen_hospital_id'), fn ($q) => $q->where('origen_hospital_id', $request->origen_hospital_id))
+            ->orderByDesc('created_at');
+
+        $movimientos = $query->paginate($perPage);
+
+        $codigos = $movimientos->getCollection()
+            ->pluck('codigo_grupo')
+            ->filter()
+            ->unique()
+            ->values();
+
+        $lotesPorCodigo = $codigos->isNotEmpty()
+            ? LoteGrupo::whereIn('codigo', $codigos)->get()->groupBy('codigo')
+            : collect();
+
+        $loteIds = $lotesPorCodigo->isNotEmpty()
+            ? $lotesPorCodigo->flatten(1)->pluck('lote_id')->filter()->unique()
+            : collect();
+
+        $lotesPorId = $loteIds->isNotEmpty()
+            ? Lote::with('insumo')->whereIn('id', $loteIds)->get()->keyBy('id')
+            : collect();
+
+        $movimientos->getCollection()->transform(function (MovimientoStock $movimiento) use ($lotesPorCodigo, $lotesPorId) {
+            $codigo = $movimiento->codigo_grupo;
+            $movimiento->lotes_grupos = $codigo
+                ? ($lotesPorCodigo->get($codigo)?->values() ?? collect())
+                : collect();
+
+            $movimiento->lotes_grupos = $movimiento->lotes_grupos->map(function (LoteGrupo $grupo) use ($lotesPorId) {
+                $grupo->lote = $lotesPorId->get($grupo->lote_id);
+                return $grupo;
+            });
+
+            $almacenOrigen = $this->resolveAlmacenInfo($movimiento->origen_almacen_tipo, $movimiento->origen_almacen_id);
+            $almacenDestino = $this->resolveAlmacenInfo($movimiento->destino_almacen_tipo, $movimiento->destino_almacen_id);
+
+            $movimiento->origen_almacen_nombre = $almacenOrigen['nombre'] ?? null;
+            $movimiento->origen_almacen_detalle = $almacenOrigen['detalle'];
+            $movimiento->destino_almacen_nombre = $almacenDestino['nombre'] ?? null;
+            $movimiento->destino_almacen_detalle = $almacenDestino['detalle'];
+
+            $movimiento->destino_hospital = $movimiento->destinoHospital;
+            $movimiento->destino_sede = $movimiento->destinoSede;
+            $movimiento->origen_hospital = $movimiento->origenHospital;
+            $movimiento->origen_sede = $movimiento->origenSede;
+
+            $movimiento->hospital = $movimiento->destinoHospital;
+            $movimiento->sede = $movimiento->destinoSede;
+
+            return $movimiento;
+        });
+
+        return response()->json([
+            'status' => true,
+            'mensaje' => 'Movimientos de stock por sede origen.',
             'data' => $movimientos,
         ]);
     }
@@ -241,8 +319,10 @@ class MovimientoStockController extends Controller
         $rules = [
             'tipo' => [$isCreate ? 'required' : 'sometimes', 'string', 'max:50'],
             'tipo_movimiento' => [$isCreate ? 'required' : 'sometimes', 'string', 'max:50'],
-            'hospital_id' => [$isCreate ? 'required' : 'sometimes', 'integer', 'min:1'],
-            'sede_id' => [$isCreate ? 'required' : 'sometimes', 'integer', 'min:1'],
+            'origen_hospital_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'origen_sede_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'destino_hospital_id' => [$isCreate ? 'required' : 'sometimes', 'integer', 'min:1'],
+            'destino_sede_id' => [$isCreate ? 'required' : 'sometimes', 'integer', 'min:1'],
             'origen_almacen_tipo' => [$isCreate ? 'required' : 'sometimes', 'string', 'max:100'],
             'origen_almacen_id' => [$isCreate ? 'required' : 'sometimes', 'integer', 'min:0'],
             'destino_almacen_tipo' => [$isCreate ? 'required' : 'sometimes', 'string', 'max:100'],

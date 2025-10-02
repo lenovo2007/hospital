@@ -15,18 +15,24 @@ class DistribucionCentralController extends Controller
     // POST /api/movimiento/central/salida
     // {
     //   "origen_almacen_id": 1,
+    //   "origen_hospital_id": 1,
+    //   "origen_sede_id": 1,
+    //   "destino_hospital_id": 1,
+    //   "destino_sede_id": 2,
     //   "destino_almacen_tipo": "almacenPrin",
-    //   "hospital_id": 1,
-    //   "sede_id": 2,
+    //   "tipo_movimiento": "despacho",
+    //   "fecha_despacho": "2025-09-29",
     //   "items": [ { "lote_id": 123, "cantidad": 100 } ]
     // }
     public function salida(Request $request)
     {
         $data = $request->validate([
             'origen_almacen_id' => ['required','integer','min:1'],
+            'origen_hospital_id' => ['required','integer','min:1'],
+            'origen_sede_id' => ['required','integer','min:1'],
+            'destino_hospital_id' => ['required','integer','min:1'],
+            'destino_sede_id' => ['required','integer','min:1'],
             'destino_almacen_tipo' => ['required','string','max:100'],
-            'hospital_id' => ['required','integer','min:1'],
-            'sede_id' => ['required','integer','min:1'],
             'tipo_movimiento' => ['required','string','max:50'],
             'fecha_despacho' => ['required','date'],
             'observaciones' => ['nullable','string','max:500'],
@@ -52,11 +58,11 @@ class DistribucionCentralController extends Controller
                     $cantidad = (int) $it['cantidad'];
 
                     $transferResult = $this->transferirDesdeCentral(
-                        origenId: (int) $data['origen_almacen_id'],
-                        destinoSedeId: (int) $data['sede_id'],
-                        hospitalId: (int) $data['hospital_id'],
-                        loteId: $loteId,
-                        cantidad: $cantidad
+                        (int) $data['origen_almacen_id'],
+                        (int) $data['destino_sede_id'],
+                        (int) $data['destino_hospital_id'],
+                        $loteId,
+                        $cantidad
                     );
 
                     $totalCantidad += $cantidad;
@@ -72,8 +78,10 @@ class DistribucionCentralController extends Controller
                 MovimientoStock::create([
                     'tipo' => 'transferencia',
                     'tipo_movimiento' => $data['tipo_movimiento'],
-                    'hospital_id' => (int) $data['hospital_id'],
-                    'sede_id' => (int) $data['sede_id'],
+                    'origen_hospital_id' => (int) $data['origen_hospital_id'],
+                    'origen_sede_id' => (int) $data['origen_sede_id'],
+                    'destino_hospital_id' => (int) $data['destino_hospital_id'],
+                    'destino_sede_id' => (int) $data['destino_sede_id'],
                     'origen_almacen_tipo' => 'almacenCent',
                     'origen_almacen_id' => $origenAlmacenId,
                     'destino_almacen_tipo' => $data['destino_almacen_tipo'],

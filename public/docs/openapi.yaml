@@ -1238,7 +1238,13 @@ paths:
         - Crea un grupo de lotes con un código único (`codigo_grupo`) en la tabla `lotes_grupos`
         - Genera un movimiento de stock con estado "pendiente" en la tabla `movimientos_stock`
         - Registra la suma total de cantidades de todos los items en el campo `cantidad`
-        - No modifica stock físico (solo registra el movimiento)
+        - **Descuenta las cantidades del almacén central de origen**
+        - Actualiza el status a `false` si la cantidad llega a 0
+        
+        **Validaciones:**
+        - Todos los lotes deben existir en el almacén central del hospital/sede origen
+        - Debe haber stock suficiente para cada lote
+        - Los lotes deben tener status `true` (activos)
         
         **Campos requeridos:**
         - IDs de hospital y sede de origen y destino
@@ -1287,7 +1293,7 @@ paths:
                     data:
                       codigo_grupo: cod001
         '422':
-          description: Error de validación de datos
+          description: Error de validación de datos o stock insuficiente
           content:
             application/json:
               schema:
@@ -1301,6 +1307,16 @@ paths:
                       origen_hospital_id: ["El campo origen hospital id es obligatorio."]
                       origen_almacen_tipo: ["El campo origen almacen tipo es obligatorio."]
                       items: ["El campo items debe contener al menos 1 elementos."]
+                stock-insuficiente:
+                  value:
+                    status: false
+                    mensaje: "Stock insuficiente en el almacén central para el lote 1. Disponible: 50, Solicitado: 200"
+                    data: null
+                lote-no-encontrado:
+                  value:
+                    status: false
+                    mensaje: "No se encontró el lote 2 en el almacén central para el hospital 1 y sede 1."
+                    data: null
                 error-inesperado:
                   value:
                     status: false

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\StockException;
 use App\Models\LoteGrupo;
 use App\Models\MovimientoStock;
 use Illuminate\Http\Request;
@@ -50,10 +51,21 @@ class DistribucionCentralController extends Controller
                 // Crear grupo de lote para los items del movimiento
                 [$codigoGrupo, $grupoItems] = LoteGrupo::crearGrupo($data['items']);
 
-                // Calcular la suma total de cantidades
+                // Calcular la suma total de cantidades y descontar del almacén central
                 $totalCantidad = 0;
                 foreach ($data['items'] as $item) {
-                    $totalCantidad += (int) $item['cantidad'];
+                    $loteId = (int) $item['lote_id'];
+                    $cantidad = (int) $item['cantidad'];
+                    
+                    // Descontar del almacén central
+                    $this->descontarDelAlmacenCentral(
+                        (int) $data['origen_hospital_id'],
+                        (int) $data['origen_sede_id'],
+                        $loteId,
+                        $cantidad
+                    );
+                    
+                    $totalCantidad += $cantidad;
                 }
 
                 // Crear el movimiento de stock
@@ -84,6 +96,16 @@ class DistribucionCentralController extends Controller
                     'codigo_grupo' => $codigoGrupo,
                 ],
             ], 200, [], JSON_UNESCAPED_UNICODE);
+        } catch (StockException $e) {
+            Log::warning('Movimiento central falló por StockException', [
+                'mensaje' => $e->getMessage(),
+                'payload' => $data,
+            ]);
+            return response()->json([
+                'status' => false,
+                'mensaje' => $e->getMessage(),
+                'data' => null,
+            ], 200);
         } catch (Throwable $e) {
             report($e);
 
@@ -95,4 +117,37 @@ class DistribucionCentralController extends Controller
         }
     }
 
+    /**
+     * Descuenta la cantidad especificada del almacén central
+     */
+    private function descontarDelAlmacenCentral(int $hospitalId, int $sedeId, int $loteId, int $cantidad): void
+    {
+        // Buscar el registro en almacenes_centrales
+        $central = DB::table('almacenes_centrales')
+            ->where('hospital_id', $hospitalId)
+            ->where('sede_id', $sedeId)
+            ->where('lote_id', $loteId)
+            ->where('status', true)
+            ->lockForUpdate()
+            ->first();
+
+        if (!$central) {
+            throw new StockException("No se encontró el lote {$loteId} en el almacén central para el hospital {$hospitalId} y sede {$sedeId}.");
+        }
+
+        if ((int) $central->cantidad < $cantidad) {
+            throw new StockException("Stock insuficiente en el almacén central para el lote {$loteId}. Disponible: {$central->cantidad}, Solicitado: {$cantidad}");
+        }
+
+        $nuevaCantidad = (int) $central->cantidad - $cantidad;
+
+        // Actualizar la cantidad y el status si es necesario
+        DB::table('almacenes_centrales')
+            ->where('id', $central->id)
+            ->update([
+                'cantidad' => $nuevaCantidad,
+                'status' => $nuevaCantidad > 0,
+                'updated_at' => now(),
+            ]);
+    }
 }

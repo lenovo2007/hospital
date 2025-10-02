@@ -1232,18 +1232,18 @@ paths:
     post:
       summary: Registrar salida desde almacén central
       description: |
-        Registra una salida de múltiples lotes desde el almacén central hacia un almacén de destino.
+        Registra un movimiento de salida desde almacén central hacia un almacén de destino.
         
         **Funcionalidad:**
-        - Crea un grupo de lotes con un código único (`codigo_grupo`)
-        - Genera un movimiento de stock con estado "pendiente"
-        - Reduce el stock en el almacén central
-        - Valida que haya stock suficiente para todos los lotes
+        - Crea un grupo de lotes con un código único (`codigo_grupo`) en la tabla `lotes_grupos`
+        - Genera un movimiento de stock con estado "pendiente" en la tabla `movimientos_stock`
+        - Registra la suma total de cantidades de todos los items en el campo `cantidad`
+        - No modifica stock físico (solo registra el movimiento)
         
-        **Validaciones:**
-        - Todos los lotes deben existir en el almacén central
-        - Debe haber stock suficiente para cada lote
-        - Los IDs de hospital y sede deben ser válidos
+        **Campos requeridos:**
+        - IDs de hospital y sede de origen y destino
+        - Tipos de almacén de origen y destino
+        - Lista de items con lote_id y cantidad
         
         **Respuesta exitosa:** Retorna el `codigo_grupo` generado para el movimiento.
       tags: [Movimientos]
@@ -1258,11 +1258,11 @@ paths:
             examples:
               despacho-multiple:
                 value:
-                  origen_almacen_id: 1
                   origen_hospital_id: 1
                   origen_sede_id: 1
                   destino_hospital_id: 2
                   destino_sede_id: 2
+                  origen_almacen_tipo: almacenCent
                   destino_almacen_tipo: almacenPrin
                   tipo_movimiento: despacho
                   fecha_despacho: '2025-09-29'
@@ -1271,7 +1271,7 @@ paths:
                     - lote_id: 1
                       cantidad: 200
                     - lote_id: 2
-                      cantidad: 500
+                      cantidad: 100
       responses:
         '200':
           description: Salida registrada
@@ -1287,29 +1287,25 @@ paths:
                     data:
                       codigo_grupo: cod001
         '422':
-          description: Error de validación o stock insuficiente
+          description: Error de validación de datos
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
               examples:
-                stock-insuficiente:
-                  value:
-                    status: false
-                    mensaje: "Stock insuficiente en el almacén central. Disponible: 50"
-                    data: null
-                lote-no-encontrado:
-                  value:
-                    status: false
-                    mensaje: "No se encontró el registro en el almacén central para el lote especificado."
-                    data: null
                 validacion-error:
                   value:
                     status: false
                     mensaje: "Los datos proporcionados no son válidos."
                     errors:
-                      origen_almacen_id: ["El campo origen almacen id es obligatorio."]
+                      origen_hospital_id: ["El campo origen hospital id es obligatorio."]
+                      origen_almacen_tipo: ["El campo origen almacen tipo es obligatorio."]
                       items: ["El campo items debe contener al menos 1 elementos."]
+                error-inesperado:
+                  value:
+                    status: false
+                    mensaje: "Error inesperado al registrar el movimiento."
+                    data: null
 
   /api/movimiento/principal/entrada:
     post:
@@ -2629,20 +2625,16 @@ components:
     MovimientoCentralSalidaRequest:
       type: object
       required: 
-        - origen_almacen_id
         - origen_hospital_id
         - origen_sede_id
         - destino_hospital_id
         - destino_sede_id
+        - origen_almacen_tipo
         - destino_almacen_tipo
         - tipo_movimiento
         - fecha_despacho
         - items
       properties:
-        origen_almacen_id:
-          type: integer
-          minimum: 1
-          description: ID del almacén central de origen
         origen_hospital_id:
           type: integer
           minimum: 1
@@ -2659,6 +2651,12 @@ components:
           type: integer
           minimum: 1
           description: ID de la sede de destino
+        origen_almacen_tipo:
+          type: string
+          maxLength: 100
+          description: Tipo de almacén de origen
+          example: almacenCent
+          enum: [almacenCent]
         destino_almacen_tipo:
           type: string
           maxLength: 100

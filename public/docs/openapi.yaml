@@ -1929,91 +1929,61 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
-  /api/movimientos-stock/sede/{sede_id}:
+  /api/movimientos-stock/destino_sede/{destino_sede_id}:
     get:
-      summary: Listar movimientos de stock por sede con sus ítems de lote
+      summary: Listar movimientos de stock por sede destino
       tags: [Movimientos]
       security:
         - bearerAuth: []
       parameters:
-        - name: sede_id
+        - name: destino_sede_id
           in: path
           required: true
           schema: { type: integer }
         - name: per_page
           in: query
-          required: false
-          schema: { type: integer, minimum: 1, maximum: 100 }
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
         - name: estado
           in: query
-          required: false
-          schema:
-            type: string
-            enum: [pendiente, completado, inconsistente, cancelado]
-        - name: hospital_id
+          schema: { type: string, enum: [pendiente, completado, inconsistente, cancelado] }
+        - name: destino_hospital_id
           in: query
-          required: false
           schema: { type: integer }
       responses:
         '200':
-          description: Movimientos por sede con sus lotes asociados
+          description: Movimientos de stock por sede destino
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
-              examples:
-                listado-con-detalle-almacenes:
-                  value:
-                    status: true
-                    mensaje: Movimientos de stock por sede.
-                    data:
-                      current_page: 1
-                      data:
-                        - id: 1
-                          tipo: transferencia
-                          tipo_movimiento: despacho
-                          hospital_id: 1
-                          hospital:
-                            id: 1
-                            nombre: Hospital Central
-                          sede_id: 1
-                          sede:
-                            id: 1
-                            nombre: Sede Principal
-                          origen_almacen_tipo: almacenCent
-                          origen_almacen_id: 2
-                          origen_almacen_nombre: Almacén Central
-                          origen_almacen_detalle:
-                            id: 2
-                            cantidad: 500
-                          destino_almacen_tipo: almacenPrin
-                          destino_almacen_id: null
-                          destino_almacen_nombre: Almacén Principal
-                          destino_almacen_detalle: null
-                          cantidad: 500
-                          fecha_despacho: '2025-09-29T00:00:00Z'
-                          estado: pendiente
-                          codigo_grupo: cod001
-                          lotes_grupos:
-                            - id: 10
-                              codigo: cod001
-                              lote_id: 2
-                              cantidad: 500
-                              status: activo
-                              lote:
-                                id: 2
-                                codigo: LOTE-002
-                                insumo_id: 45
-                                fecha_vencimiento: '2026-01-31'
-                                insumo:
-                                  id: 45
-                                  nombre: Mascarilla quirúrgica
-                                  presentacion: caja de 50 unidades
-                      total: 1
-                      per_page: 15
-                      last_page: 1
-                      from: 1
-                      to: 1
+
+  /api/movimientos-stock/origen_sede/{origen_sede_id}:
+    get:
+      summary: Listar movimientos de stock por sede origen
+      tags: [Movimientos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: origen_sede_id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: per_page
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+        - name: estado
+          in: query
+          schema: { type: string, enum: [pendiente, completado, inconsistente, cancelado] }
+        - name: origen_hospital_id
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Movimientos de stock por sede origen
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
 
   /api/movimientos-stock/discrepancias:
     get:
@@ -2722,27 +2692,49 @@ components:
 
     MovimientoStockRequest:
       type: object
+      required:
+        - tipo
+        - tipo_movimiento
+        - destino_hospital_id
+        - destino_sede_id
+        - origen_almacen_tipo
+        - origen_almacen_id
+        - destino_almacen_tipo
+        - destino_almacen_id
+        - cantidad
       properties:
         tipo:
           type: string
+          maxLength: 50
           example: transferencia
         tipo_movimiento:
           type: string
+          maxLength: 50
           example: despacho
-        hospital_id:
+        origen_hospital_id:
+          type: integer
+          nullable: true
+          minimum: 1
+        origen_sede_id:
+          type: integer
+          nullable: true
+          minimum: 1
+        destino_hospital_id:
           type: integer
           minimum: 1
-        sede_id:
+        destino_sede_id:
           type: integer
           minimum: 1
         origen_almacen_tipo:
           type: string
+          maxLength: 100
           example: almacenCent
         origen_almacen_id:
           type: integer
           minimum: 0
         destino_almacen_tipo:
           type: string
+          maxLength: 100
           example: almacenPrin
         destino_almacen_id:
           type: integer
@@ -2759,7 +2751,7 @@ components:
           maxLength: 500
         fecha_recepcion:
           type: string
-          format: date-time
+          format: date
           nullable: true
         observaciones_recepcion:
           type: string
@@ -2775,11 +2767,10 @@ components:
         user_id:
           type: integer
           minimum: 1
-          nullable: true
         user_id_receptor:
           type: integer
-          minimum: 1
           nullable: true
+          minimum: 1
 
     MovimientoDiscrepanciaRequest:
       type: object

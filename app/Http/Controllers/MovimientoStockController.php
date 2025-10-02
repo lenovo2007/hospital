@@ -90,17 +90,12 @@ class MovimientoStockController extends Controller
             $almacenDestino = $this->resolveAlmacenInfo($movimiento->destino_almacen_tipo, $movimiento->destino_almacen_id);
 
             $movimiento->origen_almacen_nombre = $almacenOrigen['nombre'] ?? null;
-            $movimiento->origen_almacen_detalle = $almacenOrigen['detalle'];
             $movimiento->destino_almacen_nombre = $almacenDestino['nombre'] ?? null;
-            $movimiento->destino_almacen_detalle = $almacenDestino['detalle'];
 
             $movimiento->destino_hospital = $movimiento->destinoHospital;
             $movimiento->destino_sede = $movimiento->destinoSede;
             $movimiento->origen_hospital = $movimiento->origenHospital;
             $movimiento->origen_sede = $movimiento->origenSede;
-
-            $movimiento->hospital = $movimiento->destinoHospital;
-            $movimiento->sede = $movimiento->destinoSede;
 
             return $movimiento;
         });
@@ -158,17 +153,12 @@ class MovimientoStockController extends Controller
             $almacenDestino = $this->resolveAlmacenInfo($movimiento->destino_almacen_tipo, $movimiento->destino_almacen_id);
 
             $movimiento->origen_almacen_nombre = $almacenOrigen['nombre'] ?? null;
-            $movimiento->origen_almacen_detalle = $almacenOrigen['detalle'];
             $movimiento->destino_almacen_nombre = $almacenDestino['nombre'] ?? null;
-            $movimiento->destino_almacen_detalle = $almacenDestino['detalle'];
 
             $movimiento->destino_hospital = $movimiento->destinoHospital;
             $movimiento->destino_sede = $movimiento->destinoSede;
             $movimiento->origen_hospital = $movimiento->origenHospital;
             $movimiento->origen_sede = $movimiento->origenSede;
-
-            $movimiento->hospital = $movimiento->destinoHospital;
-            $movimiento->sede = $movimiento->destinoSede;
 
             return $movimiento;
         });

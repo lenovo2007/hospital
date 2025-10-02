@@ -1244,7 +1244,10 @@ paths:
             examples:
               despacho-multiple:
                 value:
-                  origen_central_id: 1
+                  origen_almacen_id: 1
+                  origen_almacen_tipo: almacenCent
+                  destino_almacen_tipo: almacenPrin
+                  destino_almacen_id: 3
                   hospital_id: 1
                   sede_id: 1
                   tipo_movimiento: despacho
@@ -2570,10 +2573,21 @@ components:
 
     MovimientoCentralSalidaRequest:
       type: object
-      required: [origen_central_id, hospital_id, sede_id, tipo_movimiento, fecha_despacho, items]
+      required: [origen_almacen_id, hospital_id, sede_id, tipo_movimiento, fecha_despacho, items, destino_almacen_tipo]
       properties:
-        origen_central_id:
+        origen_almacen_id:
           type: integer
+          minimum: 1
+        origen_almacen_tipo:
+          type: string
+          nullable: true
+          example: almacenCent
+        destino_almacen_tipo:
+          type: string
+          example: almacenPrin
+        destino_almacen_id:
+          type: integer
+          nullable: true
           minimum: 1
         hospital_id:
           type: integer

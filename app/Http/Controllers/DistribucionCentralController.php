@@ -14,7 +14,10 @@ class DistribucionCentralController extends Controller
 {
     // POST /api/movimiento/central/salida
     // {
-    //   "origen_central_id": 1,
+    //   "origen_almacen_id": 1,
+    //   "origen_almacen_tipo": "almacenCent",
+    //   "destino_almacen_tipo": "almacenPrin",
+    //   "destino_almacen_id": 2,
     //   "hospital_id": 1,
     //   "sede_id": 2,
     //   "items": [ { "lote_id": 123, "cantidad": 100 } ]
@@ -22,7 +25,10 @@ class DistribucionCentralController extends Controller
     public function salida(Request $request)
     {
         $data = $request->validate([
-            'origen_central_id' => ['required','integer','min:1'],
+            'origen_almacen_id' => ['required','integer','min:1'],
+            'origen_almacen_tipo' => ['nullable','string','max:100'],
+            'destino_almacen_tipo' => ['required','string','max:100'],
+            'destino_almacen_id' => ['sometimes','integer','min:1'],
             'hospital_id' => ['required','integer','min:1'],
             'sede_id' => ['required','integer','min:1'],
             'tipo_movimiento' => ['required','string','max:50'],
@@ -37,20 +43,23 @@ class DistribucionCentralController extends Controller
 
         $codigoGrupo = null;
 
+        $origenAlmacenTipo = $data['origen_almacen_tipo'] ?? 'almacenCent';
+
         try {
-            DB::transaction(function () use ($data, $userId, &$codigoGrupo) {
+            DB::transaction(function () use ($data, $userId, &$codigoGrupo, $origenAlmacenTipo) {
                 // Crear grupo de lote para los items del movimiento
                 [$codigoGrupo, $grupoItems] = LoteGrupo::crearGrupo($data['items']);
 
                 $totalCantidad = 0;
-                $centralIds = [];
+                $origenDetectadoIds = [];
 
                 foreach ($data['items'] as $it) {
                     $loteId = (int) $it['lote_id'];
                     $cantidad = (int) $it['cantidad'];
 
-                    $transferResult = $this->transferirDesdeCentral(
-                        origenId: (int) $data['origen_central_id'],
+                    $transferResult = $this->transferirDesdeAlmacen(
+                        tipoAlmacen: $origenAlmacenTipo,
+                        origenId: (int) $data['origen_almacen_id'],
                         destinoSedeId: (int) $data['sede_id'],
                         hospitalId: (int) $data['hospital_id'],
                         loteId: $loteId,
@@ -58,22 +67,26 @@ class DistribucionCentralController extends Controller
                     );
 
                     $totalCantidad += $cantidad;
-                    $centralIds[] = $transferResult['central_id'];
+                    if (isset($transferResult['origen_id'])) {
+                        $origenDetectadoIds[] = $transferResult['origen_id'];
+                    }
                 }
 
-                $origenAlmacenId = !empty($centralIds)
-                    ? (count(array_unique($centralIds)) === 1 ? $centralIds[0] : (int) $data['origen_central_id'])
-                    : (int) $data['origen_central_id'];
+                $origenAlmacenId = !empty($origenDetectadoIds)
+                    ? (count(array_unique($origenDetectadoIds)) === 1 ? $origenDetectadoIds[0] : (int) $data['origen_almacen_id'])
+                    : (int) $data['origen_almacen_id'];
+
+                $destinoAlmacenId = (int) ($data['destino_almacen_id'] ?? $data['sede_id']);
 
                 MovimientoStock::create([
                     'tipo' => 'transferencia',
                     'tipo_movimiento' => $data['tipo_movimiento'],
                     'hospital_id' => (int) $data['hospital_id'],
                     'sede_id' => (int) $data['sede_id'],
-                    'origen_almacen_tipo' => 'almacenCent',
+                    'origen_almacen_tipo' => $origenAlmacenTipo,
                     'origen_almacen_id' => $origenAlmacenId,
-                    'destino_almacen_tipo' => 'almacenPrin',
-                    'destino_almacen_id' => (int) $data['sede_id'],
+                    'destino_almacen_tipo' => $data['destino_almacen_tipo'],
+                    'destino_almacen_id' => $destinoAlmacenId,
                     'cantidad' => $totalCantidad,
                     'fecha_despacho' => $data['fecha_despacho'],
                     'observaciones' => $data['observaciones'] ?? null,
@@ -109,6 +122,20 @@ class DistribucionCentralController extends Controller
                 'data' => null,
             ], 200);
         }
+    }
+
+    private function transferirDesdeAlmacen(string $tipoAlmacen, int $origenId, int $destinoSedeId, int $hospitalId, int $loteId, int $cantidad): array
+    {
+        return match ($tipoAlmacen) {
+            'almacenCent' => $this->transferirDesdeCentral(
+                origenId: $origenId,
+                destinoSedeId: $destinoSedeId,
+                hospitalId: $hospitalId,
+                loteId: $loteId,
+                cantidad: $cantidad
+            ),
+            default => throw new StockException('Tipo de almacén de origen no soportado: ' . $tipoAlmacen),
+        };
     }
 
     private function transferirDesdeCentral(int $origenId, int $destinoSedeId, int $hospitalId, int $loteId, int $cantidad): array
@@ -147,7 +174,7 @@ class DistribucionCentralController extends Controller
             ]);
 
         return [
-            'central_id' => (int) $central->id,
+            'origen_id' => (int) $central->id,
             'destino_id' => null,
         ];
     }

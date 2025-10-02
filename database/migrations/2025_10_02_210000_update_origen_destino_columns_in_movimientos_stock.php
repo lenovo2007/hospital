@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -10,10 +11,8 @@ return new class extends Migration
     {
         Schema::table('movimientos_stock', function (Blueprint $table) {
             if (Schema::hasColumn('movimientos_stock', 'hospital_id')) {
-                try {
+                if ($this->indexExists('movimientos_stock', 'mov_stock_tipo_hosp_idx')) {
                     $table->dropIndex('mov_stock_tipo_hosp_idx');
-                } catch (\Throwable $e) {
-                    // ignore if index does not exist
                 }
             }
         });
@@ -44,10 +43,8 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('movimientos_stock', function (Blueprint $table) {
-            try {
+            if ($this->indexExists('movimientos_stock', 'mov_stock_tipo_destino_hosp_idx')) {
                 $table->dropIndex('mov_stock_tipo_destino_hosp_idx');
-            } catch (\Throwable $e) {
-                // ignore if index does not exist
             }
         });
 
@@ -72,5 +69,20 @@ return new class extends Migration
                 $table->index(['tipo', 'hospital_id'], 'mov_stock_tipo_hosp_idx');
             }
         });
+    }
+
+    private function indexExists(string $table, string $index): bool
+    {
+        $database = DB::getDatabaseName();
+
+        $result = DB::selectOne(
+            'SELECT COUNT(1) AS total
+             FROM information_schema.statistics
+             WHERE table_schema = ? AND table_name = ? AND index_name = ?
+             LIMIT 1',
+            [$database, $table, $index]
+        );
+
+        return (int) ($result->total ?? 0) > 0;
     }
 };

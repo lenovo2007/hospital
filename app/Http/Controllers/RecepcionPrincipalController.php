@@ -16,13 +16,12 @@ class RecepcionPrincipalController extends Controller
     public function recibir(Request $request)
     {
         $data = $request->validate([
-            'codigo_grupo' => ['required', 'string', 'max:50'],
-            'hospital_id' => ['required', 'integer', 'min:1'],
-            'sede_id' => ['required', 'integer', 'min:1'],
-            'observaciones_recepcion' => ['nullable', 'string', 'max:500'],
-            'items' => ['nullable', 'array', 'min:1'],
-            'items.*.lote_id' => ['required_with:items', 'integer', 'min:1'],
-            'items.*.cantidad' => ['required_with:items', 'integer', 'min:0'],
+            'movimiento_stock_id' => ['required', 'integer', 'min:1'],
+            'fecha_recepcion' => ['required', 'date'],
+            'user_id_receptor' => ['required', 'integer', 'min:1'],
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.lote_id' => ['required', 'integer', 'min:1'],
+            'items.*.cantidad' => ['required', 'integer', 'min:1'],
         ]);
 
         $userId = (int) $request->user()->id;
@@ -33,19 +32,17 @@ class RecepcionPrincipalController extends Controller
 
         try {
             DB::transaction(function () use ($data, $userId, &$resultado) {
-                $movimiento = MovimientoStock::where('codigo_grupo', $data['codigo_grupo'])
+                // Buscar el movimiento por ID
+                $movimiento = MovimientoStock::where('id', $data['movimiento_stock_id'])
                     ->where('estado', 'pendiente')
                     ->lockForUpdate()
                     ->first();
 
                 if (!$movimiento) {
-                    throw new InvalidArgumentException('No existe un movimiento pendiente con el código indicado.');
+                    throw new InvalidArgumentException('No existe un movimiento pendiente con el ID indicado.');
                 }
 
-                if ((int) $movimiento->hospital_id !== (int) $data['hospital_id'] || (int) $movimiento->sede_id !== (int) $data['sede_id']) {
-                    throw new InvalidArgumentException('El movimiento no corresponde al hospital o sede proporcionados.');
-                }
-
+                // Buscar los lotes grupos asociados al movimiento
                 $itemsEsperados = LoteGrupo::where('codigo', $movimiento->codigo_grupo)
                     ->where('status', 'activo')
                     ->lockForUpdate()
@@ -58,20 +55,12 @@ class RecepcionPrincipalController extends Controller
                 $mapaEsperado = [];
                 foreach ($itemsEsperados as $item) {
                     $mapaEsperado[(int) $item->lote_id] = [
-                        'cantidad' => (int) $item->cantidad,
+                        'cantidad' => (int) $item->cantidad_salida,
                         'modelo' => $item,
                     ];
                 }
 
-                $itemsRecibidos = $data['items'] ?? [];
-                if (empty($itemsRecibidos)) {
-                    foreach ($mapaEsperado as $loteId => $info) {
-                        $itemsRecibidos[] = [
-                            'lote_id' => $loteId,
-                            'cantidad' => $info['cantidad'],
-                        ];
-                    }
-                }
+                $itemsRecibidos = $data['items'];
 
                 $mapaRecibido = [];
                 foreach ($itemsRecibidos as $item) {
@@ -111,8 +100,8 @@ class RecepcionPrincipalController extends Controller
 
                     $registroDestino = DB::table('almacenes_principales')
                         ->where([
-                            'hospital_id' => (int) $data['hospital_id'],
-                            'sede_id' => (int) $data['sede_id'],
+                            'hospital_id' => $movimiento->destino_hospital_id,
+                            'sede_id' => $movimiento->destino_sede_id,
                             'lote_id' => $loteId,
                         ])
                         ->lockForUpdate()
@@ -129,8 +118,8 @@ class RecepcionPrincipalController extends Controller
                             ]);
                     } else {
                         DB::table('almacenes_principales')->insert([
-                            'hospital_id' => (int) $data['hospital_id'],
-                            'sede_id' => (int) $data['sede_id'],
+                            'hospital_id' => $movimiento->destino_hospital_id,
+                            'sede_id' => $movimiento->destino_sede_id,
                             'lote_id' => $loteId,
                             'cantidad' => $cantidad,
                             'status' => $cantidad > 0 ? 1 : 0,
@@ -139,7 +128,17 @@ class RecepcionPrincipalController extends Controller
                         ]);
                     }
 
-                    $info['modelo']->update(['status' => 'inactivo']);
+                    // Actualizar cantidad_entrada en el lote grupo
+                    $info['modelo']->update([
+                        'cantidad_entrada' => $cantidad,
+                        'status' => 'completado'
+                    ]);
+                }
+
+                // Calcular cantidad total de entrada para el movimiento
+                $totalCantidadEntrada = 0;
+                foreach ($itemsRecibidos as $item) {
+                    $totalCantidadEntrada += (int) $item['cantidad'];
                 }
 
                 $estadoFinal = empty($discrepancias) ? 'completado' : 'inconsistente';
@@ -150,15 +149,15 @@ class RecepcionPrincipalController extends Controller
                         'lote_id' => $detalle['lote_id'] ?: null,
                         'cantidad_esperada' => $detalle['cantidad_esperada'],
                         'cantidad_recibida' => $detalle['cantidad_recibida'],
-                        'observaciones' => $data['observaciones_recepcion'] ?? null,
+                        'observaciones' => null,
                     ]);
                 }
 
                 $movimiento->update([
                     'estado' => $estadoFinal,
-                    'fecha_recepcion' => now(),
-                    'observaciones_recepcion' => $data['observaciones_recepcion'] ?? null,
-                    'user_id_receptor' => $userId,
+                    'fecha_recepcion' => $data['fecha_recepcion'],
+                    'cantidad_entrada' => $totalCantidadEntrada,
+                    'user_id_receptor' => $data['user_id_receptor'],
                 ]);
 
                 $resultado['estado'] = $estadoFinal;

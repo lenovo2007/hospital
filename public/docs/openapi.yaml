@@ -1326,7 +1326,16 @@ paths:
   /api/movimiento/principal/entrada:
     post:
       summary: Confirmar recepción en almacén principal
-      description: Valida las cantidades recibidas, actualiza el estado del movimiento y registra discrepancias automáticas.
+      description: |
+        Confirma la recepción de un movimiento de stock en el almacén principal.
+        
+        **Funcionalidad:**
+        - Actualiza el campo `cantidad_entrada` en la tabla `lotes_grupos`
+        - Actualiza el campo `cantidad_entrada` en la tabla `movimientos_stock` 
+        - Registra la fecha de recepción y usuario receptor
+        - Actualiza el stock en `almacenes_principales`
+        - Cambia el status de lotes_grupos a 'completado'
+        - Genera discrepancias automáticas si las cantidades no coinciden
       tags: [Movimientos]
       security:
         - bearerAuth: []
@@ -1339,26 +1348,24 @@ paths:
             examples:
               recepcion-completa:
                 value:
-                  codigo_grupo: cod001
-                  hospital_id: 1
-                  sede_id: 1
-                  observaciones_recepcion: ''
+                  movimiento_stock_id: 1
+                  fecha_recepcion: "2025-10-02"
+                  user_id_receptor: 3
                   items:
                     - lote_id: 1
                       cantidad: 200
                     - lote_id: 2
-                      cantidad: 500
+                      cantidad: 100
               recepcion-con-discrepancia:
                 value:
-                  codigo_grupo: cod001
-                  hospital_id: 1
-                  sede_id: 1
-                  observaciones_recepcion: 'Faltó una caja del lote 2'
+                  movimiento_stock_id: 1
+                  fecha_recepcion: "2025-10-02"
+                  user_id_receptor: 3
                   items:
                     - lote_id: 1
                       cantidad: 200
                     - lote_id: 2
-                      cantidad: 450
+                      cantidad: 80
       responses:
         '200':
           description: Recepción registrada (con o sin discrepancias)
@@ -2712,24 +2719,24 @@ components:
 
     MovimientoPrincipalEntradaRequest:
       type: object
-      required: [codigo_grupo, hospital_id, sede_id]
+      required: [movimiento_stock_id, fecha_recepcion, user_id_receptor, items]
       properties:
-        codigo_grupo:
-          type: string
-          maxLength: 50
-        hospital_id:
+        movimiento_stock_id:
           type: integer
           minimum: 1
-        sede_id:
+          description: ID del movimiento de stock a recibir
+        fecha_recepcion:
+          type: string
+          format: date
+          description: Fecha de recepción de los items
+        user_id_receptor:
           type: integer
           minimum: 1
-        observaciones_recepcion:
-          type: string
-          nullable: true
-          maxLength: 500
+          description: ID del usuario que recibe los items
         items:
           type: array
-          description: Si se omite, se asumirán las cantidades esperadas del despacho.
+          minItems: 1
+          description: Lista de lotes recibidos con sus cantidades
           items:
             type: object
             required: [lote_id, cantidad]
@@ -2737,9 +2744,11 @@ components:
               lote_id:
                 type: integer
                 minimum: 1
+                description: ID del lote recibido
               cantidad:
                 type: integer
-                minimum: 0
+                minimum: 1
+                description: Cantidad recibida del lote
 
     MovimientoPrincipalEntradaResponse:
       type: object

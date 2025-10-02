@@ -70,7 +70,7 @@ class MovimientoStockController extends Controller
             : collect();
 
         $lotesPorId = $loteIds->isNotEmpty()
-            ? Lote::whereIn('id', $loteIds)->get()->keyBy('id')
+            ? Lote::with('insumo')->whereIn('id', $loteIds)->get()->keyBy('id')
             : collect();
 
         $movimientos->getCollection()->transform(function (MovimientoStock $movimiento) use ($lotesPorCodigo, $lotesPorId) {

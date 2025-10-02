@@ -77,7 +77,7 @@ class DistribucionCentralController extends Controller
                     'origen_almacen_tipo' => 'almacenCent',
                     'origen_almacen_id' => $origenAlmacenId,
                     'destino_almacen_tipo' => $data['destino_almacen_tipo'],
-                    'destino_almacen_id' => (int) $data['sede_id'],
+                    'destino_almacen_id' => null,
                     'cantidad' => $totalCantidad,
                     'fecha_despacho' => $data['fecha_despacho'],
                     'observaciones' => $data['observaciones'] ?? null,

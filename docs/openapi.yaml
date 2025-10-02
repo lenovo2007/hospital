@@ -1712,6 +1712,181 @@ paths:
                 $ref: '#/components/schemas/StandardResponse'
 
   # ========================================
+  # MOVIMIENTOS DE STOCK
+  # ========================================
+  /api/movimientos-stock:
+    get:
+      summary: Listar movimientos de stock
+      tags: [Movimientos Stock]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: per_page
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+        - name: estado
+          in: query
+          schema: { type: string, enum: [pendiente, completado, inconsistente, cancelado] }
+        - name: destino_hospital_id
+          in: query
+          schema: { type: integer }
+        - name: destino_sede_id
+          in: query
+          schema: { type: integer }
+        - name: origen_hospital_id
+          in: query
+          schema: { type: integer }
+        - name: origen_sede_id
+          in: query
+          schema: { type: integer }
+        - name: codigo_grupo
+          in: query
+          schema: { type: string }
+      responses:
+        '200':
+          description: Listado de movimientos de stock
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+    post:
+      summary: Crear movimiento de stock
+      tags: [Movimientos Stock]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MovimientoStockRequest'
+      responses:
+        '201':
+          description: Movimiento de stock creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/movimientos-stock/{id}:
+    get:
+      summary: Ver detalle de movimiento de stock
+      tags: [Movimientos Stock]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Detalle del movimiento de stock
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+    put:
+      summary: Actualizar movimiento de stock
+      tags: [Movimientos Stock]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MovimientoStockRequest'
+      responses:
+        '200':
+          description: Movimiento de stock actualizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+    delete:
+      summary: Eliminar movimiento de stock
+      tags: [Movimientos Stock]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Movimiento de stock eliminado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/movimientos-stock/destino_sede/{destino_sede_id}:
+    get:
+      summary: Listar movimientos de stock por sede destino
+      tags: [Movimientos Stock]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: destino_sede_id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: per_page
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+        - name: estado
+          in: query
+          schema: { type: string, enum: [pendiente, completado, inconsistente, cancelado] }
+        - name: destino_hospital_id
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Movimientos de stock por sede destino
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/movimientos-stock/origen_sede/{origen_sede_id}:
+    get:
+      summary: Listar movimientos de stock por sede origen
+      tags: [Movimientos Stock]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: origen_sede_id
+          in: path
+          required: true
+          schema: { type: integer }
+        - name: per_page
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+        - name: estado
+          in: query
+          schema: { type: string, enum: [pendiente, completado, inconsistente, cancelado] }
+        - name: origen_hospital_id
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Movimientos de stock por sede origen
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  # ========================================
   # MOVIMIENTOS Y DISTRIBUCIÓN
   # ========================================
   /api/movimiento/central:
@@ -2182,3 +2357,81 @@ components:
       properties:
         lote_ids: { type: array, items: { type: integer } }
         estrategia: { type: string, enum: [porcentaje] }
+
+    MovimientoStockRequest:
+      type: object
+      required:
+        - tipo
+        - tipo_movimiento
+        - destino_hospital_id
+        - destino_sede_id
+        - origen_almacen_tipo
+        - origen_almacen_id
+        - destino_almacen_tipo
+        - destino_almacen_id
+        - cantidad
+      properties:
+        tipo:
+          type: string
+          maxLength: 50
+        tipo_movimiento:
+          type: string
+          maxLength: 50
+        origen_hospital_id:
+          type: integer
+          nullable: true
+          minimum: 1
+        origen_sede_id:
+          type: integer
+          nullable: true
+          minimum: 1
+        destino_hospital_id:
+          type: integer
+          minimum: 1
+        destino_sede_id:
+          type: integer
+          minimum: 1
+        origen_almacen_tipo:
+          type: string
+          maxLength: 100
+        origen_almacen_id:
+          type: integer
+          minimum: 0
+        destino_almacen_tipo:
+          type: string
+          maxLength: 100
+        destino_almacen_id:
+          type: integer
+          minimum: 0
+        cantidad:
+          type: integer
+          minimum: 0
+        fecha_despacho:
+          type: string
+          format: date
+        observaciones:
+          type: string
+          nullable: true
+          maxLength: 500
+        fecha_recepcion:
+          type: string
+          format: date
+          nullable: true
+        observaciones_recepcion:
+          type: string
+          nullable: true
+          maxLength: 500
+        estado:
+          type: string
+          enum: [pendiente, completado, inconsistente, cancelado]
+        codigo_grupo:
+          type: string
+          nullable: true
+          maxLength: 50
+        user_id:
+          type: integer
+          minimum: 1
+        user_id_receptor:
+          type: integer
+          nullable: true
+          minimum: 1

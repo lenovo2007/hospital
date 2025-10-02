@@ -2,8 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AlmacenCentral;
+use App\Models\AlmacenFarmacia;
+use App\Models\AlmacenParalelo;
+use App\Models\AlmacenPrincipal;
+use App\Models\AlmacenServiciosApoyo;
+use App\Models\AlmacenServiciosAtenciones;
+use App\Models\Hospital;
 use App\Models\LoteGrupo;
 use App\Models\MovimientoStock;
+use App\Models\Sede;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -37,7 +46,8 @@ class MovimientoStockController extends Controller
         $perPage = (int) $request->query('per_page', 50);
         $perPage = $perPage > 0 ? min($perPage, 100) : 50;
 
-        $query = MovimientoStock::where('sede_id', $sedeId)
+        $query = MovimientoStock::with(['hospital', 'sede', 'usuario', 'usuarioReceptor'])
+            ->where('sede_id', $sedeId)
             ->when($request->filled('estado'), fn ($q) => $q->where('estado', $request->estado))
             ->when($request->filled('hospital_id'), fn ($q) => $q->where('hospital_id', $request->hospital_id))
             ->orderByDesc('created_at');
@@ -54,9 +64,20 @@ class MovimientoStockController extends Controller
             ? LoteGrupo::whereIn('codigo', $codigos)->get()->groupBy('codigo')
             : collect();
 
-        $movimientos->getCollection()->transform(function ($movimiento) use ($lotesPorCodigo) {
+        $movimientos->getCollection()->transform(function (MovimientoStock $movimiento) use ($lotesPorCodigo) {
             $codigo = $movimiento->codigo_grupo;
-            $movimiento->lotes_grupos = $codigo ? ($lotesPorCodigo->get($codigo) ?? collect()) : collect();
+            $movimiento->lotes_grupos = $codigo
+                ? ($lotesPorCodigo->get($codigo)?->values() ?? collect())
+                : collect();
+
+            $almacenOrigen = $this->resolveAlmacenInfo($movimiento->origen_almacen_tipo, $movimiento->origen_almacen_id);
+            $almacenDestino = $this->resolveAlmacenInfo($movimiento->destino_almacen_tipo, $movimiento->destino_almacen_id);
+
+            $movimiento->origen_almacen_nombre = $almacenOrigen['nombre'] ?? null;
+            $movimiento->origen_almacen_detalle = $almacenOrigen['detalle'];
+            $movimiento->destino_almacen_nombre = $almacenDestino['nombre'] ?? null;
+            $movimiento->destino_almacen_detalle = $almacenDestino['detalle'];
+
             return $movimiento;
         });
 
@@ -65,6 +86,53 @@ class MovimientoStockController extends Controller
             'mensaje' => 'Movimientos de stock por sede.',
             'data' => $movimientos,
         ]);
+    }
+
+    private function resolveAlmacenInfo(?string $tipo, $id): array
+    {
+        if (!$tipo || !$id) {
+            return [
+                'nombre' => $tipo ? $this->mapAlmacenNombre($tipo) : null,
+                'detalle' => null,
+            ];
+        }
+
+        $map = [
+            'almacenCent' => [AlmacenCentral::class, 'Almacén Central'],
+            'almacenPrin' => [AlmacenPrincipal::class, 'Almacén Principal'],
+            'almacenFarm' => [AlmacenFarmacia::class, 'Almacén Farmacia'],
+            'almacenPar' => [AlmacenParalelo::class, 'Almacén Paralelo'],
+            'almacenServApoyo' => [AlmacenServiciosApoyo::class, 'Almacén Servicios de Apoyo'],
+            'almacenServAtencion' => [AlmacenServiciosAtenciones::class, 'Almacén Servicios de Atención'],
+        ];
+
+        if (!array_key_exists($tipo, $map)) {
+            return [
+                'nombre' => ucfirst(str_replace('_', ' ', $tipo)),
+                'detalle' => null,
+            ];
+        }
+
+        [$model, $nombre] = $map[$tipo];
+        $registro = $model::query()->find($id);
+
+        return [
+            'nombre' => $nombre,
+            'detalle' => $registro,
+        ];
+    }
+
+    private function mapAlmacenNombre(string $tipo): ?string
+    {
+        return match ($tipo) {
+            'almacenCent' => 'Almacén Central',
+            'almacenPrin' => 'Almacén Principal',
+            'almacenFarm' => 'Almacén Farmacia',
+            'almacenPar' => 'Almacén Paralelo',
+            'almacenServApoyo' => 'Almacén Servicios de Apoyo',
+            'almacenServAtencion' => 'Almacén Servicios de Atención',
+            default => null,
+        };
     }
 
     public function show(MovimientoStock $movimientos_stock)

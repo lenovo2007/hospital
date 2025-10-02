@@ -15,12 +15,14 @@ class LoteGrupo extends Model
     protected $fillable = [
         'codigo',
         'lote_id',
-        'cantidad',
+        'cantidad_salida',
+        'cantidad_entrada',
         'status',
     ];
 
     protected $casts = [
-        'cantidad' => 'integer',
+        'cantidad_salida' => 'integer',
+        'cantidad_entrada' => 'integer',
     ];
 
     /**
@@ -61,7 +63,8 @@ class LoteGrupo extends Model
             $grupoItem = self::create([
                 'codigo' => $codigo,
                 'lote_id' => $item['lote_id'],
-                'cantidad' => $item['cantidad'],
+                'cantidad_salida' => $item['cantidad'],
+                'cantidad_entrada' => 0,
                 'status' => 'activo',
             ]);
 

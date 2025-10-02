@@ -20,7 +20,8 @@ class MovimientoStock extends Model
         'origen_almacen_id',
         'destino_almacen_tipo',
         'destino_almacen_id',
-        'cantidad',
+        'cantidad_salida',
+        'cantidad_entrada',
         'fecha_despacho',
         'observaciones',
         'fecha_recepcion',
@@ -32,7 +33,8 @@ class MovimientoStock extends Model
     ];
 
     protected $casts = [
-        'cantidad' => 'integer',
+        'cantidad_salida' => 'integer',
+        'cantidad_entrada' => 'integer',
         'fecha_despacho' => 'datetime',
         'fecha_recepcion' => 'datetime',
     ];

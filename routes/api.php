@@ -23,7 +23,6 @@ use App\Http\Controllers\MovimientoDiscrepanciaController;
 use App\Http\Controllers\RecepcionPrincipalController;
 use App\Http\Controllers\SeguimientoController;
 use App\Http\Controllers\SeguimientoRepartidorController;
-use App\Http\Controllers\SolicitudesFaltantesController;
 use App\Http\Controllers\LoteGrupoController;
 
 // Autenticación con token
@@ -223,8 +222,4 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
     Route::delete('/lote-grupo/{id}', [LoteGrupoController::class, 'destroy']);
     Route::get('/lote-grupo/estadisticas', [LoteGrupoController::class, 'estadisticas']);
 
-    // Solicitudes de faltantes (visibilidad de carencias)
-    Route::get('/solicitudes_faltantes', [SolicitudesFaltantesController::class, 'index']);
-    Route::post('/solicitudes_faltantes', [SolicitudesFaltantesController::class, 'store']);
-    Route::patch('/solicitudes_faltantes/{solicitud}', [SolicitudesFaltantesController::class, 'update']);
 });

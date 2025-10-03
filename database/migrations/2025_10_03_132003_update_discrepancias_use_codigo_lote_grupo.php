@@ -12,15 +12,17 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('movimientos_discrepancias', function (Blueprint $table) {
-            // Eliminar la foreign key y columna lote_id
-            $table->dropForeign(['lote_id']);
-            $table->dropColumn('lote_id');
+            // Verificar si existe la columna lote_id antes de eliminarla
+            if (Schema::hasColumn('movimientos_discrepancias', 'lote_id')) {
+                $table->dropForeign(['lote_id']);
+                $table->dropColumn('lote_id');
+            }
             
-            // Agregar codigo_lote_grupo
-            $table->string('codigo_lote_grupo', 50)->after('movimiento_stock_id');
-            
-            // Agregar foreign key a lotes_grupos
-            $table->foreign('codigo_lote_grupo')->references('codigo')->on('lotes_grupos')->onDelete('cascade');
+            // Agregar codigo_lote_grupo solo si no existe
+            if (!Schema::hasColumn('movimientos_discrepancias', 'codigo_lote_grupo')) {
+                $table->string('codigo_lote_grupo', 50)->after('movimiento_stock_id');
+                $table->foreign('codigo_lote_grupo')->references('codigo')->on('lotes_grupos')->onDelete('cascade');
+            }
         });
     }
 

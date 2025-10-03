@@ -12,12 +12,19 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('movimientos_stock', function (Blueprint $table) {
-            // Renombrar campos
-            $table->renameColumn('cantidad_salida', 'cantidad_salida_total');
-            $table->renameColumn('cantidad_entrada', 'cantidad_entrada_total');
+            // Renombrar campos solo si existen con el nombre anterior
+            if (Schema::hasColumn('movimientos_stock', 'cantidad_salida') && !Schema::hasColumn('movimientos_stock', 'cantidad_salida_total')) {
+                $table->renameColumn('cantidad_salida', 'cantidad_salida_total');
+            }
             
-            // Agregar campo discrepancia_total
-            $table->boolean('discrepancia_total')->default(false)->after('cantidad_entrada_total');
+            if (Schema::hasColumn('movimientos_stock', 'cantidad_entrada') && !Schema::hasColumn('movimientos_stock', 'cantidad_entrada_total')) {
+                $table->renameColumn('cantidad_entrada', 'cantidad_entrada_total');
+            }
+            
+            // Agregar campo discrepancia_total solo si no existe
+            if (!Schema::hasColumn('movimientos_stock', 'discrepancia_total')) {
+                $table->boolean('discrepancia_total')->default(false);
+            }
         });
     }
 

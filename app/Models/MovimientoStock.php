@@ -78,4 +78,9 @@ class MovimientoStock extends Model
     {
         return $this->belongsTo(User::class, 'user_id_receptor');
     }
+
+    public function seguimientos()
+    {
+        return $this->hasMany(Seguimiento::class, 'movimiento_stock_id');
+    }
 }

@@ -8,7 +8,6 @@ use App\Models\MovimientoStock;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use InvalidArgumentException;
 use Throwable;
 
 class DistribucionCentralController extends Controller
@@ -153,55 +152,4 @@ class DistribucionCentralController extends Controller
             ]);
     }
 
-    /**
-     * Marcar un movimiento como entregado
-     */
-    public function marcarEntregado(Request $request)
-    {
-        $data = $request->validate([
-            'movimiento_stock_id' => ['required', 'integer', 'min:1'],
-        ]);
-
-        try {
-            DB::transaction(function () use ($data) {
-                // Buscar el movimiento
-                $movimiento = MovimientoStock::where('id', $data['movimiento_stock_id'])
-                    ->where('estado', 'pendiente')
-                    ->lockForUpdate()
-                    ->first();
-
-                if (!$movimiento) {
-                    throw new InvalidArgumentException('No existe un movimiento pendiente con el ID indicado.');
-                }
-
-                // Actualizar los lotes grupos a estado 'entregado'
-                LoteGrupo::where('codigo', $movimiento->codigo_grupo)
-                    ->where('status', 'activo')
-                    ->update(['status' => 'entregado']);
-
-                // Actualizar el movimiento a estado 'en_transito'
-                $movimiento->update(['estado' => 'en_transito']);
-            });
-
-            return response()->json([
-                'status' => true,
-                'mensaje' => 'Movimiento marcado como entregado.',
-                'data' => null,
-            ], 200);
-        } catch (InvalidArgumentException $e) {
-            return response()->json([
-                'status' => false,
-                'mensaje' => $e->getMessage(),
-                'data' => null,
-            ], 422);
-        } catch (Throwable $e) {
-            report($e);
-
-            return response()->json([
-                'status' => false,
-                'mensaje' => 'Error inesperado al marcar como entregado.',
-                'data' => null,
-            ], 500);
-        }
-    }
 }

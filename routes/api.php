@@ -21,6 +21,7 @@ use App\Http\Controllers\FichaInsumoController;
 use App\Http\Controllers\MovimientoStockController;
 use App\Http\Controllers\MovimientoDiscrepanciaController;
 use App\Http\Controllers\RecepcionPrincipalController;
+use App\Http\Controllers\SeguimientoRepartidorController;
 use App\Http\Controllers\SolicitudesFaltantesController;
 use App\Http\Controllers\LoteGrupoController;
 
@@ -192,8 +193,10 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
     // Distribución desde almacén central hacia principal (hospital)
     Route::post('/movimiento/central/salida', [DistribucionCentralController::class, 'salida']);
     
-    // Marcar movimiento como entregado
-    Route::post('/movimiento/central/entregado', [DistribucionCentralController::class, 'marcarEntregado']);
+    // Seguimiento del repartidor
+    Route::post('/repartidor/seguimiento', [SeguimientoRepartidorController::class, 'actualizarSeguimiento']);
+    Route::get('/repartidor/seguimiento/{movimiento_stock_id}', [SeguimientoRepartidorController::class, 'obtenerSeguimiento']);
+    Route::get('/repartidor/movimientos', [SeguimientoRepartidorController::class, 'movimientosRepartidor']);
 
     // Recepción en almacén principal de una distribución central
     Route::post('/movimiento/principal/entrada', [RecepcionPrincipalController::class, 'recibir']);

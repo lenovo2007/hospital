@@ -21,6 +21,7 @@ use App\Http\Controllers\FichaInsumoController;
 use App\Http\Controllers\MovimientoStockController;
 use App\Http\Controllers\MovimientoDiscrepanciaController;
 use App\Http\Controllers\RecepcionPrincipalController;
+use App\Http\Controllers\SeguimientoController;
 use App\Http\Controllers\SeguimientoRepartidorController;
 use App\Http\Controllers\SolicitudesFaltantesController;
 use App\Http\Controllers\LoteGrupoController;
@@ -192,14 +193,20 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
 
     // Distribución desde almacén central hacia principal (hospital)
     Route::post('/movimiento/central/salida', [DistribucionCentralController::class, 'salida']);
-    
-    // Seguimiento del repartidor
-    Route::post('/repartidor/seguimiento', [SeguimientoRepartidorController::class, 'actualizarSeguimiento']);
-    Route::get('/repartidor/seguimiento/{movimiento_stock_id}', [SeguimientoRepartidorController::class, 'obtenerSeguimiento']);
-    Route::get('/repartidor/movimientos', [SeguimientoRepartidorController::class, 'movimientosRepartidor']);
 
     // Recepción en almacén principal de una distribución central
     Route::post('/movimiento/principal/entrada', [RecepcionPrincipalController::class, 'recibir']);
+
+    // CRUD Seguimientos (Administración)
+    Route::apiResource('seguimientos', SeguimientoController::class);
+    Route::get('/seguimientos/movimiento/{movimiento_stock_id}', [SeguimientoController::class, 'porMovimiento']);
+
+    // Rutas del Repartidor
+    Route::prefix('repartidor')->group(function () {
+        Route::post('/seguimiento', [SeguimientoRepartidorController::class, 'actualizarSeguimiento']);
+        Route::get('/seguimiento/{movimiento_stock_id}', [SeguimientoRepartidorController::class, 'obtenerSeguimiento']);
+        Route::get('/movimientos', [SeguimientoRepartidorController::class, 'movimientosRepartidor']);
+    });
 
     // Distribución interna desde principal hacia farmacia/paralelo/servicios
     Route::post('/distribucion/principal', [DistribucionInternaController::class, 'distribuir']);

@@ -14,9 +14,18 @@ class MovimientoDiscrepanciaController extends Controller
         $perPage = (int) $request->query('per_page', 50);
         $perPage = $perPage > 0 ? min($perPage, 100) : 50;
 
-        $query = MovimientoDiscrepancia::query()
+        $query = MovimientoDiscrepancia::with([
+                'movimientoStock:id,codigo_grupo,estado,fecha_despacho,fecha_recepcion',
+                'movimientoStock.origenHospital:id,nombre',
+                'movimientoStock.origenSede:id,nombre', 
+                'movimientoStock.destinoHospital:id,nombre',
+                'movimientoStock.destinoSede:id,nombre',
+                'loteGrupo:codigo,lote_id,cantidad_salida,cantidad_entrada,discrepancia,status',
+                'loteGrupo.lote:id,codigo,nombre,fecha_vencimiento',
+                'loteGrupo.lote.insumo:id,nombre,descripcion'
+            ])
             ->when($request->filled('movimiento_stock_id'), fn ($q) => $q->where('movimiento_stock_id', $request->movimiento_stock_id))
-            ->when($request->filled('lote_id'), fn ($q) => $q->where('lote_id', $request->lote_id))
+            ->when($request->filled('codigo_lote_grupo'), fn ($q) => $q->where('codigo_lote_grupo', $request->codigo_lote_grupo))
             ->orderByDesc('created_at');
 
         $discrepancias = $query->paginate($perPage);
@@ -30,6 +39,17 @@ class MovimientoDiscrepanciaController extends Controller
 
     public function show(MovimientoDiscrepancia $movimientos_discrepancia)
     {
+        $movimientos_discrepancia->load([
+            'movimientoStock:id,codigo_grupo,estado,fecha_despacho,fecha_recepcion',
+            'movimientoStock.origenHospital:id,nombre',
+            'movimientoStock.origenSede:id,nombre', 
+            'movimientoStock.destinoHospital:id,nombre',
+            'movimientoStock.destinoSede:id,nombre',
+            'loteGrupo:codigo,lote_id,cantidad_salida,cantidad_entrada,discrepancia,status',
+            'loteGrupo.lote:id,codigo,nombre,fecha_vencimiento',
+            'loteGrupo.lote.insumo:id,nombre,descripcion'
+        ]);
+
         return response()->json([
             'status' => true,
             'mensaje' => 'Detalle de la discrepancia.',
@@ -115,7 +135,7 @@ class MovimientoDiscrepanciaController extends Controller
     {
         $rules = [
             'movimiento_stock_id' => [$isCreate ? 'required' : 'sometimes', 'integer', 'min:1'],
-            'lote_id' => ['sometimes', 'nullable', 'integer', 'min:1'],
+            'codigo_lote_grupo' => [$isCreate ? 'required' : 'sometimes', 'string', 'max:50'],
             'cantidad_esperada' => ['sometimes', 'integer', 'min:0'],
             'cantidad_recibida' => ['sometimes', 'integer', 'min:0'],
             'observaciones' => ['sometimes', 'nullable', 'string', 'max:500'],

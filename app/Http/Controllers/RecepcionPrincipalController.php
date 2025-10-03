@@ -156,6 +156,17 @@ class RecepcionPrincipalController extends Controller
                         'discrepancia' => $tieneDiscrepancia,
                         'status' => 'recibido'
                     ]);
+
+                    // Si hay discrepancia, registrarla en la tabla movimientos_discrepancias
+                    if ($tieneDiscrepancia) {
+                        MovimientoDiscrepancia::create([
+                            'movimiento_stock_id' => $movimiento->id,
+                            'codigo_lote_grupo' => $loteGrupo->codigo,
+                            'cantidad_esperada' => $cantidadEsperada,
+                            'cantidad_recibida' => $cantidadRecibida,
+                            'observaciones' => "Discrepancia automática: esperado {$cantidadEsperada}, recibido {$cantidadRecibida}"
+                        ]);
+                    }
                 }
 
                 // Calcular cantidad total de entrada para el movimiento

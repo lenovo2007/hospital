@@ -1334,8 +1334,9 @@ paths:
         - Actualiza el campo `cantidad_entrada` en la tabla `movimientos_stock` 
         - Registra la fecha de recepción y usuario receptor
         - Actualiza el stock en `almacenes_principales`
-        - Cambia el status de lotes_grupos a 'completado'
-        - Genera discrepancias automáticas si las cantidades no coinciden
+        - Cambia el status de lotes_grupos a 'recibido'
+        - Marca `discrepancia = true` en lotes_grupos si cantidad_entrada ≠ cantidad_salida
+        - **Registra automáticamente** discrepancias en tabla `movimientos_discrepancias`
       tags: [Movimientos]
       security:
         - bearerAuth: []
@@ -2489,6 +2490,9 @@ paths:
   # ========================================
   # DISCREPANCIAS
   # ========================================
+  # Las discrepancias se registran automáticamente cuando hay diferencias
+  # entre cantidad_salida y cantidad_entrada en lotes_grupos durante la recepción.
+  # También se pueden registrar manualmente para casos especiales.
   /api/movimientos-stock/discrepancias:
     get:
       summary: Listar discrepancias de movimientos
@@ -2500,12 +2504,19 @@ paths:
         - name: movimiento_stock_id
           in: query
           schema: { type: integer }
-        - name: lote_id
+          description: Filtrar por ID de movimiento
+        - name: codigo_lote_grupo
           in: query
-          schema: { type: integer }
+          schema: { type: string }
+          description: Filtrar por código de lote grupo
+        - name: per_page
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 100, default: 50 }
+          description: Elementos por página
         - name: page
           in: query
           schema: { type: integer }
+          description: Número de página
       responses:
         '200':
           description: Listado paginado de discrepancias
@@ -2529,7 +2540,7 @@ paths:
               nueva-discrepancia:
                 value:
                   movimiento_stock_id: 15
-                  lote_id: 4
+                  codigo_lote_grupo: "LG-2025-001"
                   cantidad_esperada: 100
                   cantidad_recibida: 95
                   observaciones: "Faltaron 5 unidades del lote"
@@ -3086,20 +3097,24 @@ components:
         movimiento_stock_id:
           type: integer
           minimum: 1
-        lote_id:
-          type: integer
-          nullable: true
-          minimum: 1
+          description: ID del movimiento de stock
+        codigo_lote_grupo:
+          type: string
+          maxLength: 50
+          description: Código del lote grupo donde ocurrió la discrepancia
         cantidad_esperada:
           type: integer
           minimum: 0
+          description: Cantidad que se esperaba recibir
         cantidad_recibida:
           type: integer
           minimum: 0
+          description: Cantidad que realmente se recibió
         observaciones:
           type: string
           nullable: true
           maxLength: 500
+          description: Observaciones sobre la discrepancia
 
     FichaInsumoRequest:
       type: object

@@ -64,7 +64,6 @@ class DistribucionCentralController extends Controller
                         $loteId,
                         $cantidad
                     );
-                    
                     $totalCantidad += $cantidad;
                 }
 
@@ -80,8 +79,9 @@ class DistribucionCentralController extends Controller
                     'origen_almacen_id' => null,
                     'destino_almacen_tipo' => $data['destino_almacen_tipo'],
                     'destino_almacen_id' => null,
-                    'cantidad_salida' => $totalCantidad,
-                    'cantidad_entrada' => 0,
+                    'cantidad_salida_total' => $totalCantidad,
+                    'cantidad_entrada_total' => 0,
+                    'discrepancia_total' => false,
                     'fecha_despacho' => $data['fecha_despacho'],
                     'observaciones' => $data['observaciones'] ?? null,
                     'estado' => 'pendiente',

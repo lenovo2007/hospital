@@ -169,30 +169,25 @@ class RecepcionPrincipalController extends Controller
                     }
                 }
 
-                // Calcular cantidad total de entrada para el movimiento
                 $totalCantidadEntrada = 0;
                 foreach ($itemsRecibidos as $item) {
                     $totalCantidadEntrada += (int) $item['cantidad'];
                 }
 
-                $estadoFinal = empty($discrepancias) ? 'completado' : 'inconsistente';
+                // Verificar si hay discrepancia total
+                $totalCantidadSalida = (int) $movimiento->cantidad_salida_total;
+                $hayDiscrepanciaTotal = $totalCantidadEntrada !== $totalCantidadSalida;
 
-                foreach ($discrepancias as $detalle) {
-                    MovimientoDiscrepancia::create([
-                        'movimiento_stock_id' => $movimiento->id,
-                        'lote_id' => $detalle['lote_id'] ?: null,
-                        'cantidad_esperada' => $detalle['cantidad_esperada'],
-                        'cantidad_recibida' => $detalle['cantidad_recibida'],
-                        'observaciones' => null,
-                    ]);
-                }
+                $estadoFinal = empty($discrepancias) ? 'completado' : 'inconsistente';
 
                 $movimiento->update([
                     'estado' => $estadoFinal,
                     'fecha_recepcion' => $data['fecha_recepcion'],
-                    'cantidad_entrada' => $totalCantidadEntrada,
+                    'cantidad_entrada_total' => $totalCantidadEntrada,
+                    'discrepancia_total' => $hayDiscrepanciaTotal,
                     'user_id_receptor' => $data['user_id_receptor'],
                 ]);
+
 
                 $resultado['estado'] = $estadoFinal;
                 $resultado['discrepancias'] = $discrepancias;

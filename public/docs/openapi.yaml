@@ -1228,17 +1228,17 @@ paths:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
 
-  /api/movimiento/central/salida:
+  /api/movimiento/almacen/salida:
     post:
-      summary: Registrar salida desde almacén central
+      summary: Registrar salida de almacén
       description: |
-        Registra un movimiento de salida desde almacén central hacia un almacén de destino.
+        Registra un movimiento de salida desde un almacén de origen hacia un almacén de destino.
         
         **Funcionalidad:**
         - Crea un grupo de lotes con un código único (`codigo_grupo`) en la tabla `lotes_grupos`
         - Genera un movimiento de stock con estado "pendiente" en la tabla `movimientos_stock`
-        - Registra la suma total de cantidades de todos los items en el campo `cantidad`
-        - **Descuenta las cantidades del almacén central de origen**
+        - Registra la suma total de cantidades de todos los items en el campo `cantidad_salida_total`
+        - **Descuenta las cantidades del almacén de origen**
         - Actualiza el status a `false` si la cantidad llega a 0
         
         **Validaciones:**
@@ -1323,19 +1323,20 @@ paths:
                     mensaje: "Error inesperado al registrar el movimiento."
                     data: null
 
-  /api/movimiento/principal/entrada:
+  /api/movimiento/almacen/entrada:
     post:
-      summary: Confirmar recepción en almacén principal
+      summary: Confirmar recepción en almacén
       description: |
-        Confirma la recepción de un movimiento de stock en el almacén principal.
+        Confirma la recepción de un movimiento de stock en el almacén de destino.
         
         **Funcionalidad:**
         - Actualiza el campo `cantidad_entrada` en la tabla `lotes_grupos`
-        - Actualiza el campo `cantidad_entrada` en la tabla `movimientos_stock` 
+        - Actualiza el campo `cantidad_entrada_total` en la tabla `movimientos_stock` 
         - Registra la fecha de recepción y usuario receptor
-        - Actualiza el stock en `almacenes_principales`
+        - Actualiza el stock en el almacén de destino
         - Cambia el status de lotes_grupos a 'recibido'
         - Marca `discrepancia = true` en lotes_grupos si cantidad_entrada ≠ cantidad_salida
+        - Marca `discrepancia_total = true` si cantidad_entrada_total ≠ cantidad_salida_total
         - **Registra automáticamente** discrepancias en tabla `movimientos_discrepancias`
       tags: [Movimientos]
       security:

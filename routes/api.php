@@ -191,10 +191,10 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
     Route::post('/tipos_hospital_distribuciones', [TipoHospitalDistribucionController::class, 'store']);
 
     // Distribución desde almacén central hacia principal (hospital)
-    Route::post('/movimiento/central/salida', [DistribucionCentralController::class, 'salida']);
+    Route::post('/movimiento/almacen/salida', [DistribucionCentralController::class, 'salida']);
 
     // Recepción en almacén principal de una distribución central
-    Route::post('/movimiento/principal/entrada', [RecepcionPrincipalController::class, 'recibir']);
+    Route::post('/movimiento/almacen/entrada', [RecepcionPrincipalController::class, 'recibir']);
 
     // CRUD Seguimientos (Administración)
     Route::apiResource('seguimientos', SeguimientoController::class);

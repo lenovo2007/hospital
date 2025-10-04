@@ -79,7 +79,7 @@ class MovimientoDiscrepanciaController extends Controller
                 'status' => false,
                 'mensaje' => 'Error al registrar la discrepancia.',
                 'data' => null,
-            ], 500);
+            ], 200);
         }
     }
 
@@ -104,7 +104,7 @@ class MovimientoDiscrepanciaController extends Controller
                 'status' => false,
                 'mensaje' => 'Error al actualizar la discrepancia.',
                 'data' => null,
-            ], 500);
+            ], 200);
         }
     }
 
@@ -127,7 +127,7 @@ class MovimientoDiscrepanciaController extends Controller
                 'status' => false,
                 'mensaje' => 'Error al eliminar la discrepancia.',
                 'data' => null,
-            ], 500);
+            ], 200);
         }
     }
 

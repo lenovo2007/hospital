@@ -52,7 +52,7 @@ class SeguimientoController extends Controller
                 'status' => false,
                 'mensaje' => 'Error inesperado al obtener los seguimientos.',
                 'data' => null,
-            ], 500);
+            ], 200);
         }
     }
 
@@ -96,7 +96,7 @@ class SeguimientoController extends Controller
                 'status' => false,
                 'mensaje' => 'Error inesperado al crear el seguimiento.',
                 'data' => null,
-            ], 500);
+            ], 200);
         }
     }
 
@@ -130,7 +130,7 @@ class SeguimientoController extends Controller
                 'status' => false,
                 'mensaje' => 'Error inesperado al obtener el seguimiento.',
                 'data' => null,
-            ], 500);
+            ], 200);
         }
     }
 
@@ -175,7 +175,7 @@ class SeguimientoController extends Controller
                 'status' => false,
                 'mensaje' => 'Error inesperado al actualizar el seguimiento.',
                 'data' => null,
-            ], 500);
+            ], 200);
         }
     }
 
@@ -210,7 +210,7 @@ class SeguimientoController extends Controller
                 'status' => false,
                 'mensaje' => 'Error inesperado al eliminar el seguimiento.',
                 'data' => null,
-            ], 500);
+            ], 200);
         }
     }
 
@@ -238,7 +238,7 @@ class SeguimientoController extends Controller
                 'status' => false,
                 'mensaje' => 'Error inesperado al obtener los seguimientos.',
                 'data' => null,
-            ], 500);
+            ], 200);
         }
     }
 }

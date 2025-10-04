@@ -90,9 +90,9 @@ class SeguimientoRepartidorController extends Controller
 
             return response()->json([
                 'status' => false,
-                'mensaje' => 'Error inesperado al actualizar el seguimiento.',
+                'mensaje' => 'Error inesperado al actualizar el seguimiento: ' . $e->getMessage(),
                 'data' => null,
-            ], 500);
+            ], 200);
         }
     }
 
@@ -112,7 +112,7 @@ class SeguimientoRepartidorController extends Controller
                     'status' => false,
                     'mensaje' => 'No se encontró seguimiento para este movimiento.',
                     'data' => null,
-                ], 404);
+                ], 200);
             }
 
             return response()->json([
@@ -128,7 +128,7 @@ class SeguimientoRepartidorController extends Controller
                 'status' => false,
                 'mensaje' => 'Error inesperado al obtener el seguimiento.',
                 'data' => null,
-            ], 500);
+            ], 200);
         }
     }
 
@@ -171,7 +171,7 @@ class SeguimientoRepartidorController extends Controller
                 'status' => false,
                 'mensaje' => 'Error inesperado al obtener los movimientos.',
                 'data' => null,
-            ], 500);
+            ], 200);
         }
     }
 }

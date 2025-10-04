@@ -213,7 +213,7 @@ class RecepcionPrincipalController extends Controller
                 'status' => false,
                 'mensaje' => 'Error inesperado al registrar la recepción.',
                 'data' => null,
-            ], 500);
+            ], 200);
         }
     }
 }

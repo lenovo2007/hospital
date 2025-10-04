@@ -117,7 +117,7 @@ class LoteGrupoController extends Controller
                 'status' => false,
                 'mensaje' => 'Error al crear el grupo de lote',
                 'error' => $e->getMessage(),
-            ], 500, [], JSON_UNESCAPED_UNICODE);
+            ], 200, [], JSON_UNESCAPED_UNICODE);
         }
     }
 
@@ -160,7 +160,7 @@ class LoteGrupoController extends Controller
                 'status' => false,
                 'mensaje' => 'Error al crear el grupo de lote',
                 'error' => $e->getMessage(),
-            ], 500, [], JSON_UNESCAPED_UNICODE);
+            ], 200, [], JSON_UNESCAPED_UNICODE);
         }
     }
 
@@ -206,7 +206,7 @@ class LoteGrupoController extends Controller
                 'status' => false,
                 'mensaje' => 'Error al actualizar el grupo de lote',
                 'error' => $e->getMessage(),
-            ], 500, [], JSON_UNESCAPED_UNICODE);
+            ], 200, [], JSON_UNESCAPED_UNICODE);
         }
     }
 
@@ -239,7 +239,7 @@ class LoteGrupoController extends Controller
                 'status' => false,
                 'mensaje' => 'Error al eliminar el grupo de lote',
                 'error' => $e->getMessage(),
-            ], 500, [], JSON_UNESCAPED_UNICODE);
+            ], 200, [], JSON_UNESCAPED_UNICODE);
         }
     }
 

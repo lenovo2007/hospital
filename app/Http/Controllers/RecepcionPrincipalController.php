@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\LoteGrupo;
-use App\Models\MovimientoDiscrepancia;
 use App\Models\MovimientoStock;
+use App\Models\MovimientoDiscrepancia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -114,8 +114,11 @@ class RecepcionPrincipalController extends Controller
                     $cantidadEsperada = (int) $loteGrupo->cantidad_salida;
                     $tieneDiscrepancia = $cantidadRecibida !== $cantidadEsperada;
 
-                    // Actualizar stock en almacenes_principales
-                    $registroDestino = DB::table('almacenes_principales')
+                    // Determinar tabla de destino según el tipo de almacén
+                    $tablaDestino = $this->obtenerTablaAlmacen($movimiento->destino_almacen_tipo);
+                    
+                    // Actualizar stock en la tabla de destino correspondiente
+                    $registroDestino = DB::table($tablaDestino)
                         ->where([
                             'hospital_id' => $movimiento->destino_hospital_id,
                             'sede_id' => $movimiento->destino_sede_id,
@@ -126,7 +129,7 @@ class RecepcionPrincipalController extends Controller
 
                     if ($registroDestino) {
                         $nuevaCantidad = (int) $registroDestino->cantidad + $cantidadRecibida;
-                        DB::table('almacenes_principales')
+                        DB::table($tablaDestino)
                             ->where('id', $registroDestino->id)
                             ->update([
                                 'cantidad' => $nuevaCantidad,
@@ -134,7 +137,7 @@ class RecepcionPrincipalController extends Controller
                                 'updated_at' => now(),
                             ]);
                     } else {
-                        DB::table('almacenes_principales')->insert([
+                        DB::table($tablaDestino)->insert([
                             'hospital_id' => $movimiento->destino_hospital_id,
                             'sede_id' => $movimiento->destino_sede_id,
                             'lote_id' => $loteId,
@@ -153,12 +156,50 @@ class RecepcionPrincipalController extends Controller
 
                     // Si hay discrepancia, registrarla en la tabla movimientos_discrepancias
                     if ($tieneDiscrepancia) {
+                        $discrepancias[] = [
+                            'lote_id' => $loteId,
+                            'cantidad_esperada' => $cantidadEsperada,
+                            'cantidad_recibida' => $cantidadRecibida,
+                        ];
+                        
                         MovimientoDiscrepancia::create([
                             'movimiento_stock_id' => $movimiento->id,
                             'codigo_lote_grupo' => $loteGrupo->codigo,
                             'cantidad_esperada' => $cantidadEsperada,
                             'cantidad_recibida' => $cantidadRecibida,
                             'observaciones' => "Discrepancia automática: esperado {$cantidadEsperada}, recibido {$cantidadRecibida}"
+                        ]);
+                    }
+                }
+
+                // Verificar lotes esperados que no fueron recibidos (faltantes)
+                foreach ($itemsEsperados as $loteEsperado) {
+                    $loteId = (int) $loteEsperado->lote_id;
+                    $fueRecibido = collect($itemsRecibidos)->contains('lote_id', $loteId);
+                    
+                    if (!$fueRecibido) {
+                        // Lote faltante - discrepancia total
+                        $cantidadEsperada = (int) $loteEsperado->cantidad_salida;
+                        
+                        $discrepancias[] = [
+                            'lote_id' => $loteId,
+                            'cantidad_esperada' => $cantidadEsperada,
+                            'cantidad_recibida' => 0,
+                        ];
+                        
+                        // Actualizar lote grupo como no recibido
+                        $loteEsperado->update([
+                            'cantidad_entrada' => 0,
+                            'discrepancia' => true,
+                        ]);
+                        
+                        // Registrar discrepancia
+                        MovimientoDiscrepancia::create([
+                            'movimiento_stock_id' => $movimiento->id,
+                            'codigo_lote_grupo' => $loteEsperado->codigo,
+                            'cantidad_esperada' => $cantidadEsperada,
+                            'cantidad_recibida' => 0,
+                            'observaciones' => "Lote faltante: esperado {$cantidadEsperada}, no recibido"
                         ]);
                     }
                 }
@@ -203,13 +244,34 @@ class RecepcionPrincipalController extends Controller
                 'data' => null,
             ], 200);
         } catch (Throwable $e) {
+            Log::error('Error en recepción principal', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+                'data' => $data,
+            ]);
             report($e);
 
             return response()->json([
                 'status' => false,
-                'mensaje' => 'Error inesperado al registrar la recepción.',
+                'mensaje' => 'Error inesperado al registrar la recepción: ' . $e->getMessage(),
                 'data' => null,
             ], 200);
         }
+    }
+
+    /**
+     * Obtiene el nombre de la tabla según el tipo de almacén
+     */
+    private function obtenerTablaAlmacen(string $tipoAlmacen): string
+    {
+        return match ($tipoAlmacen) {
+            'almacenCent' => 'almacenes_centrales',
+            'almacenPrin' => 'almacenes_principales',
+            'almacenFarm' => 'almacenes_farmacia',
+            'almacenPar' => 'almacenes_paralelo',
+            'almacenServApoyo' => 'almacenes_servicios_apoyo',
+            'almacenServAtenciones' => 'almacenes_servicios_atenciones',
+            default => throw new InvalidArgumentException("Tipo de almacén no soportado: {$tipoAlmacen}"),
+        };
     }
 }

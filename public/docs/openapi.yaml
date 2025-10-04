@@ -1378,14 +1378,14 @@ paths:
                     status: true
                     mensaje: Recepción confirmada y stock actualizado.
                     data:
-                      estado: completado
+                      estado: recibido
                       discrepancias: []
                 inconsistencias:
                   value:
                     status: true
                     mensaje: Recepción registrada con discrepancias. Se generó un reporte automático.
                     data:
-                      estado: inconsistente
+                      estado: recibido
                       discrepancias:
                         - lote_id: 2
                           cantidad_esperada: 500
@@ -1398,7 +1398,17 @@ paths:
                 movimiento-no-encontrado:
                   value:
                     status: false
-                    mensaje: "No existe un movimiento pendiente con el ID indicado."
+                    mensaje: "No existe un movimiento con el ID indicado."
+                    data: null
+                estado-invalido-central:
+                  value:
+                    status: false
+                    mensaje: "El movimiento debe estar en estado: entregado para poder ser recibido. Tipo de movimiento: con repartidor (Central → Principal). Estado actual: despachado"
+                    data: null
+                estado-invalido-principal:
+                  value:
+                    status: false
+                    mensaje: "El movimiento debe estar en estado: despachado, entregado para poder ser recibido. Tipo de movimiento: interno (Principal → Otros almacenes). Estado actual: pendiente"
                     data: null
         '500':
           description: Error inesperado

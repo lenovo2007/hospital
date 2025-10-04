@@ -32,14 +32,25 @@ class RecepcionPrincipalController extends Controller
 
         try {
             DB::transaction(function () use ($data, $userId, &$resultado) {
-                // Buscar el movimiento por ID - debe estar en estado 'entregado'
+                // Buscar el movimiento por ID
                 $movimiento = MovimientoStock::where('id', $data['movimiento_stock_id'])
-                    ->where('estado', 'entregado')
                     ->lockForUpdate()
                     ->first();
 
                 if (!$movimiento) {
-                    throw new InvalidArgumentException('No existe un movimiento entregado con el ID indicado. Solo se puede recibir mercancía que haya sido entregada por el repartidor.');
+                    throw new InvalidArgumentException('No existe un movimiento con el ID indicado.');
+                }
+
+                // Validar estado según el tipo de almacén origen
+                $estadosPermitidos = $this->obtenerEstadosPermitidosParaRecepcion($movimiento->origen_almacen_tipo);
+                
+                if (!in_array($movimiento->estado, $estadosPermitidos)) {
+                    $estadosTexto = implode(', ', $estadosPermitidos);
+                    $tipoMovimiento = $movimiento->origen_almacen_tipo === 'almacenCent' 
+                        ? 'con repartidor (Central → Principal)' 
+                        : 'interno (Principal → Otros almacenes)';
+                    
+                    throw new InvalidArgumentException("El movimiento debe estar en estado: {$estadosTexto} para poder ser recibido. Tipo de movimiento: {$tipoMovimiento}. Estado actual: {$movimiento->estado}");
                 }
 
                 // Buscar los lotes grupos asociados al movimiento
@@ -272,6 +283,23 @@ class RecepcionPrincipalController extends Controller
             'almacenServApoyo' => 'almacenes_servicios_apoyo',
             'almacenServAtenciones' => 'almacenes_servicios_atenciones',
             default => throw new InvalidArgumentException("Tipo de almacén no soportado: {$tipoAlmacen}"),
+        };
+    }
+
+    /**
+     * Obtiene los estados permitidos para recepción según el tipo de almacén origen
+     */
+    private function obtenerEstadosPermitidosParaRecepcion(string $origenAlmacenTipo): array
+    {
+        return match ($origenAlmacenTipo) {
+            // Central → Principal: Requiere repartidor, debe estar entregado
+            'almacenCent' => ['entregado'],
+            
+            // Principal → Otros: Movimiento interno, puede recibirse desde despachado
+            'almacenPrin' => ['despachado', 'entregado'],
+            
+            // Otros tipos por si acaso (mantener lógica de repartidor)
+            default => ['entregado'],
         };
     }
 }

@@ -322,7 +322,7 @@ class MovimientoStockController extends Controller
             'observaciones' => ['sometimes', 'nullable', 'string', 'max:500'],
             'fecha_recepcion' => ['sometimes', 'nullable', 'date'],
             'observaciones_recepcion' => ['sometimes', 'nullable', 'string', 'max:500'],
-            'estado' => ['sometimes', 'string', 'in:pendiente,completado,inconsistente,cancelado'],
+            'estado' => ['sometimes', 'string', 'in:pendiente,despachado,entregado,recibido,cancelado'],
             'codigo_grupo' => ['sometimes', 'nullable', 'string', 'max:50'],
             'user_id' => ['sometimes', 'integer', 'min:1'],
             'user_id_receptor' => ['sometimes', 'nullable', 'integer', 'min:1'],

@@ -172,9 +172,9 @@ class RecepcionPrincipalController extends Controller
                 $totalCantidadSalida = (int) $movimiento->cantidad_salida_total;
                 $hayDiscrepanciaTotal = $totalCantidadEntrada !== $totalCantidadSalida;
 
-                // Determinar estado final: completado si no hay discrepancias, inconsistente si las hay
+                // Determinar estado final: siempre será 'recibido' ya que se completó la recepción
                 $hayDiscrepanciasIndividuales = !empty($discrepancias);
-                $estadoFinal = ($hayDiscrepanciasIndividuales || $hayDiscrepanciaTotal) ? 'inconsistente' : 'completado';
+                $estadoFinal = 'recibido';
 
                 $movimiento->update([
                     'estado' => $estadoFinal,

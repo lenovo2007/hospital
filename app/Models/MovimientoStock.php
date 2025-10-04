@@ -9,7 +9,7 @@ class MovimientoStock extends Model
 {
     protected $table = 'movimientos_stock';
 
-    // Estados válidos: pendiente, en_transito, entregado, completado, inconsistente, cancelado
+    // Estados válidos: pendiente, despachado, entregado, recibido, cancelado
 
     protected $fillable = [
         'tipo',

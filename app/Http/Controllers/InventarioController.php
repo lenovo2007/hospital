@@ -105,9 +105,33 @@ class InventarioController extends Controller
     public function listarPorSede($sedeId)
     {
         try {
-            $tabla = 'almacenes_centrales';
-            if (!Schema::hasTable($tabla)) {
-                throw new \RuntimeException("No se encontró la tabla $tabla");
+            // Obtener el tipo de almacén de la sede
+            $sede = DB::table('sedes')->where('id', $sedeId)->first();
+            if (!$sede) {
+                return response()->json([
+                    'status' => false,
+                    'mensaje' => 'Sede no encontrada.',
+                    'data' => [],
+                ], 200);
+            }
+
+            // Determinar la tabla según el tipo de almacén
+            $tabla = match ($sede->tipo_almacen) {
+                'almacenCent' => 'almacenes_centrales',
+                'almacenPrin' => 'almacenes_principales',
+                'almacenFarm' => 'almacenes_farmacia',
+                'almacenPar' => 'almacenes_paralelo',
+                'almacenServApoyo' => 'almacenes_servicios_apoyo',
+                'almacenServAtenciones' => 'almacenes_servicios_atenciones',
+                default => null,
+            };
+
+            if (!$tabla || !Schema::hasTable($tabla)) {
+                return response()->json([
+                    'status' => false,
+                    'mensaje' => "No se encontró la tabla de almacén para el tipo: {$sede->tipo_almacen}",
+                    'data' => [],
+                ], 200);
             }
 
             // Esquema objetivo: almacenes_centrales(cantidad, sede_id, lote_id, hospital_id, status)

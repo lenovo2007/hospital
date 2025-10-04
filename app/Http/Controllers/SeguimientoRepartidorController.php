@@ -32,7 +32,7 @@ class SeguimientoRepartidorController extends Controller
             DB::transaction(function () use ($data, $userId) {
                 // Buscar el movimiento
                 $movimiento = MovimientoStock::where('id', $data['movimiento_stock_id'])
-                    ->whereIn('estado', ['pendiente', 'en_transito'])
+                    ->whereIn('estado', ['pendiente', 'despachado'])
                     ->lockForUpdate()
                     ->first();
 
@@ -51,8 +51,8 @@ class SeguimientoRepartidorController extends Controller
 
                 // Actualizar estado del movimiento según el estado del seguimiento
                 $estadoMovimiento = match($data['estado']) {
-                    'despachado' => 'en_transito',
-                    'en_camino' => 'en_transito', 
+                    'despachado' => 'despachado',
+                    'en_camino' => 'despachado', 
                     'entregado' => 'entregado',
                 };
 
@@ -148,7 +148,7 @@ class SeguimientoRepartidorController extends Controller
                           ->limit(1);
                 }
             ])
-            ->whereIn('estado', ['pendiente', 'en_transito', 'entregado'])
+            ->whereIn('estado', ['pendiente', 'despachado', 'entregado'])
             ->orderByDesc('created_at')
             ->get();
 

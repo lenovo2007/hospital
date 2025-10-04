@@ -12,6 +12,8 @@ class LoteGrupo extends Model
 
     protected $table = 'lotes_grupos';
 
+    // Status válidos: activo, entregado, recibido, inactivo
+
     protected $fillable = [
         'codigo',
         'lote_id',

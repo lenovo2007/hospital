@@ -1280,11 +1280,13 @@ paths:
                       cantidad: 100
       responses:
         '200':
-          description: Salida registrada
+          description: Respuesta del endpoint (éxito o error con status=false)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                oneOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
               examples:
                 exito:
                   value:
@@ -1292,13 +1294,6 @@ paths:
                     mensaje: Movimiento desde central aplicado.
                     data:
                       codigo_grupo: cod001
-        '200':
-          description: Error de validación de datos o stock insuficiente (status=false)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              examples:
                 validacion-error:
                   value:
                     status: false
@@ -1370,11 +1365,13 @@ paths:
                       cantidad: 80
       responses:
         '200':
-          description: Recepción registrada (con o sin discrepancias)
+          description: Respuesta del endpoint (éxito o error con status=false)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MovimientoPrincipalEntradaResponse'
+                oneOf:
+                  - $ref: '#/components/schemas/MovimientoPrincipalEntradaResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
               examples:
                 completado:
                   value:
@@ -1393,13 +1390,6 @@ paths:
                         - lote_id: 2
                           cantidad_esperada: 500
                           cantidad_recibida: 450
-        '200':
-          description: Validaciones fallidas o movimiento no encontrado (status=false)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-              examples:
                 items-no-entregados:
                   value:
                     status: false

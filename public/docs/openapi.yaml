@@ -2420,11 +2420,13 @@ paths:
                   observaciones: "Entregado al encargado del almacén"
       responses:
         '200':
-          description: Seguimiento actualizado exitosamente
+          description: Respuesta del endpoint (éxito o error con status=false)
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                oneOf:
+                  - $ref: '#/components/schemas/StandardResponse'
+                  - $ref: '#/components/schemas/ErrorResponse'
               examples:
                 despachado:
                   value:
@@ -2441,12 +2443,11 @@ paths:
                     status: true
                     mensaje: "Movimiento marcado como entregado."
                     data: null
-        '200':
-          description: Error de validación (status=false)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
+                error-validacion:
+                  value:
+                    status: false
+                    mensaje: "Error de validación en los datos proporcionados."
+                    data: null
 
   /api/repartidor/seguimiento/{movimiento_stock_id}:
     get:

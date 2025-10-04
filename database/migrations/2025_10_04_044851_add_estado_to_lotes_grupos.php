@@ -11,11 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('lotes_grupos', function (Blueprint $table) {
-            if (!Schema::hasColumn('lotes_grupos', 'estado')) {
-                $table->enum('estado', ['pendiente', 'entregado', 'recibido'])->default('pendiente')->after('status');
-            }
-        });
+        // No agregar el campo estado - se decidió no usarlo
     }
 
     /**

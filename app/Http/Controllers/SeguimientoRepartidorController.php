@@ -58,13 +58,7 @@ class SeguimientoRepartidorController extends Controller
 
                 $movimiento->update(['estado' => $estadoMovimiento]);
 
-                // Si está entregado, actualizar el estado de los lotes grupos a 'entregado'
-                if ($data['estado'] === 'entregado') {
-                    DB::table('lotes_grupos')
-                        ->where('codigo', $movimiento->codigo_grupo)
-                        ->where('status', 'activo')
-                        ->update(['estado' => 'entregado']);
-                }
+                // Nota: Los lotes_grupos mantienen su status 'activo' durante todo el proceso
             });
 
             $mensaje = match($data['estado']) {

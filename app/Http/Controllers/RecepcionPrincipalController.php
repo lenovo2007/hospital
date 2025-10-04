@@ -51,15 +51,10 @@ class RecepcionPrincipalController extends Controller
                     throw new InvalidArgumentException('No se encontraron items asociados al código de grupo.');
                 }
 
-                // Validar que los items estén en estado 'entregado'
-                $itemsNoEntregados = $itemsEsperados->where('estado', '!=', 'entregado');
-                if ($itemsNoEntregados->isNotEmpty()) {
-                    throw new InvalidArgumentException('Los items deben estar en estado "entregado" antes de poder ser recibidos. Hay items que no han sido entregados por el repartidor.');
-                }
-
-                $itemsEntregados = $itemsEsperados->where('estado', 'entregado');
-                if ($itemsEntregados->isEmpty()) {
-                    throw new InvalidArgumentException('No se encontraron items en estado "entregado" para recibir.');
+                // Validar que los items estén activos (la validación de entrega se hace a nivel de movimiento)
+                $itemsInactivos = $itemsEsperados->where('status', 'inactivo');
+                if ($itemsInactivos->isNotEmpty()) {
+                    throw new InvalidArgumentException('Hay items inactivos que no pueden ser procesados.');
                 }
 
                 $mapaEsperado = [];
@@ -150,11 +145,10 @@ class RecepcionPrincipalController extends Controller
                         ]);
                     }
 
-                    // Actualizar lote grupo con cantidad_entrada, discrepancia y estado
+                    // Actualizar lote grupo con cantidad_entrada y discrepancia
                     $loteGrupo->update([
                         'cantidad_entrada' => $cantidadRecibida,
                         'discrepancia' => $tieneDiscrepancia,
-                        'estado' => 'recibido'
                     ]);
 
                     // Si hay discrepancia, registrarla en la tabla movimientos_discrepancias

@@ -32,14 +32,14 @@ class RecepcionPrincipalController extends Controller
 
         try {
             DB::transaction(function () use ($data, $userId, &$resultado) {
-                // Buscar el movimiento por ID
+                // Buscar el movimiento por ID - debe estar en estado 'entregado'
                 $movimiento = MovimientoStock::where('id', $data['movimiento_stock_id'])
-                    ->where('estado', 'pendiente')
+                    ->where('estado', 'entregado')
                     ->lockForUpdate()
                     ->first();
 
                 if (!$movimiento) {
-                    throw new InvalidArgumentException('No existe un movimiento pendiente con el ID indicado.');
+                    throw new InvalidArgumentException('No existe un movimiento entregado con el ID indicado. Solo se puede recibir mercancía que haya sido entregada por el repartidor.');
                 }
 
                 // Buscar los lotes grupos asociados al movimiento
@@ -52,9 +52,9 @@ class RecepcionPrincipalController extends Controller
                 }
 
                 // Validar que los items estén en status 'entregado'
-                $itemsPendientes = $itemsEsperados->where('status', 'activo');
-                if ($itemsPendientes->isNotEmpty()) {
-                    throw new InvalidArgumentException('Los items deben estar en estado "entregado" antes de poder ser recibidos. Estado actual: activo (pendiente).');
+                $itemsNoEntregados = $itemsEsperados->where('status', '!=', 'entregado');
+                if ($itemsNoEntregados->isNotEmpty()) {
+                    throw new InvalidArgumentException('Los items deben estar en estado "entregado" antes de poder ser recibidos. Hay items que no han sido entregados por el repartidor.');
                 }
 
                 $itemsEntregados = $itemsEsperados->where('status', 'entregado');
@@ -178,7 +178,9 @@ class RecepcionPrincipalController extends Controller
                 $totalCantidadSalida = (int) $movimiento->cantidad_salida_total;
                 $hayDiscrepanciaTotal = $totalCantidadEntrada !== $totalCantidadSalida;
 
-                $estadoFinal = empty($discrepancias) ? 'completado' : 'inconsistente';
+                // Determinar estado final: completado si no hay discrepancias, inconsistente si las hay
+                $hayDiscrepanciasIndividuales = !empty($discrepancias);
+                $estadoFinal = ($hayDiscrepanciasIndividuales || $hayDiscrepanciaTotal) ? 'inconsistente' : 'completado';
 
                 $movimiento->update([
                     'estado' => $estadoFinal,

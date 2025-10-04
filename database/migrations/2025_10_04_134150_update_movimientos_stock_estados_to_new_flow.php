@@ -12,11 +12,14 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Primero expandir el enum para incluir todos los valores (viejos y nuevos)
+        DB::statement("ALTER TABLE movimientos_stock MODIFY COLUMN estado ENUM('pendiente', 'en_transito', 'entregado', 'completado', 'inconsistente', 'cancelado', 'despachado', 'recibido') DEFAULT 'pendiente'");
+        
         // Actualizar registros existentes para mapear al nuevo flujo
         DB::statement("UPDATE movimientos_stock SET estado = 'despachado' WHERE estado = 'en_transito'");
         DB::statement("UPDATE movimientos_stock SET estado = 'recibido' WHERE estado IN ('completado', 'inconsistente')");
         
-        // Modificar el enum para el nuevo flujo de estados
+        // Finalmente reducir el enum solo a los nuevos valores
         DB::statement("ALTER TABLE movimientos_stock MODIFY COLUMN estado ENUM('pendiente', 'despachado', 'entregado', 'recibido', 'cancelado') DEFAULT 'pendiente'");
     }
 

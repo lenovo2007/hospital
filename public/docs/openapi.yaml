@@ -1292,8 +1292,8 @@ paths:
                     mensaje: Movimiento desde central aplicado.
                     data:
                       codigo_grupo: cod001
-        '422':
-          description: Error de validación de datos o stock insuficiente
+        '200':
+          description: Error de validación de datos o stock insuficiente (status=false)
           content:
             application/json:
               schema:
@@ -1393,12 +1393,23 @@ paths:
                         - lote_id: 2
                           cantidad_esperada: 500
                           cantidad_recibida: 450
-        '422':
-          description: Validaciones fallidas o movimiento no encontrado
+        '200':
+          description: Validaciones fallidas o movimiento no encontrado (status=false)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                items-no-entregados:
+                  value:
+                    status: false
+                    mensaje: "Los items deben estar en estado \"entregado\" antes de poder ser recibidos. Estado actual: activo (pendiente)."
+                    data: null
+                movimiento-no-encontrado:
+                  value:
+                    status: false
+                    mensaje: "No existe un movimiento pendiente con el ID indicado."
+                    data: null
         '500':
           description: Error inesperado
           content:
@@ -2440,8 +2451,8 @@ paths:
                     status: true
                     mensaje: "Movimiento marcado como entregado."
                     data: null
-        '422':
-          description: Error de validación
+        '200':
+          description: Error de validación (status=false)
           content:
             application/json:
               schema:

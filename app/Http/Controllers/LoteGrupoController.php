@@ -93,7 +93,7 @@ class LoteGrupoController extends Controller
                 'status' => false,
                 'mensaje' => 'Errores de validación',
                 'errors' => $validator->errors(),
-            ], 422, [], JSON_UNESCAPED_UNICODE);
+            ], 200, [], JSON_UNESCAPED_UNICODE);
         }
 
         try {
@@ -137,7 +137,7 @@ class LoteGrupoController extends Controller
                 'status' => false,
                 'mensaje' => 'Errores de validación',
                 'errors' => $validator->errors(),
-            ], 422, [], JSON_UNESCAPED_UNICODE);
+            ], 200, [], JSON_UNESCAPED_UNICODE);
         }
 
         try {
@@ -189,7 +189,7 @@ class LoteGrupoController extends Controller
                 'status' => false,
                 'mensaje' => 'Errores de validación',
                 'errors' => $validator->errors(),
-            ], 422, [], JSON_UNESCAPED_UNICODE);
+            ], 200, [], JSON_UNESCAPED_UNICODE);
         }
 
         try {

@@ -205,7 +205,7 @@ class RecepcionPrincipalController extends Controller
                 'status' => false,
                 'mensaje' => $e->getMessage(),
                 'data' => null,
-            ], 422);
+            ], 200);
         } catch (Throwable $e) {
             report($e);
 

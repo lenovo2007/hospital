@@ -66,7 +66,7 @@ class AuthController extends Controller
                 'mensaje' => 'Error de validación.',
                 'errores' => $e->errors(),
                 'data' => null,
-            ], 422, [], JSON_UNESCAPED_UNICODE);
+            ], 200, [], JSON_UNESCAPED_UNICODE);
 
         } catch (\Exception $e) {
             \Log::error('Login error: ' . $e->getMessage());

@@ -12,8 +12,8 @@ return new class extends Migration
      */
     public function up(): void
     {
-        // Modificar el enum para incluir los nuevos estados
-        DB::statement("ALTER TABLE lotes_grupos MODIFY COLUMN status ENUM('activo', 'entregado', 'recibido', 'inactivo') DEFAULT 'activo'");
+        // No modificar el enum - mantener solo activo/inactivo
+        // Esta migración se deja vacía para mantener consistencia
     }
 
     /**

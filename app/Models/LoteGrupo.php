@@ -12,7 +12,8 @@ class LoteGrupo extends Model
 
     protected $table = 'lotes_grupos';
 
-    // Status válidos: activo, entregado, recibido, inactivo
+    // Status válidos: activo, inactivo (para activar/desactivar el lote)
+    // Estado válidos: pendiente, entregado, recibido (para el flujo de entrega)
 
     protected $fillable = [
         'codigo',
@@ -21,6 +22,7 @@ class LoteGrupo extends Model
         'cantidad_entrada',
         'discrepancia',
         'status',
+        'estado',
     ];
 
     protected $casts = [

@@ -1615,6 +1615,146 @@ paths:
         '200':
           description: Despacho cancelado
 
+  /api/estadisticas/dashboard:
+    get:
+      summary: Dashboard general de estadísticas
+      tags: [Estadísticas]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Resumen general de estadísticas
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      resumen_insumos: { type: object }
+                      resumen_movimientos: { type: object }
+                      resumen_faltantes: { type: object }
+                      resumen_pacientes: { type: object }
+                      fecha_actualizacion: { type: string }
+
+  /api/estadisticas/insumos:
+    get:
+      summary: Estadísticas de insumos con comparación mensual
+      tags: [Estadísticas]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Estadísticas de insumos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      total_general: { type: integer }
+                      nuevos_este_mes: { type: integer }
+                      nuevos_mes_anterior: { type: integer }
+                      porcentaje_cambio: { type: number }
+                      tendencia: { type: string, enum: [aumento, disminucion, igual] }
+                      mensaje_comparacion: { type: string }
+                      insumos_por_sede: { type: array }
+
+  /api/estadisticas/movimientos-estados:
+    get:
+      summary: Estadísticas de estados de movimientos
+      tags: [Estadísticas]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: fecha_desde
+          in: query
+          schema: { type: string, format: date }
+        - name: fecha_hasta
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Estadísticas por estado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      total_movimientos: { type: integer }
+                      por_estado: { type: object }
+                      porcentajes: { type: object }
+                      periodo: { type: object }
+
+  /api/estadisticas/insumos-faltantes:
+    get:
+      summary: Insumos faltantes en almacén central
+      tags: [Estadísticas]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Insumos sin stock o con stock bajo
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      insumos_sin_stock: { type: object }
+                      insumos_stock_bajo: { type: object }
+                      resumen: { type: object }
+
+  /api/estadisticas/pacientes-estados:
+    get:
+      summary: Estadísticas de estados de despachos a pacientes
+      tags: [Estadísticas]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: fecha_desde
+          in: query
+          schema: { type: string, format: date }
+        - name: fecha_hasta
+          in: query
+          schema: { type: string, format: date }
+        - name: hospital_id
+          in: query
+          schema: { type: integer }
+        - name: sede_id
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Estadísticas de despachos por estado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      total_despachos: { type: integer }
+                      total_pacientes_unicos: { type: integer }
+                      total_items_despachados: { type: integer }
+                      por_estado: { type: object }
+                      porcentajes: { type: object }
+                      filtros_aplicados: { type: object }
+
   /api/insumos/codigo/{codigo}:
     get:
       summary: Ver insumo por código

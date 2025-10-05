@@ -17,6 +17,7 @@ use App\Http\Controllers\TipoHospitalDistribucionController;
 use App\Http\Controllers\DistribucionCentralController;
 use App\Http\Controllers\RecepcionPrincipalController;
 use App\Http\Controllers\DespachoPacienteController;
+use App\Http\Controllers\EstadisticasController;
 use App\Http\Controllers\FichaInsumoController;
 use App\Http\Controllers\MovimientoStockController;
 use App\Http\Controllers\MovimientoDiscrepanciaController;
@@ -204,6 +205,15 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
         Route::post('/{id}/confirmar-entrega', [DespachoPacienteController::class, 'confirmarEntrega']);
         Route::post('/{id}/cancelar', [DespachoPacienteController::class, 'cancelar']);
         Route::delete('/{id}', [DespachoPacienteController::class, 'destroy']);
+    });
+
+    // Estadísticas - Endpoints separados
+    Route::prefix('estadisticas')->group(function () {
+        Route::get('/dashboard', [EstadisticasController::class, 'dashboard']);
+        Route::get('/insumos', [EstadisticasController::class, 'insumos']);
+        Route::get('/movimientos-estados', [EstadisticasController::class, 'movimientosEstados']);
+        Route::get('/insumos-faltantes', [EstadisticasController::class, 'insumosFaltantes']);
+        Route::get('/pacientes-estados', [EstadisticasController::class, 'pacientesEstados']);
     });
 
     // CRUD Seguimientos (Administración)

@@ -394,7 +394,7 @@ class DespachoPacienteController extends Controller
                 ->leftJoin('lotes', 'lotes_grupos.lote_id', '=', 'lotes.id')
                 ->leftJoin('insumos', 'lotes.id_insumo', '=', 'insumos.id')
                 ->where('lotes_grupos.codigo', $codigoDespacho)
-                ->where('lotes_grupos.status', true)
+                ->where('lotes_grupos.status', 'activo')
                 ->select(
                     'insumos.id as insumo_id',
                     'insumos.nombre as insumo_nombre',
@@ -404,9 +404,8 @@ class DespachoPacienteController extends Controller
                     'lotes.id as lote_id',
                     'lotes.numero_lote',
                     'lotes.fecha_vencimiento',
-                    'lotes_grupos.cantidad_despachada',
-                    'lotes_grupos.cantidad_recibida',
-                    'lotes_grupos.discrepancia'
+                    'lotes_grupos.cantidad as cantidad_despachada',
+                    'lotes_grupos.id as lote_grupo_id'
                 )
                 ->get();
         } catch (\Exception $e) {

@@ -1628,8 +1628,7 @@ paths:
                                       numero_lote: { type: string }
                                       fecha_vencimiento: { type: string, format: date }
                                       cantidad_despachada: { type: integer }
-                                      cantidad_recibida: { type: integer }
-                                      discrepancia: { type: boolean }
+                                      lote_grupo_id: { type: integer }
                       current_page: { type: integer }
                       total: { type: integer }
 
@@ -3194,8 +3193,7 @@ components:
               numero_lote: { type: string }
               fecha_vencimiento: { type: string, format: date }
               cantidad_despachada: { type: integer }
-              cantidad_recibida: { type: integer }
-              discrepancia: { type: boolean }
+              lote_grupo_id: { type: integer }
 
     UserRequest:
       type: object

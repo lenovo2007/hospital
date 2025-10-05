@@ -1634,15 +1634,10 @@ paths:
 
   /api/estadisticas/dashboard:
     get:
-      summary: Dashboard general de estadísticas por sede
+      summary: Dashboard general de estadísticas (todas las sedes)
       tags: [Estadísticas]
       security:
         - bearerAuth: []
-      parameters:
-        - name: sede_id
-          in: query
-          schema: { type: integer }
-          description: ID de la sede para filtrar estadísticas
       responses:
         '200':
           description: Resumen general de estadísticas
@@ -1661,17 +1656,43 @@ paths:
                       resumen_pacientes: { type: object }
                       fecha_actualizacion: { type: string }
 
-  /api/estadisticas/insumos:
+  /api/estadisticas/dashboard/sede/{sede_id}:
     get:
-      summary: Estadísticas de insumos con comparación mensual por sede
+      summary: Dashboard de estadísticas específico por sede
       tags: [Estadísticas]
       security:
         - bearerAuth: []
       parameters:
         - name: sede_id
-          in: query
+          in: path
+          required: true
           schema: { type: integer }
-          description: ID de la sede para filtrar estadísticas
+          description: ID de la sede
+      responses:
+        '200':
+          description: Resumen de estadísticas por sede
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      sede_info: { type: object }
+                      resumen_insumos: { type: object }
+                      resumen_movimientos: { type: object }
+                      resumen_faltantes: { type: object }
+                      resumen_pacientes: { type: object }
+                      fecha_actualizacion: { type: string }
+
+  /api/estadisticas/insumos:
+    get:
+      summary: Estadísticas de insumos generales (todas las sedes)
+      tags: [Estadísticas]
+      security:
+        - bearerAuth: []
       responses:
         '200':
           description: Estadísticas de insumos
@@ -1690,19 +1711,81 @@ paths:
                       porcentaje_cambio: { type: number }
                       tendencia: { type: string, enum: [aumento, disminucion, igual] }
                       mensaje_comparacion: { type: string }
-                      insumos_por_sede: { type: array }
 
-  /api/estadisticas/movimientos-estados:
+  /api/estadisticas/insumos/sede/{sede_id}:
     get:
-      summary: Estadísticas de estados de movimientos por sede
+      summary: Estadísticas de insumos específicas por sede
       tags: [Estadísticas]
       security:
         - bearerAuth: []
       parameters:
         - name: sede_id
-          in: query
+          in: path
+          required: true
           schema: { type: integer }
-          description: ID de la sede para filtrar estadísticas
+          description: ID de la sede
+      responses:
+        '200':
+          description: Estadísticas de insumos por sede
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      sede_info: { type: object }
+                      total_general: { type: integer }
+                      nuevos_este_mes: { type: integer }
+                      nuevos_mes_anterior: { type: integer }
+                      porcentaje_cambio: { type: number }
+                      tendencia: { type: string, enum: [aumento, disminucion, igual] }
+                      mensaje_comparacion: { type: string }
+
+  /api/estadisticas/movimientos-estados:
+    get:
+      summary: Estadísticas de estados de movimientos generales
+      tags: [Estadísticas]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: fecha_desde
+          in: query
+          schema: { type: string, format: date }
+        - name: fecha_hasta
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Estadísticas por estado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      total_movimientos: { type: integer }
+                      por_estado: { type: object }
+                      porcentajes: { type: object }
+                      periodo: { type: object }
+
+  /api/estadisticas/movimientos-estados/sede/{sede_id}:
+    get:
+      summary: Estadísticas de estados de movimientos por sede específica
+      tags: [Estadísticas]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sede_id
+          in: path
+          required: true
+          schema: { type: integer }
+          description: ID de la sede
         - name: fecha_desde
           in: query
           schema: { type: string, format: date }

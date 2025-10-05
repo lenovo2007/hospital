@@ -209,11 +209,19 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
 
     // Estadísticas - Endpoints separados
     Route::prefix('estadisticas')->group(function () {
+        // Rutas generales (sin sede específica)
         Route::get('/dashboard', [EstadisticasController::class, 'dashboard']);
         Route::get('/insumos', [EstadisticasController::class, 'insumos']);
         Route::get('/movimientos-estados', [EstadisticasController::class, 'movimientosEstados']);
         Route::get('/insumos-faltantes', [EstadisticasController::class, 'insumosFaltantes']);
         Route::get('/pacientes-estados', [EstadisticasController::class, 'pacientesEstados']);
+        
+        // Rutas específicas por sede
+        Route::get('/dashboard/sede/{sede_id}', [EstadisticasController::class, 'dashboardPorSede']);
+        Route::get('/insumos/sede/{sede_id}', [EstadisticasController::class, 'insumosPorSede']);
+        Route::get('/movimientos-estados/sede/{sede_id}', [EstadisticasController::class, 'movimientosEstadosPorSede']);
+        Route::get('/insumos-faltantes/sede/{sede_id}', [EstadisticasController::class, 'insumosFaltantesPorSede']);
+        Route::get('/pacientes-estados/sede/{sede_id}', [EstadisticasController::class, 'pacientesEstadosPorSede']);
     });
 
     // CRUD Seguimientos (Administración)

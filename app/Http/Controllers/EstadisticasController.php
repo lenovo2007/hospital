@@ -403,6 +403,57 @@ class EstadisticasController extends Controller
     }
 
     /**
+     * Dashboard específico por sede
+     * GET /api/estadisticas/dashboard/sede/{sede_id}
+     */
+    public function dashboardPorSede(Request $request, $sede_id)
+    {
+        // Agregar sede_id al request para reutilizar la lógica existente
+        $request->merge(['sede_id' => $sede_id]);
+        return $this->dashboard($request);
+    }
+
+    /**
+     * Estadísticas de insumos específicas por sede
+     * GET /api/estadisticas/insumos/sede/{sede_id}
+     */
+    public function insumosPorSede(Request $request, $sede_id)
+    {
+        $request->merge(['sede_id' => $sede_id]);
+        return $this->insumos($request);
+    }
+
+    /**
+     * Estadísticas de movimientos específicas por sede
+     * GET /api/estadisticas/movimientos-estados/sede/{sede_id}
+     */
+    public function movimientosEstadosPorSede(Request $request, $sede_id)
+    {
+        $request->merge(['sede_id' => $sede_id]);
+        return $this->movimientosEstados($request);
+    }
+
+    /**
+     * Estadísticas de insumos faltantes específicas por sede
+     * GET /api/estadisticas/insumos-faltantes/sede/{sede_id}
+     */
+    public function insumosFaltantesPorSede(Request $request, $sede_id)
+    {
+        $request->merge(['sede_id' => $sede_id]);
+        return $this->insumosFaltantes($request);
+    }
+
+    /**
+     * Estadísticas de pacientes específicas por sede
+     * GET /api/estadisticas/pacientes-estados/sede/{sede_id}
+     */
+    public function pacientesEstadosPorSede(Request $request, $sede_id)
+    {
+        $request->merge(['sede_id' => $sede_id]);
+        return $this->pacientesEstados($request);
+    }
+
+    /**
      * Obtiene el nombre de la tabla según el tipo de almacén
      */
     private function obtenerTablaAlmacen(string $tipoAlmacen): string

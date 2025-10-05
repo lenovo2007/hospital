@@ -387,10 +387,27 @@ class DespachoPacienteController extends Controller
     {
         try {
             if (empty($codigoDespacho)) {
+                \Log::info('Código de despacho vacío');
                 return collect([]);
             }
 
-            return DB::table('lotes_grupos')
+            \Log::info('Buscando insumos para despacho: ' . $codigoDespacho);
+
+            // Primero verificar si existen registros en lotes_grupos con este código
+            $lotesGrupos = DB::table('lotes_grupos')
+                ->where('codigo', $codigoDespacho)
+                ->get();
+
+            \Log::info('Registros encontrados en lotes_grupos: ' . $lotesGrupos->count(), [
+                'codigo' => $codigoDespacho,
+                'registros' => $lotesGrupos->toArray()
+            ]);
+
+            if ($lotesGrupos->isEmpty()) {
+                return collect([]);
+            }
+
+            $resultado = DB::table('lotes_grupos')
                 ->leftJoin('lotes', 'lotes_grupos.lote_id', '=', 'lotes.id')
                 ->leftJoin('insumos', 'lotes.id_insumo', '=', 'insumos.id')
                 ->where('lotes_grupos.codigo', $codigoDespacho)
@@ -408,9 +425,17 @@ class DespachoPacienteController extends Controller
                     'lotes_grupos.id as lote_grupo_id'
                 )
                 ->get();
+
+            \Log::info('Resultado final de insumos: ' . $resultado->count(), [
+                'codigo' => $codigoDespacho,
+                'insumos' => $resultado->toArray()
+            ]);
+
+            return $resultado;
         } catch (\Exception $e) {
-            \Log::warning('Error obteniendo insumos para despacho: ' . $codigoDespacho, [
-                'error' => $e->getMessage()
+            \Log::error('Error obteniendo insumos para despacho: ' . $codigoDespacho, [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
             return collect([]);
         }

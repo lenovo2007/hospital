@@ -1811,15 +1811,10 @@ paths:
 
   /api/estadisticas/insumos-faltantes:
     get:
-      summary: Insumos faltantes en almacén por sede
+      summary: Insumos faltantes generales (todas las sedes)
       tags: [Estadísticas]
       security:
         - bearerAuth: []
-      parameters:
-        - name: sede_id
-          in: query
-          schema: { type: integer }
-          description: ID de la sede para filtrar estadísticas
       responses:
         '200':
           description: Insumos sin stock o con stock bajo
@@ -1836,9 +1831,39 @@ paths:
                       insumos_stock_bajo: { type: object }
                       resumen: { type: object }
 
+  /api/estadisticas/insumos-faltantes/sede/{sede_id}:
+    get:
+      summary: Insumos faltantes específicos por sede
+      tags: [Estadísticas]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sede_id
+          in: path
+          required: true
+          schema: { type: integer }
+          description: ID de la sede
+      responses:
+        '200':
+          description: Insumos sin stock o con stock bajo por sede
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      sede_info: { type: object }
+                      tipo_almacen: { type: string }
+                      insumos_sin_stock: { type: object }
+                      insumos_stock_bajo: { type: object }
+                      resumen: { type: object }
+
   /api/estadisticas/pacientes-estados:
     get:
-      summary: Estadísticas de estados de despachos a pacientes
+      summary: Estadísticas de estados de despachos a pacientes generales
       tags: [Estadísticas]
       security:
         - bearerAuth: []
@@ -1850,9 +1875,6 @@ paths:
           in: query
           schema: { type: string, format: date }
         - name: hospital_id
-          in: query
-          schema: { type: integer }
-        - name: sede_id
           in: query
           schema: { type: integer }
       responses:
@@ -1867,6 +1889,47 @@ paths:
                   data:
                     type: object
                     properties:
+                      total_despachos: { type: integer }
+                      total_pacientes_unicos: { type: integer }
+                      total_items_despachados: { type: integer }
+                      por_estado: { type: object }
+                      porcentajes: { type: object }
+                      filtros_aplicados: { type: object }
+
+  /api/estadisticas/pacientes-estados/sede/{sede_id}:
+    get:
+      summary: Estadísticas de estados de despachos a pacientes por sede específica
+      tags: [Estadísticas]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sede_id
+          in: path
+          required: true
+          schema: { type: integer }
+          description: ID de la sede
+        - name: fecha_desde
+          in: query
+          schema: { type: string, format: date }
+        - name: fecha_hasta
+          in: query
+          schema: { type: string, format: date }
+        - name: hospital_id
+          in: query
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Estadísticas de despachos por estado por sede
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      sede_info: { type: object }
                       total_despachos: { type: integer }
                       total_pacientes_unicos: { type: integer }
                       total_items_despachados: { type: integer }

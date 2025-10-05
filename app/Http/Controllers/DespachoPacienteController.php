@@ -366,6 +366,53 @@ class DespachoPacienteController extends Controller
     }
 
     /**
+     * Método de prueba para diagnosticar insumos
+     */
+    public function testInsumos($codigo)
+    {
+        try {
+            // Consulta directa a lotes_grupos
+            $lotesGrupos = DB::table('lotes_grupos')
+                ->where('codigo', $codigo)
+                ->get();
+
+            // Consulta con joins
+            $insumos = DB::table('lotes_grupos')
+                ->leftJoin('lotes', 'lotes_grupos.lote_id', '=', 'lotes.id')
+                ->leftJoin('insumos', 'lotes.id_insumo', '=', 'insumos.id')
+                ->where('lotes_grupos.codigo', $codigo)
+                ->where('lotes_grupos.status', 'activo')
+                ->select(
+                    'lotes_grupos.*',
+                    'lotes.id as lote_id_real',
+                    'lotes.numero_lote',
+                    'lotes.fecha_vencimiento',
+                    'lotes.id_insumo',
+                    'insumos.id as insumo_id',
+                    'insumos.nombre as insumo_nombre',
+                    'insumos.codigo as insumo_codigo'
+                )
+                ->get();
+
+            return response()->json([
+                'status' => true,
+                'codigo_buscado' => $codigo,
+                'lotes_grupos_raw' => $lotesGrupos,
+                'insumos_con_joins' => $insumos,
+                'count_lotes_grupos' => $lotesGrupos->count(),
+                'count_insumos' => $insumos->count(),
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ], 500);
+        }
+    }
+
+    /**
      * Eliminar (soft delete) un despacho
      */
     public function destroy($id)

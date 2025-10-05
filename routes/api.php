@@ -201,6 +201,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
         Route::get('/', [DespachoPacienteController::class, 'index']);
         Route::get('/sede/{sede_id}', [DespachoPacienteController::class, 'porSede']);
         Route::get('/sede/{sede_id}/simple', [DespachoPacienteController::class, 'porSedeSimple']);
+        Route::get('/test-insumos/{codigo}', [DespachoPacienteController::class, 'testInsumos']);
         Route::post('/', [DespachoPacienteController::class, 'despachar']);
         Route::get('/{id}', [DespachoPacienteController::class, 'show']);
         Route::put('/{id}', [DespachoPacienteController::class, 'update']);

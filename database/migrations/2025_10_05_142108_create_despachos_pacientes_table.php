@@ -11,6 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Verificar si la tabla ya existe antes de crearla
+        if (Schema::hasTable('despachos_pacientes')) {
+            return; // La tabla ya existe, no hacer nada
+        }
+
         Schema::create('despachos_pacientes', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('hospital_id');

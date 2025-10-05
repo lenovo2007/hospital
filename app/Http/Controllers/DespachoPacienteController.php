@@ -468,7 +468,7 @@ class DespachoPacienteController extends Controller
                     'lotes.id as lote_id',
                     'lotes.numero_lote',
                     'lotes.fecha_vencimiento',
-                    'lotes_grupos.cantidad as cantidad_despachada',
+                    'lotes_grupos.cantidad_salida as cantidad_despachada',
                     'lotes_grupos.id as lote_grupo_id'
                 )
                 ->get();

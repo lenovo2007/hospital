@@ -20,7 +20,6 @@ use App\Http\Controllers\DespachoPacienteController;
 use App\Http\Controllers\FichaInsumoController;
 use App\Http\Controllers\MovimientoStockController;
 use App\Http\Controllers\MovimientoDiscrepanciaController;
-use App\Http\Controllers\RecepcionPrincipalController;
 use App\Http\Controllers\SeguimientoController;
 use App\Http\Controllers\SeguimientoRepartidorController;
 use App\Http\Controllers\LoteGrupoController;

@@ -91,7 +91,9 @@ class DespachoPaciente extends Model
         return $this->estado === 'cancelado';
     }
 
-    // Generar código único de despacho
+    // Nota: Ahora se usa el mismo código que lotes_grupos (cod001, cod002, etc.)
+    // El método generarCodigoDespacho() ya no se usa
+    /*
     public static function generarCodigoDespacho(): string
     {
         $fecha = now()->format('Ymd');
@@ -102,4 +104,5 @@ class DespachoPaciente extends Model
         $numero = str_pad($ultimo + 1, 3, '0', STR_PAD_LEFT);
         return "DESP-{$fecha}-{$numero}";
     }
+    */
 }

@@ -69,11 +69,11 @@ class DespachoPacienteController extends Controller
                 $tipoAlmacen = $sede->tipo_almacen;
                 $tablaAlmacen = $this->obtenerTablaAlmacen($tipoAlmacen);
 
-                // Generar código único de despacho
-                $codigoDespacho = DespachoPaciente::generarCodigoDespacho();
-
-                // Crear grupo de lote para los items del movimiento usando el código de despacho
-                [$codigoGrupo, $grupoItems] = LoteGrupo::crearGrupoConCodigo($codigoDespacho, $data['items']);
+                // Crear grupo de lote para los items del movimiento (genera su propio código)
+                [$codigoGrupo, $grupoItems] = LoteGrupo::crearGrupo($data['items']);
+                
+                // Usar el mismo código del grupo de lotes para el despacho
+                $codigoDespacho = $codigoGrupo;
 
                 // Calcular la suma total de cantidades y descontar del almacén
                 $totalCantidad = 0;

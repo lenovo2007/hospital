@@ -17,17 +17,24 @@ class EstadisticasController extends Controller
      */
     public function insumos(Request $request)
     {
+        $sedeId = $request->get('sede_id');
         $mesActual = Carbon::now();
         $mesAnterior = Carbon::now()->subMonth();
 
+        // Query base para insumos
+        $queryBase = Insumo::where('status', true);
+        if ($sedeId) {
+            $queryBase->where('sede_id', $sedeId);
+        }
+
         // Total de insumos activos este mes
-        $totalActual = Insumo::where('status', true)
+        $totalActual = (clone $queryBase)
             ->whereMonth('created_at', $mesActual->month)
             ->whereYear('created_at', $mesActual->year)
             ->count();
 
         // Total de insumos activos mes anterior
-        $totalAnterior = Insumo::where('status', true)
+        $totalAnterior = (clone $queryBase)
             ->whereMonth('created_at', $mesAnterior->month)
             ->whereYear('created_at', $mesAnterior->year)
             ->count();
@@ -45,26 +52,28 @@ class EstadisticasController extends Controller
         }
 
         // Total general de insumos
-        $totalGeneral = Insumo::where('status', true)->count();
+        $totalGeneral = (clone $queryBase)->count();
 
-        // Insumos por sede
-        $insumosPorSede = DB::table('insumos')
-            ->join('sedes', 'insumos.sede_id', '=', 'sedes.id')
-            ->where('insumos.status', true)
-            ->select('sedes.nombre as sede', DB::raw('COUNT(*) as total'))
-            ->groupBy('sedes.id', 'sedes.nombre')
-            ->get();
+        // Información de la sede si se especifica
+        $sedeInfo = null;
+        if ($sedeId) {
+            $sedeInfo = DB::table('sedes')
+                ->join('hospitales', 'sedes.hospital_id', '=', 'hospitales.id')
+                ->where('sedes.id', $sedeId)
+                ->select('sedes.nombre as sede_nombre', 'hospitales.nombre as hospital_nombre')
+                ->first();
+        }
 
         return response()->json([
             'status' => true,
             'data' => [
+                'sede_info' => $sedeInfo,
                 'total_general' => $totalGeneral,
                 'nuevos_este_mes' => $totalActual,
                 'nuevos_mes_anterior' => $totalAnterior,
                 'porcentaje_cambio' => abs($porcentajeCambio),
                 'tendencia' => $tendencia,
                 'mensaje_comparacion' => $this->generarMensajeComparacion($porcentajeCambio, $tendencia),
-                'insumos_por_sede' => $insumosPorSede,
             ]
         ]);
     }
@@ -76,10 +85,18 @@ class EstadisticasController extends Controller
     public function movimientosEstados(Request $request)
     {
         // Filtros opcionales
+        $sedeId = $request->get('sede_id');
         $fechaDesde = $request->get('fecha_desde');
         $fechaHasta = $request->get('fecha_hasta');
 
         $query = MovimientoStock::query();
+
+        if ($sedeId) {
+            $query->where(function($q) use ($sedeId) {
+                $q->where('origen_sede_id', $sedeId)
+                  ->orWhere('destino_sede_id', $sedeId);
+            });
+        }
 
         if ($fechaDesde) {
             $query->whereDate('created_at', '>=', $fechaDesde);
@@ -112,9 +129,20 @@ class EstadisticasController extends Controller
             $porcentajes[$estado] = $total > 0 ? round(($cantidad / $total) * 100, 1) : 0;
         }
 
+        // Información de la sede si se especifica
+        $sedeInfo = null;
+        if ($sedeId) {
+            $sedeInfo = DB::table('sedes')
+                ->join('hospitales', 'sedes.hospital_id', '=', 'hospitales.id')
+                ->where('sedes.id', $sedeId)
+                ->select('sedes.nombre as sede_nombre', 'hospitales.nombre as hospital_nombre')
+                ->first();
+        }
+
         return response()->json([
             'status' => true,
             'data' => [
+                'sede_info' => $sedeInfo,
                 'total_movimientos' => $total,
                 'por_estado' => $resultado,
                 'porcentajes' => $porcentajes,
@@ -127,21 +155,43 @@ class EstadisticasController extends Controller
     }
 
     /**
-     * Insumos en falta en almacén central
+     * Insumos en falta en almacén por sede
      * GET /api/estadisticas/insumos-faltantes
      */
     public function insumosFaltantes(Request $request)
     {
-        // Insumos que existen en la tabla insumos pero no tienen stock en almacén central
-        $insumosSinStock = DB::table('insumos')
+        $sedeId = $request->get('sede_id');
+        
+        // Determinar el tipo de almacén según la sede
+        $tipoAlmacen = 'almacenes_centrales'; // Por defecto
+        $tablaAlmacen = 'almacenes_centrales';
+        
+        if ($sedeId) {
+            $sede = DB::table('sedes')->where('id', $sedeId)->first();
+            if ($sede) {
+                $tipoAlmacen = $sede->tipo_almacen;
+                $tablaAlmacen = $this->obtenerTablaAlmacen($tipoAlmacen);
+            }
+        }
+
+        // Query base para insumos
+        $queryBaseInsumos = DB::table('insumos')->where('insumos.status', true);
+        if ($sedeId) {
+            $queryBaseInsumos->where('insumos.sede_id', $sedeId);
+        }
+
+        // Insumos que existen pero no tienen stock en el almacén correspondiente
+        $insumosSinStock = (clone $queryBaseInsumos)
             ->leftJoin('lotes', 'insumos.id', '=', 'lotes.id_insumo')
-            ->leftJoin('almacenes_centrales', function($join) {
-                $join->on('lotes.id', '=', 'almacenes_centrales.lote_id')
-                     ->where('almacenes_centrales.status', true)
-                     ->where('almacenes_centrales.cantidad', '>', 0);
+            ->leftJoin($tablaAlmacen, function($join) use ($tablaAlmacen, $sedeId) {
+                $join->on('lotes.id', '=', $tablaAlmacen . '.lote_id')
+                     ->where($tablaAlmacen . '.status', true)
+                     ->where($tablaAlmacen . '.cantidad', '>', 0);
+                if ($sedeId) {
+                    $join->where($tablaAlmacen . '.sede_id', $sedeId);
+                }
             })
-            ->where('insumos.status', true)
-            ->whereNull('almacenes_centrales.id')
+            ->whereNull($tablaAlmacen . '.id')
             ->select(
                 'insumos.id',
                 'insumos.nombre',
@@ -153,27 +203,43 @@ class EstadisticasController extends Controller
             ->get();
 
         // Insumos con stock bajo (menos de 10 unidades)
-        $insumosStockBajo = DB::table('insumos')
+        $insumosStockBajo = (clone $queryBaseInsumos)
             ->join('lotes', 'insumos.id', '=', 'lotes.id_insumo')
-            ->join('almacenes_centrales', 'lotes.id', '=', 'almacenes_centrales.lote_id')
-            ->where('insumos.status', true)
-            ->where('almacenes_centrales.status', true)
-            ->where('almacenes_centrales.cantidad', '>', 0)
-            ->where('almacenes_centrales.cantidad', '<=', 10)
-            ->select(
+            ->join($tablaAlmacen, 'lotes.id', '=', $tablaAlmacen . '.lote_id')
+            ->where($tablaAlmacen . '.status', true)
+            ->where($tablaAlmacen . '.cantidad', '>', 0)
+            ->where($tablaAlmacen . '.cantidad', '<=', 10);
+            
+        if ($sedeId) {
+            $insumosStockBajo->where($tablaAlmacen . '.sede_id', $sedeId);
+        }
+            
+        $insumosStockBajo = $insumosStockBajo->select(
                 'insumos.id',
                 'insumos.nombre',
                 'insumos.codigo',
                 'insumos.codigo_alterno',
                 'insumos.presentacion',
-                DB::raw('SUM(almacenes_centrales.cantidad) as stock_actual')
+                DB::raw('SUM(' . $tablaAlmacen . '.cantidad) as stock_actual')
             )
             ->groupBy('insumos.id', 'insumos.nombre', 'insumos.codigo', 'insumos.codigo_alterno', 'insumos.presentacion')
             ->get();
 
+        // Información de la sede si se especifica
+        $sedeInfo = null;
+        if ($sedeId) {
+            $sedeInfo = DB::table('sedes')
+                ->join('hospitales', 'sedes.hospital_id', '=', 'hospitales.id')
+                ->where('sedes.id', $sedeId)
+                ->select('sedes.nombre as sede_nombre', 'hospitales.nombre as hospital_nombre', 'sedes.tipo_almacen')
+                ->first();
+        }
+
         return response()->json([
             'status' => true,
             'data' => [
+                'sede_info' => $sedeInfo,
+                'tipo_almacen' => $tipoAlmacen,
                 'insumos_sin_stock' => [
                     'total' => $insumosSinStock->count(),
                     'listado' => $insumosSinStock
@@ -272,15 +338,28 @@ class EstadisticasController extends Controller
      */
     public function dashboard(Request $request)
     {
+        $sedeId = $request->get('sede_id');
+        
         // Obtener estadísticas básicas de cada endpoint
         $insumos = $this->insumos($request)->getData()->data;
         $movimientos = $this->movimientosEstados($request)->getData()->data;
         $faltantes = $this->insumosFaltantes($request)->getData()->data;
         $pacientes = $this->pacientesEstados($request)->getData()->data;
 
+        // Información de la sede si se especifica
+        $sedeInfo = null;
+        if ($sedeId) {
+            $sedeInfo = DB::table('sedes')
+                ->join('hospitales', 'sedes.hospital_id', '=', 'hospitales.id')
+                ->where('sedes.id', $sedeId)
+                ->select('sedes.nombre as sede_nombre', 'hospitales.nombre as hospital_nombre', 'sedes.tipo_almacen')
+                ->first();
+        }
+
         return response()->json([
             'status' => true,
             'data' => [
+                'sede_info' => $sedeInfo,
                 'resumen_insumos' => [
                     'total' => $insumos->total_general,
                     'tendencia' => $insumos->tendencia,
@@ -321,5 +400,21 @@ class EstadisticasController extends Controller
             default:
                 return "Sin cambios respecto al mes pasado";
         }
+    }
+
+    /**
+     * Obtiene el nombre de la tabla según el tipo de almacén
+     */
+    private function obtenerTablaAlmacen(string $tipoAlmacen): string
+    {
+        return match ($tipoAlmacen) {
+            'almacenCent' => 'almacenes_centrales',
+            'almacenPrin' => 'almacenes_principales',
+            'almacenFarm' => 'almacenes_farmacia',
+            'almacenPar' => 'almacenes_paralelo',
+            'almacenServApoyo' => 'almacenes_servicios_apoyo',
+            'almacenServAtenciones' => 'almacenes_servicios_atenciones',
+            default => 'almacenes_centrales',
+        };
     }
 }

@@ -1634,10 +1634,15 @@ paths:
 
   /api/estadisticas/dashboard:
     get:
-      summary: Dashboard general de estadísticas
+      summary: Dashboard general de estadísticas por sede
       tags: [Estadísticas]
       security:
         - bearerAuth: []
+      parameters:
+        - name: sede_id
+          in: query
+          schema: { type: integer }
+          description: ID de la sede para filtrar estadísticas
       responses:
         '200':
           description: Resumen general de estadísticas
@@ -1658,10 +1663,15 @@ paths:
 
   /api/estadisticas/insumos:
     get:
-      summary: Estadísticas de insumos con comparación mensual
+      summary: Estadísticas de insumos con comparación mensual por sede
       tags: [Estadísticas]
       security:
         - bearerAuth: []
+      parameters:
+        - name: sede_id
+          in: query
+          schema: { type: integer }
+          description: ID de la sede para filtrar estadísticas
       responses:
         '200':
           description: Estadísticas de insumos
@@ -1684,11 +1694,15 @@ paths:
 
   /api/estadisticas/movimientos-estados:
     get:
-      summary: Estadísticas de estados de movimientos
+      summary: Estadísticas de estados de movimientos por sede
       tags: [Estadísticas]
       security:
         - bearerAuth: []
       parameters:
+        - name: sede_id
+          in: query
+          schema: { type: integer }
+          description: ID de la sede para filtrar estadísticas
         - name: fecha_desde
           in: query
           schema: { type: string, format: date }
@@ -1714,10 +1728,15 @@ paths:
 
   /api/estadisticas/insumos-faltantes:
     get:
-      summary: Insumos faltantes en almacén central
+      summary: Insumos faltantes en almacén por sede
       tags: [Estadísticas]
       security:
         - bearerAuth: []
+      parameters:
+        - name: sede_id
+          in: query
+          schema: { type: integer }
+          description: ID de la sede para filtrar estadísticas
       responses:
         '200':
           description: Insumos sin stock o con stock bajo

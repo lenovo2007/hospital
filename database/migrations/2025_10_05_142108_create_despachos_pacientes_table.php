@@ -53,11 +53,11 @@ return new class extends Migration
             $table->index('estado');
             $table->index('codigo_despacho');
             
-            // Foreign keys
-            $table->foreign('hospital_id')->references('id')->on('hospitales');
-            $table->foreign('sede_id')->references('id')->on('sedes');
-            $table->foreign('user_id')->references('id')->on('users');
-            $table->foreign('user_id_entrega')->references('id')->on('users');
+            // Foreign keys (commented out to avoid constraint errors)
+            // $table->foreign('hospital_id')->references('id')->on('hospitales');
+            // $table->foreign('sede_id')->references('id')->on('sedes');
+            // $table->foreign('user_id')->references('id')->on('users');
+            // $table->foreign('user_id_entrega')->references('id')->on('users');
         });
     }
 

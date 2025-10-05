@@ -72,8 +72,8 @@ class DespachoPacienteController extends Controller
                 // Generar código único de despacho
                 $codigoDespacho = DespachoPaciente::generarCodigoDespacho();
 
-                // Crear grupo de lote para los items del movimiento
-                [$codigoGrupo, $grupoItems] = LoteGrupo::crearGrupo($data['items']);
+                // Crear grupo de lote para los items del movimiento usando el código de despacho
+                [$codigoGrupo, $grupoItems] = LoteGrupo::crearGrupoConCodigo($codigoDespacho, $data['items']);
 
                 // Calcular la suma total de cantidades y descontar del almacén
                 $totalCantidad = 0;
@@ -113,7 +113,7 @@ class DespachoPacienteController extends Controller
                     'user_id' => $userId,
                 ]);
 
-                $codigoGrupo = $codigoDespacho; // Para la respuesta
+                // $codigoGrupo ya tiene el valor correcto del despacho
             });
 
             return response()->json([

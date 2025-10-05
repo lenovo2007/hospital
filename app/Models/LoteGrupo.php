@@ -17,6 +17,7 @@ class LoteGrupo extends Model
     protected $fillable = [
         'codigo',
         'lote_id',
+        'cantidad',
         'cantidad_salida',
         'cantidad_entrada',
         'discrepancia',
@@ -24,6 +25,7 @@ class LoteGrupo extends Model
     ];
 
     protected $casts = [
+        'cantidad' => 'integer',
         'cantidad_salida' => 'integer',
         'cantidad_entrada' => 'integer',
         'discrepancia' => 'boolean',
@@ -67,6 +69,31 @@ class LoteGrupo extends Model
             $grupoItem = self::create([
                 'codigo' => $codigo,
                 'lote_id' => $item['lote_id'],
+                'cantidad' => $item['cantidad'],
+                'cantidad_salida' => $item['cantidad'],
+                'cantidad_entrada' => 0,
+                'discrepancia' => false,
+                'status' => 'activo',
+            ]);
+
+            $grupoItems[] = $grupoItem;
+        }
+
+        return [$codigo, $grupoItems];
+    }
+
+    /**
+     * Crear grupo de items con código específico
+     */
+    public static function crearGrupoConCodigo(string $codigo, array $items): array
+    {
+        $grupoItems = [];
+
+        foreach ($items as $item) {
+            $grupoItem = self::create([
+                'codigo' => $codigo,
+                'lote_id' => $item['lote_id'],
+                'cantidad' => $item['cantidad'],
                 'cantidad_salida' => $item['cantidad'],
                 'cantidad_entrada' => 0,
                 'discrepancia' => false,

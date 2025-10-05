@@ -33,9 +33,11 @@ class MovimientoStock extends Model
         'codigo_grupo',
         'user_id',
         'user_id_receptor',
+        'datos_paciente',
     ];
 
     protected $casts = [
+        'datos_paciente' => 'array',
         'cantidad_salida_total' => 'integer',
         'cantidad_entrada_total' => 'integer',
         'discrepancia_total' => 'boolean',

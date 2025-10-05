@@ -10,13 +10,13 @@ use App\Http\Controllers\AlmacenPrincipalController;
 use App\Http\Controllers\AlmacenCentralController;
 use App\Http\Controllers\InsumoController;
 use App\Http\Controllers\AlmacenFarmaciaController;
-use App\Http\Controllers\AlmacenParaleloController;
 use App\Http\Controllers\AlmacenServiciosAtencionesController;
 use App\Http\Controllers\AlmacenServiciosApoyoController;
 use App\Http\Controllers\LoteController;
 use App\Http\Controllers\TipoHospitalDistribucionController;
 use App\Http\Controllers\DistribucionCentralController;
-use App\Http\Controllers\DistribucionInternaController;
+use App\Http\Controllers\RecepcionPrincipalController;
+use App\Http\Controllers\DespachoPacienteController;
 use App\Http\Controllers\FichaInsumoController;
 use App\Http\Controllers\MovimientoStockController;
 use App\Http\Controllers\MovimientoDiscrepanciaController;
@@ -195,6 +195,9 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
 
     // Recepción en almacén principal de una distribución central
     Route::post('/movimiento/almacen/entrada', [RecepcionPrincipalController::class, 'recibir']);
+
+    // Despacho directo a paciente
+    Route::post('/despacho/paciente', [DespachoPacienteController::class, 'despachar']);
 
     // CRUD Seguimientos (Administración)
     Route::apiResource('seguimientos', SeguimientoController::class);

@@ -1417,6 +1417,204 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/despachos-pacientes:
+    get:
+      summary: Listar despachos a pacientes
+      tags: [Despachos Pacientes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: hospital_id
+          in: query
+          schema: { type: integer }
+        - name: sede_id
+          in: query
+          schema: { type: integer }
+        - name: estado
+          in: query
+          schema: { type: string, enum: [pendiente, despachado, entregado, cancelado] }
+        - name: paciente_cedula
+          in: query
+          schema: { type: string }
+        - name: fecha_desde
+          in: query
+          schema: { type: string, format: date }
+        - name: fecha_hasta
+          in: query
+          schema: { type: string, format: date }
+        - name: per_page
+          in: query
+          schema: { type: integer, default: 15 }
+      responses:
+        '200':
+          description: Lista de despachos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      data: { type: array, items: { $ref: '#/components/schemas/DespachoPaciente' } }
+                      current_page: { type: integer }
+                      total: { type: integer }
+    post:
+      summary: Crear despacho a paciente
+      tags: [Despachos Pacientes]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [hospital_id, sede_id, fecha_despacho, paciente_nombres, paciente_apellidos, paciente_cedula, items]
+              properties:
+                hospital_id: { type: integer }
+                sede_id: { type: integer }
+                fecha_despacho: { type: string, format: date }
+                observaciones: { type: string }
+                paciente_nombres: { type: string }
+                paciente_apellidos: { type: string }
+                paciente_cedula: { type: string }
+                paciente_telefono: { type: string }
+                paciente_direccion: { type: string }
+                medico_tratante: { type: string }
+                diagnostico: { type: string }
+                indicaciones_medicas: { type: string }
+                items:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      lote_id: { type: integer }
+                      cantidad: { type: integer }
+      responses:
+        '200':
+          description: Despacho creado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: boolean }
+                  mensaje: { type: string }
+                  data:
+                    type: object
+                    properties:
+                      codigo_despacho: { type: string }
+                      paciente: { type: object }
+                      total_items: { type: integer }
+
+  /api/despachos-pacientes/{id}:
+    get:
+      summary: Ver despacho específico
+      tags: [Despachos Pacientes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Despacho encontrado
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: boolean }
+                  data: { $ref: '#/components/schemas/DespachoPaciente' }
+    put:
+      summary: Actualizar despacho
+      tags: [Despachos Pacientes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                observaciones: { type: string }
+                paciente_telefono: { type: string }
+                paciente_direccion: { type: string }
+                medico_tratante: { type: string }
+                diagnostico: { type: string }
+                indicaciones_medicas: { type: string }
+      responses:
+        '200':
+          description: Despacho actualizado
+    delete:
+      summary: Eliminar despacho
+      tags: [Despachos Pacientes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      responses:
+        '200':
+          description: Despacho eliminado
+
+  /api/despachos-pacientes/{id}/confirmar-entrega:
+    post:
+      summary: Confirmar entrega del despacho
+      tags: [Despachos Pacientes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                observaciones_entrega: { type: string }
+      responses:
+        '200':
+          description: Entrega confirmada
+
+  /api/despachos-pacientes/{id}/cancelar:
+    post:
+      summary: Cancelar despacho
+      tags: [Despachos Pacientes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: integer }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [motivo_cancelacion]
+              properties:
+                motivo_cancelacion: { type: string }
+      responses:
+        '200':
+          description: Despacho cancelado
+
   /api/insumos/codigo/{codigo}:
     get:
       summary: Ver insumo por código
@@ -2793,6 +2991,39 @@ components:
           type: object
           nullable: true
           example: {"campo": ["El campo es requerido"]}
+
+    DespachoPaciente:
+      type: object
+      properties:
+        id: { type: integer }
+        hospital_id: { type: integer }
+        sede_id: { type: integer }
+        almacen_tipo: { type: string }
+        fecha_despacho: { type: string, format: date }
+        observaciones: { type: string, nullable: true }
+        paciente_nombres: { type: string }
+        paciente_apellidos: { type: string }
+        paciente_cedula: { type: string }
+        paciente_telefono: { type: string, nullable: true }
+        paciente_direccion: { type: string, nullable: true }
+        medico_tratante: { type: string, nullable: true }
+        diagnostico: { type: string, nullable: true }
+        indicaciones_medicas: { type: string, nullable: true }
+        codigo_despacho: { type: string }
+        cantidad_total_items: { type: integer }
+        valor_total: { type: number, format: decimal, nullable: true }
+        estado: { type: string, enum: [pendiente, despachado, entregado, cancelado] }
+        fecha_entrega: { type: string, format: datetime, nullable: true }
+        user_id: { type: integer }
+        user_id_entrega: { type: integer, nullable: true }
+        status: { type: boolean }
+        created_at: { type: string, format: datetime }
+        updated_at: { type: string, format: datetime }
+        hospital: { type: object, nullable: true }
+        sede: { type: object, nullable: true }
+        usuario: { type: object, nullable: true }
+        usuario_entrega: { type: object, nullable: true }
+        lotes: { type: array, items: { type: object }, nullable: true }
 
     UserRequest:
       type: object

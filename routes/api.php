@@ -195,8 +195,16 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
     // Recepción en almacén principal de una distribución central
     Route::post('/movimiento/almacen/entrada', [RecepcionPrincipalController::class, 'recibir']);
 
-    // Despacho directo a paciente
-    Route::post('/despacho/paciente', [DespachoPacienteController::class, 'despachar']);
+    // Despachos a pacientes - CRUD completo
+    Route::prefix('despachos-pacientes')->group(function () {
+        Route::get('/', [DespachoPacienteController::class, 'index']);
+        Route::post('/', [DespachoPacienteController::class, 'despachar']);
+        Route::get('/{id}', [DespachoPacienteController::class, 'show']);
+        Route::put('/{id}', [DespachoPacienteController::class, 'update']);
+        Route::post('/{id}/confirmar-entrega', [DespachoPacienteController::class, 'confirmarEntrega']);
+        Route::post('/{id}/cancelar', [DespachoPacienteController::class, 'cancelar']);
+        Route::delete('/{id}', [DespachoPacienteController::class, 'destroy']);
+    });
 
     // CRUD Seguimientos (Administración)
     Route::apiResource('seguimientos', SeguimientoController::class);

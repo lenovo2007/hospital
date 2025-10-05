@@ -198,6 +198,13 @@ class DespachoPacienteController extends Controller
         $despachos = $query->orderBy('created_at', 'desc')
             ->paginate($request->get('per_page', 15));
 
+        // Agregar datos de insumos para cada despacho
+        $despachos->getCollection()->transform(function ($despacho) {
+            $insumos = $this->obtenerInsumosDespacho($despacho->codigo_despacho);
+            $despacho->insumos_despachados = $insumos;
+            return $despacho;
+        });
+
         return response()->json([
             'status' => true,
             'data' => $despachos,
@@ -209,9 +216,13 @@ class DespachoPacienteController extends Controller
      */
     public function show($id)
     {
-        $despacho = DespachoPaciente::with(['hospital', 'sede', 'usuario', 'usuarioEntrega', 'lotes'])
+        $despacho = DespachoPaciente::with(['hospital', 'sede', 'usuario'])
             ->where('status', true)
             ->findOrFail($id);
+
+        // Agregar datos de insumos
+        $insumos = $this->obtenerInsumosDespacho($despacho->codigo_despacho);
+        $despacho->insumos_despachados = $insumos;
 
         return response()->json([
             'status' => true,
@@ -245,55 +256,44 @@ class DespachoPacienteController extends Controller
     }
 
     /**
-     * Confirmar entrega del despacho
+     * Listar despachos por sede con datos de insumos
      */
-    public function confirmarEntrega(Request $request, $id)
+    public function porSede(Request $request, $sede_id)
     {
-        $despacho = DespachoPaciente::where('status', true)
-            ->where('estado', 'despachado')
-            ->findOrFail($id);
+        $query = DespachoPaciente::with(['hospital', 'sede', 'usuario'])
+            ->where('status', true)
+            ->where('sede_id', $sede_id);
 
-        $data = $request->validate([
-            'observaciones_entrega' => ['nullable', 'string', 'max:500'],
-        ]);
+        // Filtros opcionales
+        if ($request->filled('estado')) {
+            $query->where('estado', $request->estado);
+        }
 
-        $despacho->update([
-            'estado' => 'entregado',
-            'fecha_entrega' => now(),
-            'user_id_entrega' => $request->user()->id,
-            'observaciones' => $despacho->observaciones . 
-                ($data['observaciones_entrega'] ? "\n\nEntrega: " . $data['observaciones_entrega'] : ''),
-        ]);
+        if ($request->filled('paciente_cedula')) {
+            $query->where('paciente_cedula', 'like', '%' . $request->paciente_cedula . '%');
+        }
+
+        if ($request->filled('fecha_desde')) {
+            $query->whereDate('fecha_despacho', '>=', $request->fecha_desde);
+        }
+
+        if ($request->filled('fecha_hasta')) {
+            $query->whereDate('fecha_despacho', '<=', $request->fecha_hasta);
+        }
+
+        $despachos = $query->orderBy('created_at', 'desc')
+            ->paginate($request->get('per_page', 15));
+
+        // Agregar datos de insumos para cada despacho
+        $despachos->getCollection()->transform(function ($despacho) {
+            $insumos = $this->obtenerInsumosDespacho($despacho->codigo_despacho);
+            $despacho->insumos_despachados = $insumos;
+            return $despacho;
+        });
 
         return response()->json([
             'status' => true,
-            'mensaje' => 'Entrega confirmada exitosamente.',
-            'data' => $despacho->fresh(),
-        ]);
-    }
-
-    /**
-     * Cancelar un despacho
-     */
-    public function cancelar(Request $request, $id)
-    {
-        $despacho = DespachoPaciente::where('status', true)
-            ->whereIn('estado', ['pendiente', 'despachado'])
-            ->findOrFail($id);
-
-        $data = $request->validate([
-            'motivo_cancelacion' => ['required', 'string', 'max:500'],
-        ]);
-
-        $despacho->update([
-            'estado' => 'cancelado',
-            'observaciones' => $despacho->observaciones . "\n\nCancelado: " . $data['motivo_cancelacion'],
-        ]);
-
-        return response()->json([
-            'status' => true,
-            'mensaje' => 'Despacho cancelado exitosamente.',
-            'data' => $despacho->fresh(),
+            'data' => $despachos,
         ]);
     }
 

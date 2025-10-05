@@ -1569,51 +1569,69 @@ paths:
         '200':
           description: Despacho eliminado
 
-  /api/despachos-pacientes/{id}/confirmar-entrega:
-    post:
-      summary: Confirmar entrega del despacho
+  /api/despachos-pacientes/sede/{sede_id}:
+    get:
+      summary: Listar despachos por sede con datos de insumos
       tags: [Despachos Pacientes]
       security:
         - bearerAuth: []
       parameters:
-        - name: id
+        - name: sede_id
           in: path
           required: true
           schema: { type: integer }
-      requestBody:
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                observaciones_entrega: { type: string }
+        - name: estado
+          in: query
+          schema: { type: string, enum: [pendiente, despachado, entregado, cancelado] }
+        - name: paciente_cedula
+          in: query
+          schema: { type: string }
+        - name: fecha_desde
+          in: query
+          schema: { type: string, format: date }
+        - name: fecha_hasta
+          in: query
+          schema: { type: string, format: date }
+        - name: per_page
+          in: query
+          schema: { type: integer, default: 15 }
       responses:
         '200':
-          description: Entrega confirmada
-
-  /api/despachos-pacientes/{id}/cancelar:
-    post:
-      summary: Cancelar despacho
-      tags: [Despachos Pacientes]
-      security:
-        - bearerAuth: []
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema: { type: integer }
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required: [motivo_cancelacion]
-              properties:
-                motivo_cancelacion: { type: string }
-      responses:
-        '200':
-          description: Despacho cancelado
+          description: Lista de despachos por sede con insumos
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      data: 
+                        type: array
+                        items: 
+                          allOf:
+                            - $ref: '#/components/schemas/DespachoPaciente'
+                            - type: object
+                              properties:
+                                insumos_despachados:
+                                  type: array
+                                  items:
+                                    type: object
+                                    properties:
+                                      insumo_id: { type: integer }
+                                      insumo_nombre: { type: string }
+                                      insumo_codigo: { type: string }
+                                      insumo_codigo_alterno: { type: string }
+                                      insumo_presentacion: { type: string }
+                                      lote_id: { type: integer }
+                                      numero_lote: { type: string }
+                                      fecha_vencimiento: { type: string, format: date }
+                                      cantidad_despachada: { type: integer }
+                                      cantidad_recibida: { type: integer }
+                                      discrepancia: { type: boolean }
+                      current_page: { type: integer }
+                      total: { type: integer }
 
   /api/estadisticas/dashboard:
     get:
@@ -3162,8 +3180,22 @@ components:
         hospital: { type: object, nullable: true }
         sede: { type: object, nullable: true }
         usuario: { type: object, nullable: true }
-        usuario_entrega: { type: object, nullable: true }
-        lotes: { type: array, items: { type: object }, nullable: true }
+        insumos_despachados:
+          type: array
+          items:
+            type: object
+            properties:
+              insumo_id: { type: integer }
+              insumo_nombre: { type: string }
+              insumo_codigo: { type: string }
+              insumo_codigo_alterno: { type: string }
+              insumo_presentacion: { type: string }
+              lote_id: { type: integer }
+              numero_lote: { type: string }
+              fecha_vencimiento: { type: string, format: date }
+              cantidad_despachada: { type: integer }
+              cantidad_recibida: { type: integer }
+              discrepancia: { type: boolean }
 
     UserRequest:
       type: object

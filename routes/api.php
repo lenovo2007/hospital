@@ -196,14 +196,13 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
     // Recepción en almacén principal de una distribución central
     Route::post('/movimiento/almacen/entrada', [RecepcionPrincipalController::class, 'recibir']);
 
-    // Despachos a pacientes - CRUD completo
+    // Despachos a pacientes - CRUD simplificado
     Route::prefix('despachos-pacientes')->group(function () {
         Route::get('/', [DespachoPacienteController::class, 'index']);
+        Route::get('/sede/{sede_id}', [DespachoPacienteController::class, 'porSede']);
         Route::post('/', [DespachoPacienteController::class, 'despachar']);
         Route::get('/{id}', [DespachoPacienteController::class, 'show']);
         Route::put('/{id}', [DespachoPacienteController::class, 'update']);
-        Route::post('/{id}/confirmar-entrega', [DespachoPacienteController::class, 'confirmarEntrega']);
-        Route::post('/{id}/cancelar', [DespachoPacienteController::class, 'cancelar']);
         Route::delete('/{id}', [DespachoPacienteController::class, 'destroy']);
     });
 

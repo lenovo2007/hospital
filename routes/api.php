@@ -200,6 +200,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
     Route::prefix('despachos-pacientes')->group(function () {
         Route::get('/', [DespachoPacienteController::class, 'index']);
         Route::get('/sede/{sede_id}', [DespachoPacienteController::class, 'porSede']);
+        Route::get('/sede/{sede_id}/simple', [DespachoPacienteController::class, 'porSedeSimple']);
         Route::post('/', [DespachoPacienteController::class, 'despachar']);
         Route::get('/{id}', [DespachoPacienteController::class, 'show']);
         Route::put('/{id}', [DespachoPacienteController::class, 'update']);

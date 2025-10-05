@@ -260,41 +260,109 @@ class DespachoPacienteController extends Controller
      */
     public function porSede(Request $request, $sede_id)
     {
-        $query = DespachoPaciente::with(['hospital', 'sede', 'usuario'])
-            ->where('status', true)
-            ->where('sede_id', $sede_id);
+        try {
+            // Primero verificar si la sede existe
+            $sedeExists = DB::table('sedes')->where('id', $sede_id)->exists();
+            if (!$sedeExists) {
+                return response()->json([
+                    'status' => false,
+                    'mensaje' => 'Sede no encontrada.',
+                    'data' => null,
+                ], 404);
+            }
 
-        // Filtros opcionales
-        if ($request->filled('estado')) {
-            $query->where('estado', $request->estado);
+            // Consulta básica sin relaciones primero
+            $query = DespachoPaciente::where('status', true)
+                ->where('sede_id', $sede_id);
+
+            // Filtros opcionales
+            if ($request->filled('estado')) {
+                $query->where('estado', $request->estado);
+            }
+
+            if ($request->filled('paciente_cedula')) {
+                $query->where('paciente_cedula', 'like', '%' . $request->paciente_cedula . '%');
+            }
+
+            if ($request->filled('fecha_desde')) {
+                $query->whereDate('fecha_despacho', '>=', $request->fecha_desde);
+            }
+
+            if ($request->filled('fecha_hasta')) {
+                $query->whereDate('fecha_despacho', '<=', $request->fecha_hasta);
+            }
+
+            $despachos = $query->orderBy('created_at', 'desc')
+                ->paginate($request->get('per_page', 15));
+
+            // Cargar relaciones manualmente para evitar errores
+            $despachos->getCollection()->transform(function ($despacho) {
+                try {
+                    // Cargar relaciones de forma segura
+                    $despacho->load(['hospital', 'sede', 'usuario']);
+                    
+                    // Obtener insumos despachados
+                    $insumos = $this->obtenerInsumosDespacho($despacho->codigo_despacho);
+                    $despacho->insumos_despachados = $insumos;
+                } catch (\Exception $e) {
+                    // Si hay error en las relaciones, continuar sin ellas
+                    $despacho->insumos_despachados = [];
+                    \Log::warning('Error cargando relaciones para despacho: ' . $despacho->id, [
+                        'error' => $e->getMessage()
+                    ]);
+                }
+                return $despacho;
+            });
+
+            return response()->json([
+                'status' => true,
+                'data' => $despachos,
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error en porSede: ' . $e->getMessage(), [
+                'sede_id' => $sede_id,
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Error interno del servidor.',
+                'error' => config('app.debug') ? $e->getMessage() : 'Error interno',
+                'data' => null,
+            ], 500);
         }
+    }
 
-        if ($request->filled('paciente_cedula')) {
-            $query->where('paciente_cedula', 'like', '%' . $request->paciente_cedula . '%');
+    /**
+     * Versión simple para diagnosticar el problema
+     */
+    public function porSedeSimple(Request $request, $sede_id)
+    {
+        try {
+            // Consulta muy básica sin relaciones
+            $despachos = DB::table('despachos_pacientes')
+                ->where('status', true)
+                ->where('sede_id', $sede_id)
+                ->orderBy('created_at', 'desc')
+                ->limit(10)
+                ->get();
+
+            return response()->json([
+                'status' => true,
+                'mensaje' => 'Consulta simple exitosa',
+                'data' => $despachos,
+                'count' => $despachos->count()
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Error en consulta simple',
+                'error' => $e->getMessage(),
+                'trace' => config('app.debug') ? $e->getTraceAsString() : null
+            ], 500);
         }
-
-        if ($request->filled('fecha_desde')) {
-            $query->whereDate('fecha_despacho', '>=', $request->fecha_desde);
-        }
-
-        if ($request->filled('fecha_hasta')) {
-            $query->whereDate('fecha_despacho', '<=', $request->fecha_hasta);
-        }
-
-        $despachos = $query->orderBy('created_at', 'desc')
-            ->paginate($request->get('per_page', 15));
-
-        // Agregar datos de insumos para cada despacho
-        $despachos->getCollection()->transform(function ($despacho) {
-            $insumos = $this->obtenerInsumosDespacho($despacho->codigo_despacho);
-            $despacho->insumos_despachados = $insumos;
-            return $despacho;
-        });
-
-        return response()->json([
-            'status' => true,
-            'data' => $despachos,
-        ]);
     }
 
     /**
@@ -317,25 +385,36 @@ class DespachoPacienteController extends Controller
      */
     private function obtenerInsumosDespacho($codigoDespacho)
     {
-        return DB::table('lotes_grupos')
-            ->join('lotes', 'lotes_grupos.lote_id', '=', 'lotes.id')
-            ->join('insumos', 'lotes.id_insumo', '=', 'insumos.id')
-            ->where('lotes_grupos.codigo', $codigoDespacho)
-            ->where('lotes_grupos.status', true)
-            ->select(
-                'insumos.id as insumo_id',
-                'insumos.nombre as insumo_nombre',
-                'insumos.codigo as insumo_codigo',
-                'insumos.codigo_alterno as insumo_codigo_alterno',
-                'insumos.presentacion as insumo_presentacion',
-                'lotes.id as lote_id',
-                'lotes.numero_lote',
-                'lotes.fecha_vencimiento',
-                'lotes_grupos.cantidad_despachada',
-                'lotes_grupos.cantidad_recibida',
-                'lotes_grupos.discrepancia'
-            )
-            ->get();
+        try {
+            if (empty($codigoDespacho)) {
+                return collect([]);
+            }
+
+            return DB::table('lotes_grupos')
+                ->leftJoin('lotes', 'lotes_grupos.lote_id', '=', 'lotes.id')
+                ->leftJoin('insumos', 'lotes.id_insumo', '=', 'insumos.id')
+                ->where('lotes_grupos.codigo', $codigoDespacho)
+                ->where('lotes_grupos.status', true)
+                ->select(
+                    'insumos.id as insumo_id',
+                    'insumos.nombre as insumo_nombre',
+                    'insumos.codigo as insumo_codigo',
+                    'insumos.codigo_alterno as insumo_codigo_alterno',
+                    'insumos.presentacion as insumo_presentacion',
+                    'lotes.id as lote_id',
+                    'lotes.numero_lote',
+                    'lotes.fecha_vencimiento',
+                    'lotes_grupos.cantidad_despachada',
+                    'lotes_grupos.cantidad_recibida',
+                    'lotes_grupos.discrepancia'
+                )
+                ->get();
+        } catch (\Exception $e) {
+            \Log::warning('Error obteniendo insumos para despacho: ' . $codigoDespacho, [
+                'error' => $e->getMessage()
+            ]);
+            return collect([]);
+        }
     }
 
     /**

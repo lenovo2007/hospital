@@ -313,6 +313,32 @@ class DespachoPacienteController extends Controller
     }
 
     /**
+     * Obtener los insumos despachados para un despacho específico
+     */
+    private function obtenerInsumosDespacho($codigoDespacho)
+    {
+        return DB::table('lotes_grupos')
+            ->join('lotes', 'lotes_grupos.lote_id', '=', 'lotes.id')
+            ->join('insumos', 'lotes.id_insumo', '=', 'insumos.id')
+            ->where('lotes_grupos.codigo', $codigoDespacho)
+            ->where('lotes_grupos.status', true)
+            ->select(
+                'insumos.id as insumo_id',
+                'insumos.nombre as insumo_nombre',
+                'insumos.codigo as insumo_codigo',
+                'insumos.codigo_alterno as insumo_codigo_alterno',
+                'insumos.presentacion as insumo_presentacion',
+                'lotes.id as lote_id',
+                'lotes.numero_lote',
+                'lotes.fecha_vencimiento',
+                'lotes_grupos.cantidad_despachada',
+                'lotes_grupos.cantidad_recibida',
+                'lotes_grupos.discrepancia'
+            )
+            ->get();
+    }
+
+    /**
      * Obtiene el nombre de la tabla según el tipo de almacén
      */
     private function obtenerTablaAlmacen(string $tipoAlmacen): string

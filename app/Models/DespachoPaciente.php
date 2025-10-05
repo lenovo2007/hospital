@@ -11,6 +11,8 @@ class DespachoPaciente extends Model
 {
     use HasFactory;
 
+    protected $table = 'despachos_pacientes';
+
     protected $fillable = [
         'hospital_id',
         'sede_id',

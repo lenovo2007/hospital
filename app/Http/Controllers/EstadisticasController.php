@@ -126,44 +126,100 @@ class EstadisticasController extends Controller
         $fechaDesde = $request->get('fecha_desde');
         $fechaHasta = $request->get('fecha_hasta');
 
-        $query = MovimientoStock::query();
-
         if ($sedeId) {
-            $query->where(function($q) use ($sedeId) {
-                $q->where('origen_sede_id', $sedeId)
-                  ->orWhere('destino_sede_id', $sedeId);
-            });
-        }
+            // Consultas separadas para origen y destino
+            $queryOrigen = MovimientoStock::where('origen_sede_id', $sedeId);
+            $queryDestino = MovimientoStock::where('destino_sede_id', $sedeId);
 
-        if ($fechaDesde) {
-            $query->whereDate('created_at', '>=', $fechaDesde);
-        }
+            if ($fechaDesde) {
+                $queryOrigen->whereDate('created_at', '>=', $fechaDesde);
+                $queryDestino->whereDate('created_at', '>=', $fechaDesde);
+            }
 
-        if ($fechaHasta) {
-            $query->whereDate('created_at', '<=', $fechaHasta);
-        }
+            if ($fechaHasta) {
+                $queryOrigen->whereDate('created_at', '<=', $fechaHasta);
+                $queryDestino->whereDate('created_at', '<=', $fechaHasta);
+            }
 
-        // Contar por estados
-        $estadisticas = $query->select('estado', DB::raw('COUNT(*) as total'))
-            ->groupBy('estado')
-            ->get()
-            ->keyBy('estado');
+            // Estadísticas como origen
+            $estadisticasOrigen = $queryOrigen->select('estado', DB::raw('COUNT(*) as total'))
+                ->groupBy('estado')
+                ->get()
+                ->keyBy('estado');
 
-        // Asegurar que todos los estados estén presentes
-        $estados = ['pendiente', 'despachado', 'entregado', 'recibido', 'cancelado'];
-        $resultado = [];
+            // Estadísticas como destino
+            $estadisticasDestino = $queryDestino->select('estado', DB::raw('COUNT(*) as total'))
+                ->groupBy('estado')
+                ->get()
+                ->keyBy('estado');
 
-        foreach ($estados as $estado) {
-            $resultado[$estado] = $estadisticas->get($estado)?->total ?? 0;
-        }
+            // Asegurar que todos los estados estén presentes
+            $estados = ['pendiente', 'despachado', 'entregado', 'recibido', 'cancelado'];
+            
+            $resultadoOrigen = [];
+            $resultadoDestino = [];
+            $resultado = [];
 
-        // Total de movimientos
-        $total = array_sum($resultado);
+            foreach ($estados as $estado) {
+                $origenCount = $estadisticasOrigen->get($estado)?->total ?? 0;
+                $destinoCount = $estadisticasDestino->get($estado)?->total ?? 0;
+                
+                $resultadoOrigen[$estado] = $origenCount;
+                $resultadoDestino[$estado] = $destinoCount;
+                $resultado[$estado] = $origenCount + $destinoCount;
+            }
 
-        // Calcular porcentajes
-        $porcentajes = [];
-        foreach ($resultado as $estado => $cantidad) {
-            $porcentajes[$estado] = $total > 0 ? round(($cantidad / $total) * 100, 1) : 0;
+            // Totales
+            $totalOrigen = array_sum($resultadoOrigen);
+            $totalDestino = array_sum($resultadoDestino);
+            $total = $totalOrigen + $totalDestino;
+
+            // Calcular porcentajes
+            $porcentajes = [];
+            foreach ($resultado as $estado => $cantidad) {
+                $porcentajes[$estado] = $total > 0 ? round(($cantidad / $total) * 100, 1) : 0;
+            }
+
+        } else {
+            // Lógica original para consulta general
+            $query = MovimientoStock::query();
+
+            if ($fechaDesde) {
+                $query->whereDate('created_at', '>=', $fechaDesde);
+            }
+
+            if ($fechaHasta) {
+                $query->whereDate('created_at', '<=', $fechaHasta);
+            }
+
+            // Contar por estados
+            $estadisticas = $query->select('estado', DB::raw('COUNT(*) as total'))
+                ->groupBy('estado')
+                ->get()
+                ->keyBy('estado');
+
+            // Asegurar que todos los estados estén presentes
+            $estados = ['pendiente', 'despachado', 'entregado', 'recibido', 'cancelado'];
+            $resultado = [];
+
+            foreach ($estados as $estado) {
+                $resultado[$estado] = $estadisticas->get($estado)?->total ?? 0;
+            }
+
+            // Total de movimientos
+            $total = array_sum($resultado);
+
+            // Calcular porcentajes
+            $porcentajes = [];
+            foreach ($resultado as $estado => $cantidad) {
+                $porcentajes[$estado] = $total > 0 ? round(($cantidad / $total) * 100, 1) : 0;
+            }
+
+            // Para consulta general, no hay división origen/destino
+            $totalOrigen = null;
+            $totalDestino = null;
+            $resultadoOrigen = null;
+            $resultadoDestino = null;
         }
 
         // Información de la sede si se especifica
@@ -176,7 +232,7 @@ class EstadisticasController extends Controller
                 ->first();
         }
 
-        return response()->json([
+        $response = [
             'status' => true,
             'data' => [
                 'sede_info' => $sedeInfo,
@@ -188,7 +244,25 @@ class EstadisticasController extends Controller
                     'hasta' => $fechaHasta ?? 'hoy'
                 ]
             ]
-        ]);
+        ];
+
+        // Agregar desglose origen/destino solo para consultas por sede
+        if ($sedeId) {
+            $response['data']['desglose_sede'] = [
+                'como_origen' => [
+                    'total' => $totalOrigen,
+                    'por_estado' => $resultadoOrigen,
+                    'descripcion' => 'Movimientos que salen de esta sede'
+                ],
+                'como_destino' => [
+                    'total' => $totalDestino,
+                    'por_estado' => $resultadoDestino,
+                    'descripcion' => 'Movimientos que llegan a esta sede'
+                ]
+            ];
+        }
+
+        return response()->json($response);
     }
 
     /**
@@ -405,7 +479,9 @@ class EstadisticasController extends Controller
                 'resumen_movimientos' => [
                     'total' => $movimientos->total_movimientos,
                     'recibidos' => $movimientos->por_estado->recibido ?? 0,
-                    'pendientes' => $movimientos->por_estado->pendiente ?? 0
+                    'pendientes' => $movimientos->por_estado->pendiente ?? 0,
+                    'como_origen' => $movimientos->desglose_sede->como_origen->total ?? null,
+                    'como_destino' => $movimientos->desglose_sede->como_destino->total ?? null
                 ],
                 'resumen_faltantes' => [
                     'total_problemas' => $faltantes->resumen->total_problemas,

@@ -56,11 +56,11 @@ return new class extends Migration
             $table->index(['tipo_ingreso', 'estado']);
             $table->index('codigo_lotes_grupo');
             
-            // Claves foráneas
-            $table->foreign('hospital_id')->references('id')->on('hospitales');
-            $table->foreign('sede_id')->references('id')->on('sedes');
-            $table->foreign('user_id')->references('id')->on('users');
-            $table->foreign('user_id_procesado')->references('id')->on('users');
+            // Claves foráneas (opcional, se pueden agregar después si las tablas existen)
+            // $table->foreign('hospital_id')->references('id')->on('hospitales');
+            // $table->foreign('sede_id')->references('id')->on('sedes');
+            // $table->foreign('user_id')->references('id')->on('users');
+            // $table->foreign('user_id_procesado')->references('id')->on('users');
         });
     }
 

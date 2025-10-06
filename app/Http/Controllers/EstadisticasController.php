@@ -21,23 +21,63 @@ class EstadisticasController extends Controller
         $mesActual = Carbon::now();
         $mesAnterior = Carbon::now()->subMonth();
 
-        // Query base para insumos
-        $queryBase = Insumo::where('status', true);
         if ($sedeId) {
-            $queryBase->where('sede_id', $sedeId);
+            // Para sede específica: contar insumos únicos disponibles en el almacén de esa sede
+            $sede = DB::table('sedes')->where('id', $sedeId)->first();
+            $tablaAlmacen = $this->obtenerTablaAlmacen($sede->tipo_almacen);
+            
+            // Total de insumos únicos disponibles en el almacén de la sede
+            $totalGeneral = DB::table($tablaAlmacen)
+                ->join('lotes', $tablaAlmacen . '.lote_id', '=', 'lotes.id')
+                ->join('insumos', 'lotes.id_insumo', '=', 'insumos.id')
+                ->where($tablaAlmacen . '.sede_id', $sedeId)
+                ->where($tablaAlmacen . '.status', true)
+                ->where('insumos.status', true)
+                ->distinct('insumos.id')
+                ->count();
+
+            // Insumos agregados este mes al almacén
+            $totalActual = DB::table($tablaAlmacen)
+                ->join('lotes', $tablaAlmacen . '.lote_id', '=', 'lotes.id')
+                ->join('insumos', 'lotes.id_insumo', '=', 'insumos.id')
+                ->where($tablaAlmacen . '.sede_id', $sedeId)
+                ->where($tablaAlmacen . '.status', true)
+                ->where('insumos.status', true)
+                ->whereMonth($tablaAlmacen . '.created_at', $mesActual->month)
+                ->whereYear($tablaAlmacen . '.created_at', $mesActual->year)
+                ->distinct('insumos.id')
+                ->count();
+
+            // Insumos agregados mes anterior al almacén
+            $totalAnterior = DB::table($tablaAlmacen)
+                ->join('lotes', $tablaAlmacen . '.lote_id', '=', 'lotes.id')
+                ->join('insumos', 'lotes.id_insumo', '=', 'insumos.id')
+                ->where($tablaAlmacen . '.sede_id', $sedeId)
+                ->where($tablaAlmacen . '.status', true)
+                ->where('insumos.status', true)
+                ->whereMonth($tablaAlmacen . '.created_at', $mesAnterior->month)
+                ->whereYear($tablaAlmacen . '.created_at', $mesAnterior->year)
+                ->distinct('insumos.id')
+                ->count();
+        } else {
+            // Query base para insumos generales
+            $queryBase = Insumo::where('status', true);
+
+            // Total de insumos activos este mes
+            $totalActual = (clone $queryBase)
+                ->whereMonth('created_at', $mesActual->month)
+                ->whereYear('created_at', $mesActual->year)
+                ->count();
+
+            // Total de insumos activos mes anterior
+            $totalAnterior = (clone $queryBase)
+                ->whereMonth('created_at', $mesAnterior->month)
+                ->whereYear('created_at', $mesAnterior->year)
+                ->count();
+
+            // Total general de insumos
+            $totalGeneral = (clone $queryBase)->count();
         }
-
-        // Total de insumos activos este mes
-        $totalActual = (clone $queryBase)
-            ->whereMonth('created_at', $mesActual->month)
-            ->whereYear('created_at', $mesActual->year)
-            ->count();
-
-        // Total de insumos activos mes anterior
-        $totalAnterior = (clone $queryBase)
-            ->whereMonth('created_at', $mesAnterior->month)
-            ->whereYear('created_at', $mesAnterior->year)
-            ->count();
 
         // Calcular porcentaje de cambio
         $porcentajeCambio = 0;
@@ -50,9 +90,6 @@ class EstadisticasController extends Controller
             $porcentajeCambio = 100;
             $tendencia = 'aumento';
         }
-
-        // Total general de insumos
-        $totalGeneral = (clone $queryBase)->count();
 
         // Información de la sede si se especifica
         $sedeInfo = null;

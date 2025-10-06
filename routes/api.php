@@ -18,6 +18,7 @@ use App\Http\Controllers\DistribucionCentralController;
 use App\Http\Controllers\RecepcionPrincipalController;
 use App\Http\Controllers\DespachoPacienteController;
 use App\Http\Controllers\EstadisticasController;
+use App\Http\Controllers\IngresoDirectoController;
 use App\Http\Controllers\FichaInsumoController;
 use App\Http\Controllers\MovimientoStockController;
 use App\Http\Controllers\MovimientoDiscrepanciaController;
@@ -206,6 +207,14 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
         Route::get('/{id}', [DespachoPacienteController::class, 'show']);
         Route::put('/{id}', [DespachoPacienteController::class, 'update']);
         Route::delete('/{id}', [DespachoPacienteController::class, 'destroy']);
+    });
+
+    // Ingresos directos - Donaciones, compras, ajustes
+    Route::prefix('ingresos-directos')->group(function () {
+        Route::get('/', [IngresoDirectoController::class, 'index']);
+        Route::get('/sede/{sede_id}', [IngresoDirectoController::class, 'porSede']);
+        Route::post('/', [IngresoDirectoController::class, 'store']);
+        Route::get('/{id}', [IngresoDirectoController::class, 'show']);
     });
 
     // Estadísticas - Endpoints separados

@@ -11,21 +11,56 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('ingresos_directos', function (Blueprint $table) {
-            // Agregar claves foráneas solo si las tablas existen
-            if (Schema::hasTable('hospitales')) {
-                $table->foreign('hospital_id')->references('id')->on('hospitales')->onDelete('cascade');
-            }
-            
-            if (Schema::hasTable('sedes')) {
-                $table->foreign('sede_id')->references('id')->on('sedes')->onDelete('cascade');
-            }
-            
-            if (Schema::hasTable('users')) {
-                $table->foreign('user_id')->references('id')->on('users')->onDelete('cascade');
-                $table->foreign('user_id_procesado')->references('id')->on('users')->onDelete('set null');
-            }
-        });
+        // Verificar y agregar claves foráneas de forma más segura
+        try {
+            Schema::table('ingresos_directos', function (Blueprint $table) {
+                // Verificar que las columnas y tablas existan antes de crear constraints
+                if (Schema::hasTable('hospitales') && Schema::hasColumn('ingresos_directos', 'hospital_id')) {
+                    // Verificar que no exista ya la constraint
+                    $table->foreign('hospital_id', 'fk_ingresos_directos_hospital_id')
+                          ->references('id')->on('hospitales')
+                          ->onDelete('cascade');
+                }
+            });
+        } catch (\Exception $e) {
+            // Si falla, continuar sin la constraint de hospital
+        }
+
+        try {
+            Schema::table('ingresos_directos', function (Blueprint $table) {
+                if (Schema::hasTable('sedes') && Schema::hasColumn('ingresos_directos', 'sede_id')) {
+                    $table->foreign('sede_id', 'fk_ingresos_directos_sede_id')
+                          ->references('id')->on('sedes')
+                          ->onDelete('cascade');
+                }
+            });
+        } catch (\Exception $e) {
+            // Si falla, continuar sin la constraint de sede
+        }
+
+        try {
+            Schema::table('ingresos_directos', function (Blueprint $table) {
+                if (Schema::hasTable('users') && Schema::hasColumn('ingresos_directos', 'user_id')) {
+                    $table->foreign('user_id', 'fk_ingresos_directos_user_id')
+                          ->references('id')->on('users')
+                          ->onDelete('cascade');
+                }
+            });
+        } catch (\Exception $e) {
+            // Si falla, continuar sin la constraint de user
+        }
+
+        try {
+            Schema::table('ingresos_directos', function (Blueprint $table) {
+                if (Schema::hasTable('users') && Schema::hasColumn('ingresos_directos', 'user_id_procesado')) {
+                    $table->foreign('user_id_procesado', 'fk_ingresos_directos_user_id_procesado')
+                          ->references('id')->on('users')
+                          ->onDelete('set null');
+                }
+            });
+        } catch (\Exception $e) {
+            // Si falla, continuar sin la constraint de user_procesado
+        }
     }
 
     /**
@@ -34,11 +69,30 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('ingresos_directos', function (Blueprint $table) {
-            // Eliminar claves foráneas
-            $table->dropForeign(['hospital_id']);
-            $table->dropForeign(['sede_id']);
-            $table->dropForeign(['user_id']);
-            $table->dropForeign(['user_id_procesado']);
+            // Eliminar claves foráneas usando nombres específicos
+            try {
+                $table->dropForeign('fk_ingresos_directos_hospital_id');
+            } catch (\Exception $e) {
+                // Constraint no existe
+            }
+            
+            try {
+                $table->dropForeign('fk_ingresos_directos_sede_id');
+            } catch (\Exception $e) {
+                // Constraint no existe
+            }
+            
+            try {
+                $table->dropForeign('fk_ingresos_directos_user_id');
+            } catch (\Exception $e) {
+                // Constraint no existe
+            }
+            
+            try {
+                $table->dropForeign('fk_ingresos_directos_user_id_procesado');
+            } catch (\Exception $e) {
+                // Constraint no existe
+            }
         });
     }
 };

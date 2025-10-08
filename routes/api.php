@@ -226,6 +226,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
         Route::get('/insumos-faltantes', [EstadisticasController::class, 'insumosFaltantes']);
         Route::get('/pacientes-estados', [EstadisticasController::class, 'pacientesEstados']);
         Route::get('/flujo-inventario', [EstadisticasController::class, 'flujoInventario']);
+        Route::get('/insumos-recientes', [EstadisticasController::class, 'insumosRecientes']);
         
         // Rutas específicas por sede
         Route::get('/dashboard/sede/{sede_id}', [EstadisticasController::class, 'dashboardPorSede']);
@@ -234,6 +235,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
         Route::get('/insumos-faltantes/sede/{sede_id}', [EstadisticasController::class, 'insumosFaltantesPorSede']);
         Route::get('/pacientes-estados/sede/{sede_id}', [EstadisticasController::class, 'pacientesEstadosPorSede']);
         Route::get('/flujo-inventario/sede/{sede_id}', [EstadisticasController::class, 'flujoInventarioPorSede']);
+        Route::get('/insumos-recientes/sede/{sede_id}', [EstadisticasController::class, 'insumosRecientesPorSede']);
     });
 
     // CRUD Seguimientos (Administración)

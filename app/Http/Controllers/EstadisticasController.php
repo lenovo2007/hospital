@@ -876,6 +876,270 @@ class EstadisticasController extends Controller
     }
 
     /**
+     * Estadísticas de insumos recientes por tipo de movimiento
+     * GET /api/estadisticas/insumos-recientes
+     */
+    public function insumosRecientes(Request $request)
+    {
+        $sedeId = $request->get('sede_id');
+        $limite = $request->get('limite', 3); // Por defecto últimos 3
+        $fechaDesde = $request->get('fecha_desde');
+        $fechaHasta = $request->get('fecha_hasta');
+        
+        // Fechas por defecto: últimos 30 días
+        if (!$fechaDesde) {
+            $fechaDesde = Carbon::now()->subDays(30)->toDateString();
+        }
+        if (!$fechaHasta) {
+            $fechaHasta = Carbon::now()->toDateString();
+        }
+
+        // Información de la sede
+        $sedeInfo = null;
+        if ($sedeId) {
+            $sedeInfo = DB::table('sedes')
+                ->join('hospitales', 'sedes.hospital_id', '=', 'hospitales.id')
+                ->where('sedes.id', $sedeId)
+                ->select(
+                    'sedes.nombre as sede_nombre', 
+                    'hospitales.nombre as hospital_nombre',
+                    'sedes.tipo_almacen'
+                )
+                ->first();
+        }
+
+        // 1. ENTRADAS - Insumos recientes
+        $entradasMovimientos = $this->obtenerInsumosRecientesEntradas($sedeId, $fechaDesde, $fechaHasta, $limite, 'movimientos');
+        $entradasIngresos = $this->obtenerInsumosRecientesEntradas($sedeId, $fechaDesde, $fechaHasta, $limite, 'ingresos');
+        
+        // Combinar y obtener totales únicos
+        $entradasTotales = $this->combinarInsumosRecientes([$entradasMovimientos, $entradasIngresos], $limite);
+
+        // 2. SALIDAS - Insumos recientes
+        $salidasTransferencias = $this->obtenerInsumosRecientesSalidas($sedeId, $fechaDesde, $fechaHasta, $limite, 'transferencias');
+        $salidasDespachos = $this->obtenerInsumosRecientesSalidas($sedeId, $fechaDesde, $fechaHasta, $limite, 'despachos');
+
+        // 3. TRANSFERENCIAS específicas
+        $transferenciasDetalle = $this->obtenerInsumosRecientesTransferencias($sedeId, $fechaDesde, $fechaHasta, $limite);
+
+        // 4. DESPACHOS A PACIENTES específicos
+        $despachosPacientesDetalle = $this->obtenerInsumosRecientesDespachosPacientes($sedeId, $fechaDesde, $fechaHasta, $limite);
+
+        return response()->json([
+            'status' => true,
+            'data' => [
+                'sede_info' => $sedeInfo,
+                'periodo' => [
+                    'desde' => $fechaDesde,
+                    'hasta' => $fechaHasta
+                ],
+                'limite_resultados' => $limite,
+                'entradas' => [
+                    'totales' => $entradasTotales,
+                    'por_movimientos' => $entradasMovimientos,
+                    'por_ingresos_directos' => $entradasIngresos,
+                    'resumen' => [
+                        'total_insumos_diferentes' => count($entradasTotales),
+                        'cantidad_total' => array_sum(array_column($entradasTotales, 'cantidad_total'))
+                    ]
+                ],
+                'salidas' => [
+                    'totales' => $this->combinarInsumosRecientes([$salidasTransferencias, $salidasDespachos], $limite),
+                    'resumen' => [
+                        'total_insumos_diferentes' => count($this->combinarInsumosRecientes([$salidasTransferencias, $salidasDespachos], $limite)),
+                        'cantidad_total' => array_sum(array_column($this->combinarInsumosRecientes([$salidasTransferencias, $salidasDespachos], $limite), 'cantidad_total'))
+                    ]
+                ],
+                'transferencias' => [
+                    'insumos_recientes' => $transferenciasDetalle,
+                    'resumen' => [
+                        'total_insumos_diferentes' => count($transferenciasDetalle),
+                        'cantidad_total' => array_sum(array_column($transferenciasDetalle, 'cantidad_total'))
+                    ]
+                ],
+                'despachos_pacientes' => [
+                    'insumos_recientes' => $despachosPacientesDetalle,
+                    'resumen' => [
+                        'total_insumos_diferentes' => count($despachosPacientesDetalle),
+                        'cantidad_total' => array_sum(array_column($despachosPacientesDetalle, 'cantidad_total'))
+                    ]
+                ],
+                'fecha_actualizacion' => now()->format('Y-m-d H:i:s')
+            ]
+        ]);
+    }
+
+    /**
+     * Estadísticas de insumos recientes específicas por sede
+     * GET /api/estadisticas/insumos-recientes/sede/{sede_id}
+     */
+    public function insumosRecientesPorSede(Request $request, $sede_id)
+    {
+        $request->merge(['sede_id' => $sede_id]);
+        return $this->insumosRecientes($request);
+    }
+
+    /**
+     * Obtener insumos recientes de entradas (movimientos o ingresos directos)
+     */
+    private function obtenerInsumosRecientesEntradas($sedeId, $fechaDesde, $fechaHasta, $limite, $tipo)
+    {
+        if ($tipo === 'movimientos') {
+            // Entradas por movimientos (donde la sede es destino)
+            $query = DB::table('movimientos_stock as ms')
+                ->join('lotes_grupos as lg', 'ms.codigo_lotes_grupo', '=', 'lg.codigo')
+                ->join('lotes as l', 'lg.lote_id', '=', 'l.id')
+                ->join('insumos as i', 'l.id_insumo', '=', 'i.id')
+                ->where('ms.estado', 'recibido')
+                ->whereDate('ms.created_at', '>=', $fechaDesde)
+                ->whereDate('ms.created_at', '<=', $fechaHasta);
+
+            if ($sedeId) {
+                $query->where('ms.destino_sede_id', $sedeId);
+            }
+
+        } else { // ingresos directos
+            $query = DB::table('ingresos_directos as id')
+                ->join('lotes_grupos as lg', 'id.codigo_lotes_grupo', '=', 'lg.codigo')
+                ->join('lotes as l', 'lg.lote_id', '=', 'l.id')
+                ->join('insumos as i', 'l.id_insumo', '=', 'i.id')
+                ->where('id.estado', 'procesado')
+                ->whereDate('id.fecha_ingreso', '>=', $fechaDesde)
+                ->whereDate('id.fecha_ingreso', '<=', $fechaHasta);
+
+            if ($sedeId) {
+                $query->where('id.sede_id', $sedeId);
+            }
+        }
+
+        return $query->select(
+                'i.id as insumo_id',
+                'i.nombre as insumo_nombre',
+                'i.codigo as insumo_codigo',
+                'i.presentacion as insumo_presentacion',
+                DB::raw('SUM(lg.cantidad_entrada) as cantidad_total'),
+                DB::raw('COUNT(DISTINCT l.id) as total_lotes'),
+                DB::raw('MAX(' . ($tipo === 'movimientos' ? 'ms.created_at' : 'id.fecha_ingreso') . ') as fecha_reciente')
+            )
+            ->groupBy('i.id', 'i.nombre', 'i.codigo', 'i.presentacion')
+            ->orderBy('fecha_reciente', 'desc')
+            ->limit($limite)
+            ->get()
+            ->toArray();
+    }
+
+    /**
+     * Obtener insumos recientes de salidas
+     */
+    private function obtenerInsumosRecientesSalidas($sedeId, $fechaDesde, $fechaHasta, $limite, $tipo)
+    {
+        if ($tipo === 'transferencias') {
+            // Salidas por transferencias (donde la sede es origen)
+            $query = DB::table('movimientos_stock as ms')
+                ->join('lotes_grupos as lg', 'ms.codigo_lotes_grupo', '=', 'lg.codigo')
+                ->join('lotes as l', 'lg.lote_id', '=', 'l.id')
+                ->join('insumos as i', 'l.id_insumo', '=', 'i.id')
+                ->whereIn('ms.estado', ['despachado', 'entregado', 'recibido'])
+                ->whereDate('ms.created_at', '>=', $fechaDesde)
+                ->whereDate('ms.created_at', '<=', $fechaHasta);
+
+            if ($sedeId) {
+                $query->where('ms.origen_sede_id', $sedeId);
+            }
+
+            $cantidadField = 'lg.cantidad_salida';
+            $fechaField = 'ms.created_at';
+
+        } else { // despachos
+            $query = DB::table('despachos_pacientes as dp')
+                ->join('lotes_grupos as lg', 'dp.codigo_despacho', '=', 'lg.codigo')
+                ->join('lotes as l', 'lg.lote_id', '=', 'l.id')
+                ->join('insumos as i', 'l.id_insumo', '=', 'i.id')
+                ->whereIn('dp.estado', ['despachado', 'entregado'])
+                ->whereDate('dp.fecha_despacho', '>=', $fechaDesde)
+                ->whereDate('dp.fecha_despacho', '<=', $fechaHasta);
+
+            if ($sedeId) {
+                $query->where('dp.sede_id', $sedeId);
+            }
+
+            $cantidadField = 'lg.cantidad_salida';
+            $fechaField = 'dp.fecha_despacho';
+        }
+
+        return $query->select(
+                'i.id as insumo_id',
+                'i.nombre as insumo_nombre',
+                'i.codigo as insumo_codigo',
+                'i.presentacion as insumo_presentacion',
+                DB::raw("SUM($cantidadField) as cantidad_total"),
+                DB::raw('COUNT(DISTINCT l.id) as total_lotes'),
+                DB::raw("MAX($fechaField) as fecha_reciente")
+            )
+            ->groupBy('i.id', 'i.nombre', 'i.codigo', 'i.presentacion')
+            ->orderBy('fecha_reciente', 'desc')
+            ->limit($limite)
+            ->get()
+            ->toArray();
+    }
+
+    /**
+     * Obtener insumos recientes específicos de transferencias
+     */
+    private function obtenerInsumosRecientesTransferencias($sedeId, $fechaDesde, $fechaHasta, $limite)
+    {
+        return $this->obtenerInsumosRecientesSalidas($sedeId, $fechaDesde, $fechaHasta, $limite, 'transferencias');
+    }
+
+    /**
+     * Obtener insumos recientes específicos de despachos a pacientes
+     */
+    private function obtenerInsumosRecientesDespachosPacientes($sedeId, $fechaDesde, $fechaHasta, $limite)
+    {
+        return $this->obtenerInsumosRecientesSalidas($sedeId, $fechaDesde, $fechaHasta, $limite, 'despachos');
+    }
+
+    /**
+     * Combinar arrays de insumos recientes y eliminar duplicados
+     */
+    private function combinarInsumosRecientes($arrays, $limite)
+    {
+        $combinados = [];
+        $insumosVistos = [];
+
+        foreach ($arrays as $array) {
+            foreach ($array as $insumo) {
+                $insumoId = $insumo->insumo_id;
+                
+                if (!isset($insumosVistos[$insumoId])) {
+                    $insumosVistos[$insumoId] = true;
+                    $combinados[] = $insumo;
+                } else {
+                    // Si ya existe, sumar las cantidades
+                    foreach ($combinados as &$existente) {
+                        if ($existente->insumo_id == $insumoId) {
+                            $existente->cantidad_total += $insumo->cantidad_total;
+                            $existente->total_lotes += $insumo->total_lotes;
+                            // Mantener la fecha más reciente
+                            if ($insumo->fecha_reciente > $existente->fecha_reciente) {
+                                $existente->fecha_reciente = $insumo->fecha_reciente;
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+
+        // Ordenar por fecha más reciente y limitar
+        usort($combinados, function($a, $b) {
+            return strtotime($b->fecha_reciente) - strtotime($a->fecha_reciente);
+        });
+
+        return array_slice($combinados, 0, $limite);
+    }
+
+    /**
      * Obtiene el nombre de la tabla según el tipo de almacén
      */
     private function obtenerTablaAlmacen(string $tipoAlmacen): string

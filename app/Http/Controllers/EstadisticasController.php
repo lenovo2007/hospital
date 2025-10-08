@@ -987,7 +987,7 @@ class EstadisticasController extends Controller
         if ($tipo === 'movimientos') {
             // Entradas por movimientos (donde la sede es destino)
             $query = DB::table('movimientos_stock as ms')
-                ->join('lotes_grupos as lg', 'ms.codigo_lotes_grupo', '=', 'lg.codigo')
+                ->join('lotes_grupos as lg', 'ms.codigo_grupo', '=', 'lg.codigo')
                 ->join('lotes as l', 'lg.lote_id', '=', 'l.id')
                 ->join('insumos as i', 'l.id_insumo', '=', 'i.id')
                 ->where('ms.estado', 'recibido')
@@ -1036,7 +1036,7 @@ class EstadisticasController extends Controller
         if ($tipo === 'transferencias') {
             // Salidas por transferencias (donde la sede es origen)
             $query = DB::table('movimientos_stock as ms')
-                ->join('lotes_grupos as lg', 'ms.codigo_lotes_grupo', '=', 'lg.codigo')
+                ->join('lotes_grupos as lg', 'ms.codigo_grupo', '=', 'lg.codigo')
                 ->join('lotes as l', 'lg.lote_id', '=', 'l.id')
                 ->join('insumos as i', 'l.id_insumo', '=', 'i.id')
                 ->whereIn('ms.estado', ['despachado', 'entregado', 'recibido'])

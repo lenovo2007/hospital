@@ -2132,15 +2132,15 @@ paths:
         - name: limite
           in: query
           schema: { type: integer, minimum: 1, maximum: 50 }
-          description: Número de insumos recientes a mostrar (default: 3)
+          description: Número de insumos recientes a mostrar (default 3)
         - name: fecha_desde
           in: query
           schema: { type: string, format: date }
-          description: Fecha de inicio del período (default: últimos 30 días)
+          description: Fecha de inicio del período (default últimos 30 días)
         - name: fecha_hasta
           in: query
           schema: { type: string, format: date }
-          description: Fecha de fin del período (default: hoy)
+          description: Fecha de fin del período (default hoy)
       responses:
         '200':
           description: Insumos recientes por tipo de movimiento

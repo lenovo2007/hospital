@@ -1751,29 +1751,10 @@ paths:
       security:
         - bearerAuth: []
       parameters:
-        - name: fecha_desde
-          in: query
-          schema: { type: string, format: date }
-        - name: fecha_hasta
-          in: query
-          schema: { type: string, format: date }
-      responses:
-        '200':
-          description: Estadísticas por estado
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status: { type: boolean }
-                  data:
-                      total_movimientos: { type: integer }
-      parameters:
         - name: sede_id
-          in: path
-          required: true
+          in: query
           schema: { type: integer }
-          description: ID de la sede
+          description: ID de la sede (opcional)
         - name: fecha_desde
           in: query
           schema: { type: string, format: date }
@@ -1792,10 +1773,12 @@ paths:
                   data:
                     type: object
                     properties:
+                      sede_info: { type: object }
                       total_movimientos: { type: integer }
                       por_estado: { type: object }
                       porcentajes: { type: object }
                       periodo: { type: object }
+                      desglose_sede: { type: object }
 
   /api/estadisticas/insumos-faltantes:
     get:
@@ -2134,6 +2117,132 @@ paths:
                       por_estado: { type: object }
                       porcentajes: { type: object }
                       filtros_aplicados: { type: object }
+
+  /api/estadisticas/insumos-recientes:
+    get:
+      summary: Estadísticas de insumos recientes por tipo de movimiento
+      tags: [Estadísticas]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sede_id
+          in: query
+          schema: { type: integer }
+          description: ID de la sede (opcional)
+        - name: limite
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50 }
+          description: Número de insumos recientes a mostrar (default: 3)
+        - name: fecha_desde
+          in: query
+          schema: { type: string, format: date }
+          description: Fecha de inicio del período (default: últimos 30 días)
+        - name: fecha_hasta
+          in: query
+          schema: { type: string, format: date }
+          description: Fecha de fin del período (default: hoy)
+      responses:
+        '200':
+          description: Insumos recientes por tipo de movimiento
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      sede_info: { type: object }
+                      periodo:
+                        type: object
+                        properties:
+                          desde: { type: string, format: date }
+                          hasta: { type: string, format: date }
+                      limite_resultados: { type: integer }
+                      entradas:
+                        type: object
+                        properties:
+                          totales:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                insumo_id: { type: integer }
+                                insumo_nombre: { type: string }
+                                insumo_codigo: { type: string }
+                                insumo_presentacion: { type: string }
+                                cantidad_total: { type: integer }
+                                total_lotes: { type: integer }
+                                fecha_reciente: { type: string, format: date-time }
+                          por_movimientos: { type: array }
+                          por_ingresos_directos: { type: array }
+                          resumen:
+                            type: object
+                            properties:
+                              total_insumos_diferentes: { type: integer }
+                              cantidad_total: { type: integer }
+                      salidas:
+                        type: object
+                        properties:
+                          totales: { type: array }
+                          resumen: { type: object }
+                      transferencias:
+                        type: object
+                        properties:
+                          insumos_recientes: { type: array }
+                          resumen: { type: object }
+                      despachos_pacientes:
+                        type: object
+                        properties:
+                          insumos_recientes: { type: array }
+                          resumen: { type: object }
+                      fecha_actualizacion: { type: string }
+
+  /api/estadisticas/insumos-recientes/sede/{sede_id}:
+    get:
+      summary: Estadísticas de insumos recientes específicas por sede
+      tags: [Estadísticas]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sede_id
+          in: path
+          required: true
+          schema: { type: integer }
+          description: ID de la sede
+        - name: limite
+          in: query
+          schema: { type: integer, minimum: 1, maximum: 50 }
+          description: Número de insumos recientes a mostrar (default: 3)
+        - name: fecha_desde
+          in: query
+          schema: { type: string, format: date }
+        - name: fecha_hasta
+          in: query
+          schema: { type: string, format: date }
+      responses:
+        '200':
+          description: Insumos recientes por sede
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      sede_info:
+                        type: object
+                        properties:
+                          sede_nombre: { type: string }
+                          hospital_nombre: { type: string }
+                          tipo_almacen: { type: string }
+                      entradas: { type: object }
+                      salidas: { type: object }
+                      transferencias: { type: object }
+                      despachos_pacientes: { type: object }
 
   /api/insumos/codigo/{codigo}:
     get:

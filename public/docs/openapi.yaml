@@ -1767,19 +1767,7 @@ paths:
                 properties:
                   status: { type: boolean }
                   data:
-                    type: object
-                    properties:
                       total_movimientos: { type: integer }
-                      por_estado: { type: object }
-                      porcentajes: { type: object }
-                      periodo: { type: object }
-
-  /api/estadisticas/movimientos-estados/sede/{sede_id}:
-    get:
-      summary: Estadísticas de estados de movimientos por sede específica
-      tags: [Estadísticas]
-      security:
-        - bearerAuth: []
       parameters:
         - name: sede_id
           in: path

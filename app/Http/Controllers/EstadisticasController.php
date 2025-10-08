@@ -567,6 +567,315 @@ class EstadisticasController extends Controller
     }
 
     /**
+     * Estadísticas de flujo de inventario por sede
+     * GET /api/estadisticas/flujo-inventario
+     */
+    public function flujoInventario(Request $request)
+    {
+        $sedeId = $request->get('sede_id');
+        $fechaDesde = $request->get('fecha_desde');
+        $fechaHasta = $request->get('fecha_hasta');
+        
+        // Fechas por defecto: mes actual
+        $mesActual = Carbon::now();
+        $mesAnterior = Carbon::now()->subMonth();
+        
+        if (!$fechaDesde) {
+            $fechaDesde = $mesActual->startOfMonth()->toDateString();
+        }
+        if (!$fechaHasta) {
+            $fechaHasta = $mesActual->endOfMonth()->toDateString();
+        }
+
+        // Información de la sede
+        $sedeInfo = null;
+        if ($sedeId) {
+            $sedeInfo = DB::table('sedes')
+                ->join('hospitales', 'sedes.hospital_id', '=', 'hospitales.id')
+                ->where('sedes.id', $sedeId)
+                ->select(
+                    'sedes.nombre as sede_nombre', 
+                    'hospitales.nombre as hospital_nombre',
+                    'sedes.tipo_almacen'
+                )
+                ->first();
+        }
+
+        // 1. ENTRADAS
+        $entradas = $this->calcularEntradas($sedeId, $fechaDesde, $fechaHasta);
+        $entradasMesAnterior = $this->calcularEntradas($sedeId, 
+            $mesAnterior->startOfMonth()->toDateString(), 
+            $mesAnterior->endOfMonth()->toDateString()
+        );
+
+        // 2. SALIDAS (Transferencias + Despachos)
+        $salidas = $this->calcularSalidas($sedeId, $fechaDesde, $fechaHasta);
+        $salidasMesAnterior = $this->calcularSalidas($sedeId,
+            $mesAnterior->startOfMonth()->toDateString(), 
+            $mesAnterior->endOfMonth()->toDateString()
+        );
+
+        // 3. TRANSFERENCIAS (solo salidas hacia otras sedes)
+        $transferencias = $this->calcularTransferencias($sedeId, $fechaDesde, $fechaHasta);
+        $transferenciasMesAnterior = $this->calcularTransferencias($sedeId,
+            $mesAnterior->startOfMonth()->toDateString(), 
+            $mesAnterior->endOfMonth()->toDateString()
+        );
+
+        // 4. DESPACHOS A PACIENTES
+        $despachosPacientes = $this->calcularDespachosPacientes($sedeId, $fechaDesde, $fechaHasta);
+        $despachosPacientesMesAnterior = $this->calcularDespachosPacientes($sedeId,
+            $mesAnterior->startOfMonth()->toDateString(), 
+            $mesAnterior->endOfMonth()->toDateString()
+        );
+
+        return response()->json([
+            'status' => true,
+            'data' => [
+                'sede_info' => $sedeInfo,
+                'periodo' => [
+                    'desde' => $fechaDesde,
+                    'hasta' => $fechaHasta
+                ],
+                'entradas' => [
+                    'total' => $entradas['total'],
+                    'por_movimientos' => $entradas['por_movimientos'],
+                    'por_ingresos_directos' => $entradas['por_ingresos_directos'],
+                    'variacion_mes_anterior' => $this->calcularVariacion($entradas['total'], $entradasMesAnterior['total']),
+                    'detalle_variacion' => [
+                        'mes_actual' => $entradas['total'],
+                        'mes_anterior' => $entradasMesAnterior['total'],
+                        'diferencia' => $entradas['total'] - $entradasMesAnterior['total']
+                    ]
+                ],
+                'salidas' => [
+                    'total' => $salidas['total'],
+                    'variacion_mes_anterior' => $this->calcularVariacion($salidas['total'], $salidasMesAnterior['total']),
+                    'detalle_variacion' => [
+                        'mes_actual' => $salidas['total'],
+                        'mes_anterior' => $salidasMesAnterior['total'],
+                        'diferencia' => $salidas['total'] - $salidasMesAnterior['total']
+                    ]
+                ],
+                'transferencias' => [
+                    'total' => $transferencias['total'],
+                    'por_estado' => $transferencias['por_estado'],
+                    'variacion_mes_anterior' => $this->calcularVariacion($transferencias['total'], $transferenciasMesAnterior['total']),
+                    'detalle_variacion' => [
+                        'mes_actual' => $transferencias['total'],
+                        'mes_anterior' => $transferenciasMesAnterior['total'],
+                        'diferencia' => $transferencias['total'] - $transferenciasMesAnterior['total']
+                    ]
+                ],
+                'despachos_pacientes' => [
+                    'total' => $despachosPacientes['total'],
+                    'por_estado' => $despachosPacientes['por_estado'],
+                    'variacion_mes_anterior' => $this->calcularVariacion($despachosPacientes['total'], $despachosPacientesMesAnterior['total']),
+                    'detalle_variacion' => [
+                        'mes_actual' => $despachosPacientes['total'],
+                        'mes_anterior' => $despachosPacientesMesAnterior['total'],
+                        'diferencia' => $despachosPacientes['total'] - $despachosPacientesMesAnterior['total']
+                    ]
+                ],
+                'resumen' => [
+                    'balance_neto' => $entradas['total'] - $salidas['total'],
+                    'rotacion_inventario' => $entradas['total'] > 0 ? round(($salidas['total'] / $entradas['total']) * 100, 1) : 0,
+                    'actividad_total' => $entradas['total'] + $salidas['total']
+                ],
+                'fecha_actualizacion' => now()->format('Y-m-d H:i:s')
+            ]
+        ]);
+    }
+
+    /**
+     * Estadísticas de flujo específicas por sede
+     * GET /api/estadisticas/flujo-inventario/sede/{sede_id}
+     */
+    public function flujoInventarioPorSede(Request $request, $sede_id)
+    {
+        $request->merge(['sede_id' => $sede_id]);
+        return $this->flujoInventario($request);
+    }
+
+    /**
+     * Calcular entradas (movimientos + ingresos directos)
+     */
+    private function calcularEntradas($sedeId, $fechaDesde, $fechaHasta)
+    {
+        // Entradas por movimientos (donde la sede es destino)
+        $queryMovimientos = DB::table('movimientos_stock')
+            ->where('estado', 'recibido')
+            ->whereDate('created_at', '>=', $fechaDesde)
+            ->whereDate('created_at', '<=', $fechaHasta);
+
+        if ($sedeId) {
+            $queryMovimientos->where('destino_sede_id', $sedeId);
+        }
+
+        $entradasMovimientos = $queryMovimientos->count();
+
+        // Entradas por ingresos directos
+        $queryIngresos = DB::table('ingresos_directos')
+            ->where('estado', 'procesado')
+            ->whereDate('fecha_ingreso', '>=', $fechaDesde)
+            ->whereDate('fecha_ingreso', '<=', $fechaHasta);
+
+        if ($sedeId) {
+            $queryIngresos->where('sede_id', $sedeId);
+        }
+
+        $entradasIngresos = $queryIngresos->count();
+
+        return [
+            'total' => $entradasMovimientos + $entradasIngresos,
+            'por_movimientos' => $entradasMovimientos,
+            'por_ingresos_directos' => $entradasIngresos
+        ];
+    }
+
+    /**
+     * Calcular salidas (transferencias + despachos pacientes)
+     */
+    private function calcularSalidas($sedeId, $fechaDesde, $fechaHasta)
+    {
+        // Salidas por transferencias (donde la sede es origen)
+        $queryTransferencias = DB::table('movimientos_stock')
+            ->whereIn('estado', ['despachado', 'entregado', 'recibido'])
+            ->whereDate('created_at', '>=', $fechaDesde)
+            ->whereDate('created_at', '<=', $fechaHasta);
+
+        if ($sedeId) {
+            $queryTransferencias->where('origen_sede_id', $sedeId);
+        }
+
+        $salidasTransferencias = $queryTransferencias->count();
+
+        // Salidas por despachos a pacientes
+        $queryDespachos = DB::table('despachos_pacientes')
+            ->whereIn('estado', ['despachado', 'entregado'])
+            ->whereDate('fecha_despacho', '>=', $fechaDesde)
+            ->whereDate('fecha_despacho', '<=', $fechaHasta);
+
+        if ($sedeId) {
+            $queryDespachos->where('sede_id', $sedeId);
+        }
+
+        $salidasDespachos = $queryDespachos->count();
+
+        return [
+            'total' => $salidasTransferencias + $salidasDespachos
+        ];
+    }
+
+    /**
+     * Calcular transferencias específicamente
+     */
+    private function calcularTransferencias($sedeId, $fechaDesde, $fechaHasta)
+    {
+        $query = DB::table('movimientos_stock')
+            ->whereDate('created_at', '>=', $fechaDesde)
+            ->whereDate('created_at', '<=', $fechaHasta);
+
+        if ($sedeId) {
+            $query->where('origen_sede_id', $sedeId);
+        }
+
+        $transferencias = $query->select('estado', DB::raw('COUNT(*) as total'))
+            ->groupBy('estado')
+            ->get()
+            ->keyBy('estado');
+
+        $estados = ['pendiente', 'despachado', 'entregado', 'recibido', 'cancelado'];
+        $porEstado = [];
+        $total = 0;
+
+        foreach ($estados as $estado) {
+            $cantidad = $transferencias->get($estado)?->total ?? 0;
+            $porEstado[$estado] = $cantidad;
+            $total += $cantidad;
+        }
+
+        return [
+            'total' => $total,
+            'por_estado' => $porEstado
+        ];
+    }
+
+    /**
+     * Calcular despachos a pacientes específicamente
+     */
+    private function calcularDespachosPacientes($sedeId, $fechaDesde, $fechaHasta)
+    {
+        $query = DB::table('despachos_pacientes')
+            ->whereDate('fecha_despacho', '>=', $fechaDesde)
+            ->whereDate('fecha_despacho', '<=', $fechaHasta);
+
+        if ($sedeId) {
+            $query->where('sede_id', $sedeId);
+        }
+
+        $despachos = $query->select('estado', DB::raw('COUNT(*) as total'))
+            ->groupBy('estado')
+            ->get()
+            ->keyBy('estado');
+
+        $estados = ['pendiente', 'despachado', 'entregado', 'cancelado'];
+        $porEstado = [];
+        $total = 0;
+
+        foreach ($estados as $estado) {
+            $cantidad = $despachos->get($estado)?->total ?? 0;
+            $porEstado[$estado] = $cantidad;
+            $total += $cantidad;
+        }
+
+        return [
+            'total' => $total,
+            'por_estado' => $porEstado
+        ];
+    }
+
+    /**
+     * Calcular variación porcentual
+     */
+    private function calcularVariacion($actual, $anterior)
+    {
+        if ($anterior == 0) {
+            return $actual > 0 ? [
+                'porcentaje' => 100,
+                'tendencia' => 'aumento',
+                'mensaje' => 'Nuevo registro (100% más que el mes anterior)'
+            ] : [
+                'porcentaje' => 0,
+                'tendencia' => 'igual',
+                'mensaje' => 'Sin actividad en ambos períodos'
+            ];
+        }
+
+        $porcentaje = round((($actual - $anterior) / $anterior) * 100, 1);
+        
+        return [
+            'porcentaje' => $porcentaje,
+            'tendencia' => $porcentaje > 0 ? 'aumento' : ($porcentaje < 0 ? 'disminucion' : 'igual'),
+            'mensaje' => $this->generarMensajeVariacion($porcentaje)
+        ];
+    }
+
+    /**
+     * Generar mensaje descriptivo de variación
+     */
+    private function generarMensajeVariacion($porcentaje)
+    {
+        if ($porcentaje > 0) {
+            return "Aumento del {$porcentaje}% respecto al mes anterior";
+        } elseif ($porcentaje < 0) {
+            return "Disminución del " . abs($porcentaje) . "% respecto al mes anterior";
+        } else {
+            return "Sin cambios respecto al mes anterior";
+        }
+    }
+
+    /**
      * Obtiene el nombre de la tabla según el tipo de almacén
      */
     private function obtenerTablaAlmacen(string $tipoAlmacen): string

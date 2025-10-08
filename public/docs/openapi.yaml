@@ -2244,6 +2244,148 @@ paths:
                       transferencias: { type: object }
                       despachos_pacientes: { type: object }
 
+  /api/estadisticas/flujo-inventario:
+    get:
+      summary: Estadísticas completas de flujo de inventario (entradas, salidas, transferencias, despachos)
+      tags: [Estadísticas]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sede_id
+          in: query
+          schema: { type: integer }
+          description: ID de la sede (opcional)
+        - name: fecha_desde
+          in: query
+          schema: { type: string, format: date }
+          description: Fecha de inicio del período (default primer día del mes actual)
+        - name: fecha_hasta
+          in: query
+          schema: { type: string, format: date }
+          description: Fecha de fin del período (default último día del mes actual)
+      responses:
+        '200':
+          description: Estadísticas completas de flujo de inventario con comparaciones mensuales
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      sede_info: { type: object }
+                      periodo:
+                        type: object
+                        properties:
+                          desde: { type: string, format: date }
+                          hasta: { type: string, format: date }
+                      entradas:
+                        type: object
+                        properties:
+                          total: { type: integer }
+                          por_movimientos: { type: integer }
+                          por_ingresos_directos: { type: integer }
+                          variacion_mes_anterior:
+                            type: object
+                            properties:
+                              porcentaje: { type: number }
+                              tendencia: { type: string, enum: [aumento, disminucion, igual] }
+                              mensaje: { type: string }
+                          detalle_variacion:
+                            type: object
+                            properties:
+                              mes_actual: { type: integer }
+                              mes_anterior: { type: integer }
+                              diferencia: { type: integer }
+                      salidas:
+                        type: object
+                        properties:
+                          total: { type: integer }
+                          variacion_mes_anterior: { type: object }
+                          detalle_variacion: { type: object }
+                      transferencias:
+                        type: object
+                        properties:
+                          total: { type: integer }
+                          por_estado:
+                            type: object
+                            properties:
+                              pendiente: { type: integer }
+                              despachado: { type: integer }
+                              entregado: { type: integer }
+                              recibido: { type: integer }
+                              cancelado: { type: integer }
+                          variacion_mes_anterior: { type: object }
+                          detalle_variacion: { type: object }
+                      despachos_pacientes:
+                        type: object
+                        properties:
+                          total: { type: integer }
+                          por_estado:
+                            type: object
+                            properties:
+                              pendiente: { type: integer }
+                              despachado: { type: integer }
+                              entregado: { type: integer }
+                              cancelado: { type: integer }
+                          variacion_mes_anterior: { type: object }
+                          detalle_variacion: { type: object }
+                      resumen:
+                        type: object
+                        properties:
+                          balance_neto: { type: integer }
+                          rotacion_inventario: { type: number }
+                          actividad_total: { type: integer }
+                      fecha_actualizacion: { type: string }
+
+  /api/estadisticas/flujo-inventario/sede/{sede_id}:
+    get:
+      summary: Estadísticas de flujo de inventario específicas por sede
+      tags: [Estadísticas]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sede_id
+          in: path
+          required: true
+          schema: { type: integer }
+          description: ID de la sede
+        - name: fecha_desde
+          in: query
+          schema: { type: string, format: date }
+          description: Fecha de inicio del período
+        - name: fecha_hasta
+          in: query
+          schema: { type: string, format: date }
+          description: Fecha de fin del período
+      responses:
+        '200':
+          description: Estadísticas de flujo por sede específica
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: boolean }
+                  data:
+                    type: object
+                    properties:
+                      sede_info:
+                        type: object
+                        properties:
+                          sede_nombre: { type: string }
+                          hospital_nombre: { type: string }
+                          tipo_almacen: { type: string }
+                      periodo: { type: object }
+                      entradas: { type: object }
+                      salidas: { type: object }
+                      transferencias: { type: object }
+                      despachos_pacientes: { type: object }
+                      resumen: { type: object }
+                      fecha_actualizacion: { type: string }
+
   /api/insumos/codigo/{codigo}:
     get:
       summary: Ver insumo por código

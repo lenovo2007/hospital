@@ -250,7 +250,7 @@ class SeguimientoRepartidorController extends Controller
                 'i.nombre as insumo_nombre',
                 'i.codigo as insumo_codigo',
                 'i.presentacion as insumo_presentacion',
-                'i.categoria',
+                'i.tipo as insumo_tipo',
                 
                 // Datos del lote
                 'l.lote',
@@ -302,7 +302,7 @@ class SeguimientoRepartidorController extends Controller
                     'nombre' => $item->insumo_nombre,
                     'codigo' => $item->insumo_codigo,
                     'presentacion' => $item->insumo_presentacion,
-                    'categoria' => $item->categoria,
+                    'tipo' => $item->insumo_tipo,
                     'lote' => $item->lote,
                     'fecha_vencimiento' => $item->fecha_vencimiento,
                     'cantidad' => $item->cantidad_salida,

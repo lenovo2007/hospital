@@ -3551,7 +3551,7 @@ paths:
                                   nombre: { type: string }
                                   codigo: { type: string }
                                   presentacion: { type: string, nullable: true }
-                                  categoria: { type: string, nullable: true }
+                                  tipo: { type: string, nullable: true }
                                   lote: { type: string }
                                   fecha_vencimiento: { type: string, format: date, nullable: true }
                                   cantidad: { type: integer }

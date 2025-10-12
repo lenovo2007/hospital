@@ -13,6 +13,10 @@ return new class extends Migration
     {
         Schema::table('seguimientos', function (Blueprint $table) {
             $table->unsignedBigInteger('despachador_id')->nullable()->after('user_id_repartidor');
+        });
+        
+        // Agregar la clave foránea en una operación separada
+        Schema::table('seguimientos', function (Blueprint $table) {
             $table->foreign('despachador_id')->references('id')->on('users')->onDelete('set null');
         });
     }

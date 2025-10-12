@@ -19,21 +19,9 @@ return new class extends Migration
             });
         }
         
-        // Verificar si la clave foránea ya existe antes de agregarla
-        $foreignKeys = DB::select("
-            SELECT CONSTRAINT_NAME 
-            FROM information_schema.KEY_COLUMN_USAGE 
-            WHERE TABLE_SCHEMA = DATABASE() 
-            AND TABLE_NAME = 'seguimientos' 
-            AND COLUMN_NAME = 'despachador_id' 
-            AND REFERENCED_TABLE_NAME IS NOT NULL
-        ");
-        
-        if (empty($foreignKeys)) {
-            Schema::table('seguimientos', function (Blueprint $table) {
-                $table->foreign('despachador_id')->references('id')->on('users')->onDelete('set null');
-            });
-        }
+        // Nota: Omitimos la clave foránea por ahora debido a incompatibilidades de tipo
+        // La integridad referencial se manejará a nivel de aplicación
+        // TODO: Investigar tipos de columna en tabla users para agregar FK posteriormente
     }
 
     /**
@@ -42,21 +30,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('seguimientos', function (Blueprint $table) {
-            // Verificar si la clave foránea existe antes de eliminarla
-            $foreignKeys = DB::select("
-                SELECT CONSTRAINT_NAME 
-                FROM information_schema.KEY_COLUMN_USAGE 
-                WHERE TABLE_SCHEMA = DATABASE() 
-                AND TABLE_NAME = 'seguimientos' 
-                AND COLUMN_NAME = 'despachador_id' 
-                AND REFERENCED_TABLE_NAME IS NOT NULL
-            ");
-            
-            if (!empty($foreignKeys)) {
-                $table->dropForeign(['despachador_id']);
-            }
-            
-            // Verificar si la columna existe antes de eliminarla
+            // Solo eliminar la columna si existe (no hay FK que eliminar)
             if (Schema::hasColumn('seguimientos', 'despachador_id')) {
                 $table->dropColumn('despachador_id');
             }

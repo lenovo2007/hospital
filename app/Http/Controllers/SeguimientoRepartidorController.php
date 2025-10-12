@@ -180,6 +180,7 @@ class SeguimientoRepartidorController extends Controller
             $request->validate([
                 'origen_sede_id' => ['nullable', 'integer', 'min:1'],
                 'destino_sede_id' => ['nullable', 'integer', 'min:1'],
+                'sede_id' => ['nullable', 'integer', 'min:1'],
                 'fecha_desde' => ['nullable', 'date'],
                 'fecha_hasta' => ['nullable', 'date'],
                 'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
@@ -197,12 +198,21 @@ class SeguimientoRepartidorController extends Controller
                 ->where('lg.status', 'activo');
 
             // Aplicar filtros opcionales
-            if ($request->filled('origen_sede_id')) {
-                $query->where('ms.origen_sede_id', $request->origen_sede_id);
-            }
+            if ($request->filled('sede_id')) {
+                // Filtro general: mostrar movimientos donde la sede sea origen O destino
+                $query->where(function($q) use ($request) {
+                    $q->where('ms.origen_sede_id', $request->sede_id)
+                      ->orWhere('ms.destino_sede_id', $request->sede_id);
+                });
+            } else {
+                // Filtros específicos (solo si no se usa el filtro general)
+                if ($request->filled('origen_sede_id')) {
+                    $query->where('ms.origen_sede_id', $request->origen_sede_id);
+                }
 
-            if ($request->filled('destino_sede_id')) {
-                $query->where('ms.destino_sede_id', $request->destino_sede_id);
+                if ($request->filled('destino_sede_id')) {
+                    $query->where('ms.destino_sede_id', $request->destino_sede_id);
+                }
             }
 
             if ($request->filled('fecha_desde')) {
@@ -317,6 +327,7 @@ class SeguimientoRepartidorController extends Controller
                         'to' => $movimientos->lastItem(),
                     ],
                     'filtros_aplicados' => [
+                        'sede_id' => $request->sede_id,
                         'origen_sede_id' => $request->origen_sede_id,
                         'destino_sede_id' => $request->destino_sede_id,
                         'fecha_desde' => $request->fecha_desde,

@@ -3479,14 +3479,18 @@ paths:
       security:
         - bearerAuth: []
       parameters:
+        - name: sede_id
+          in: query
+          schema: { type: integer, minimum: 1 }
+          description: Filtro general - mostrar movimientos donde la sede sea origen O destino (tiene prioridad sobre filtros específicos)
         - name: origen_sede_id
           in: query
           schema: { type: integer, minimum: 1 }
-          description: Filtrar por sede de origen
+          description: Filtrar específicamente por sede de origen (solo si no se usa sede_id)
         - name: destino_sede_id
           in: query
           schema: { type: integer, minimum: 1 }
-          description: Filtrar por sede de destino
+          description: Filtrar específicamente por sede de destino (solo si no se usa sede_id)
         - name: fecha_desde
           in: query
           schema: { type: string, format: date }
@@ -3564,6 +3568,7 @@ paths:
                       filtros_aplicados:
                         type: object
                         properties:
+                          sede_id: { type: integer, nullable: true }
                           origen_sede_id: { type: integer, nullable: true }
                           destino_sede_id: { type: integer, nullable: true }
                           fecha_desde: { type: string, format: date, nullable: true }

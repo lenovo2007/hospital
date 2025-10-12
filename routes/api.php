@@ -247,6 +247,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
         Route::post('/seguimiento', [SeguimientoRepartidorController::class, 'actualizarSeguimiento']);
         Route::get('/seguimiento/{movimiento_stock_id}', [SeguimientoRepartidorController::class, 'obtenerSeguimiento']);
         Route::get('/movimientos', [SeguimientoRepartidorController::class, 'movimientosRepartidor']);
+        Route::get('/movimientos-pendientes', [SeguimientoRepartidorController::class, 'movimientosPendientes']);
     });
 
     // Distribución interna desde principal hacia farmacia/paralelo/servicios

@@ -18,6 +18,7 @@ class SeguimientoRepartidorController extends Controller
     {
         $data = $request->validate([
             'movimiento_stock_id' => ['required', 'integer', 'min:1'],
+            'despachador_id' => ['required', 'integer', 'min:1'],
             'estado' => ['required', 'string', 'in:despachado,en_camino,entregado'],
             'ubicacion' => ['nullable', 'array'],
             'ubicacion.lat' => ['required_with:ubicacion', 'numeric'],
@@ -46,7 +47,8 @@ class SeguimientoRepartidorController extends Controller
                     $data['estado'],
                     $userId,
                     $data['ubicacion'] ?? null,
-                    $data['observaciones'] ?? null
+                    $data['observaciones'] ?? null,
+                    $data['despachador_id'] ?? null
                 );
 
                 // Actualizar estado del movimiento según el estado del seguimiento

@@ -19,12 +19,14 @@ class Seguimiento extends Model
         'status',
         'observaciones',
         'user_id_repartidor',
+        'despachador_id',
     ];
 
     protected $casts = [
         'ubicacion' => 'array',
         'movimiento_stock_id' => 'integer',
         'user_id_repartidor' => 'integer',
+        'despachador_id' => 'integer',
     ];
 
     /**
@@ -44,6 +46,14 @@ class Seguimiento extends Model
     }
 
     /**
+     * Relación con User (despachador)
+     */
+    public function despachador(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'despachador_id');
+    }
+
+    /**
      * Crear un nuevo registro de seguimiento
      */
     public static function crearSeguimiento(
@@ -51,7 +61,8 @@ class Seguimiento extends Model
         string $estado,
         int $userIdRepartidor,
         ?array $ubicacion = null,
-        ?string $observaciones = null
+        ?string $observaciones = null,
+        ?int $despachadorId = null
     ): self {
         return self::create([
             'movimiento_stock_id' => $movimientoStockId,
@@ -60,6 +71,7 @@ class Seguimiento extends Model
             'status' => 'activo',
             'observaciones' => $observaciones,
             'user_id_repartidor' => $userIdRepartidor,
+            'despachador_id' => $despachadorId,
         ]);
     }
 

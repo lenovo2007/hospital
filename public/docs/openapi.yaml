@@ -3377,11 +3377,13 @@ paths:
               despachado:
                 value:
                   movimiento_stock_id: 1
+                  despachador_id: 5
                   estado: "despachado"
                   observaciones: "Saliendo del almacén central"
               en-camino:
                 value:
                   movimiento_stock_id: 1
+                  despachador_id: 5
                   estado: "en_camino"
                   ubicacion:
                     lat: 10.485123
@@ -3391,6 +3393,7 @@ paths:
               entregado:
                 value:
                   movimiento_stock_id: 1
+                  despachador_id: 5
                   estado: "entregado"
                   ubicacion:
                     lat: 10.490000
@@ -4390,12 +4393,16 @@ components:
     # Repartidor Schemas
     RepartidorSeguimientoRequest:
       type: object
-      required: [movimiento_stock_id, estado]
+      required: [movimiento_stock_id, despachador_id, estado]
       properties:
         movimiento_stock_id:
           type: integer
           minimum: 1
           description: ID del movimiento a actualizar
+        despachador_id:
+          type: integer
+          minimum: 1
+          description: ID del usuario que despacha/asigna el movimiento
         estado:
           type: string
           enum: [despachado, en_camino, entregado]

@@ -54,7 +54,7 @@ class SeguimientoRepartidorController extends Controller
                 // Actualizar estado del movimiento según el estado del seguimiento
                 $estadoMovimiento = match($data['estado']) {
                     'despachado' => 'despachado',
-                    'en_camino' => 'despachado', 
+                    'en_camino' => 'en_camino', 
                     'entregado' => 'entregado',
                 };
 

@@ -253,7 +253,7 @@ class SeguimientoRepartidorController extends Controller
                 'i.tipo as insumo_tipo',
                 
                 // Datos del lote
-                'l.lote',
+                'l.numero_lote as lote',
                 'l.fecha_vencimiento',
                 'lg.cantidad_salida',
                 'lg.codigo as lote_grupo_codigo'

@@ -264,4 +264,88 @@ class SeguimientoRepartidorController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Obtener movimientos en camino por sede
+     * GET /api/repartidor/movimientos-en-camino/{sede_id}
+     */
+    public function movimientosEnCamino(Request $request, $sedeId)
+    {
+        try {
+            $movimientos = MovimientoStock::whereHas('seguimientos')
+                ->with([
+                    'origenHospital:id,nombre',
+                    'origenSede:id,nombre',
+                    'destinoHospital:id,nombre',
+                    'destinoSede:id,nombre',
+                    'seguimientos' => function ($query) {
+                        $query->orderByDesc('created_at');
+                    }
+                ])
+                ->where('estado', 'en_camino')
+                ->where(function($query) use ($sedeId) {
+                    $query->where('origen_sede_id', $sedeId)
+                          ->orWhere('destino_sede_id', $sedeId);
+                })
+                ->orderByDesc('created_at')
+                ->get();
+
+            return response()->json([
+                'status' => true,
+                'mensaje' => 'Movimientos en camino obtenidos correctamente.',
+                'data' => $movimientos,
+            ], 200);
+
+        } catch (Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Error inesperado al obtener los movimientos en camino: ' . $e->getMessage(),
+                'data' => null,
+            ], 500);
+        }
+    }
+
+    /**
+     * Obtener movimientos entregados/recibidos por sede
+     * GET /api/repartidor/movimientos-entregados/{sede_id}
+     */
+    public function movimientosEntregados(Request $request, $sedeId)
+    {
+        try {
+            $movimientos = MovimientoStock::whereHas('seguimientos')
+                ->with([
+                    'origenHospital:id,nombre',
+                    'origenSede:id,nombre',
+                    'destinoHospital:id,nombre',
+                    'destinoSede:id,nombre',
+                    'seguimientos' => function ($query) {
+                        $query->orderByDesc('created_at');
+                    }
+                ])
+                ->whereIn('estado', ['entregado', 'recibido'])
+                ->where(function($query) use ($sedeId) {
+                    $query->where('origen_sede_id', $sedeId)
+                          ->orWhere('destino_sede_id', $sedeId);
+                })
+                ->orderByDesc('created_at')
+                ->get();
+
+            return response()->json([
+                'status' => true,
+                'mensaje' => 'Movimientos entregados obtenidos correctamente.',
+                'data' => $movimientos,
+            ], 200);
+
+        } catch (Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Error inesperado al obtener los movimientos entregados: ' . $e->getMessage(),
+                'data' => null,
+            ], 500);
+        }
+    }
 }

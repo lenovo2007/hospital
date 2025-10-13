@@ -248,6 +248,8 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
         Route::get('/seguimiento/{movimiento_stock_id}', [SeguimientoRepartidorController::class, 'obtenerSeguimiento']);
         Route::get('/movimientos', [SeguimientoRepartidorController::class, 'movimientosRepartidor']);
         Route::get('/movimientos-pendientes', [SeguimientoRepartidorController::class, 'movimientosPendientes']);
+        Route::get('/movimientos-en-camino/{sede_id}', [SeguimientoRepartidorController::class, 'movimientosEnCamino']);
+        Route::get('/movimientos-entregados/{sede_id}', [SeguimientoRepartidorController::class, 'movimientosEntregados']);
     });
 
     // Distribución interna desde principal hacia farmacia/paralelo/servicios

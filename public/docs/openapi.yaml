@@ -3584,6 +3584,78 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/repartidor/movimientos-en-camino/{sede_id}:
+    get:
+      summary: Obtener movimientos en camino por sede
+      description: |
+        Lista todos los movimientos con estado 'en_camino' que tengan registros de seguimiento
+        y estén relacionados con la sede especificada (como origen o destino).
+      tags: [Repartidor]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sede_id
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1 }
+          description: ID de la sede (busca en origen_sede_id y destino_sede_id)
+      responses:
+        '200':
+          description: Movimientos en camino obtenidos correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: boolean }
+                  mensaje: { type: string }
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MovimientoStockComplete'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/repartidor/movimientos-entregados/{sede_id}:
+    get:
+      summary: Obtener movimientos entregados/recibidos por sede
+      description: |
+        Lista todos los movimientos con estado 'entregado' o 'recibido' que tengan registros de seguimiento
+        y estén relacionados con la sede especificada (como origen o destino).
+      tags: [Repartidor]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sede_id
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1 }
+          description: ID de la sede (busca en origen_sede_id y destino_sede_id)
+      responses:
+        '200':
+          description: Movimientos entregados obtenidos correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: boolean }
+                  mensaje: { type: string }
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MovimientoStockComplete'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   # ========================================
   # DISCREPANCIAS
   # ========================================

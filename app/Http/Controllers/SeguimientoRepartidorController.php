@@ -51,10 +51,14 @@ class SeguimientoRepartidorController extends Controller
                     $data['despachador_id'] ?? null
                 );
 
+                // Verificar si 'en_camino' está disponible en el enum
+                $enumCheck = DB::select("SHOW COLUMNS FROM movimientos_stock WHERE Field = 'estado'");
+                $hasEnCamino = !empty($enumCheck) && strpos($enumCheck[0]->Type, 'en_camino') !== false;
+                
                 // Actualizar estado del movimiento según el estado del seguimiento
                 $estadoMovimiento = match($data['estado']) {
                     'despachado' => 'despachado',
-                    'en_camino' => 'en_camino', 
+                    'en_camino' => $hasEnCamino ? 'en_camino' : 'despachado',
                     'entregado' => 'entregado',
                 };
 

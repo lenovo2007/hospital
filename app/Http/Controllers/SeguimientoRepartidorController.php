@@ -272,17 +272,7 @@ class SeguimientoRepartidorController extends Controller
     public function movimientosEnCamino(Request $request, $sedeId)
     {
         try {
-            // Verificar si 'en_camino' está disponible en el enum
-            $enumCheck = DB::select("SHOW COLUMNS FROM movimientos_stock WHERE Field = 'estado'");
-            $hasEnCamino = !empty($enumCheck) && strpos($enumCheck[0]->Type, 'en_camino') !== false;
-            
-            // Usar los estados apropiados según disponibilidad
-            $estados = $hasEnCamino ? ['en_camino'] : ['despachado'];
-            
-            $movimientos = MovimientoStock::whereHas('seguimientos', function($query) {
-                    // Solo movimientos que tienen seguimientos con estado 'en_camino'
-                    $query->where('estado', 'en_camino');
-                })
+            $movimientos = MovimientoStock::whereHas('seguimientos')
                 ->with([
                     'origenHospital:id,nombre,direccion,telefono,email',
                     'origenSede:id,nombre,direccion,telefono,email',
@@ -292,7 +282,7 @@ class SeguimientoRepartidorController extends Controller
                         $query->orderByDesc('created_at');
                     }
                 ])
-                ->whereIn('estado', $estados)
+                ->where('estado', 'en_camino')
                 ->where(function($query) use ($sedeId) {
                     $query->where('origen_sede_id', $sedeId)
                           ->orWhere('destino_sede_id', $sedeId);

@@ -153,7 +153,6 @@ class SeguimientoRepartidorController extends Controller
                           ->orderByDesc('created_at');
                 }
             ])
-            ->whereIn('estado', ['pendiente', 'despachado', 'entregado'])
             ->orderByDesc('created_at')
             ->get();
 

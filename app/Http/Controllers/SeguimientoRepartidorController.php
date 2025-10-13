@@ -150,6 +150,10 @@ class SeguimientoRepartidorController extends Controller
                 'destinoSede:id,nombre',
                 'seguimientos' => function ($query) use ($userId) {
                     $query->where('user_id_repartidor', $userId)
+                          ->with([
+                              'despachador:id,name,email',
+                              'repartidor:id,name,email'
+                          ])
                           ->orderByDesc('created_at');
                 }
             ])
@@ -279,7 +283,11 @@ class SeguimientoRepartidorController extends Controller
                     'destinoHospital:id,nombre,direccion,telefono,email',
                     'destinoSede:id,nombre,direccion,telefono,email',
                     'seguimientos' => function ($query) {
-                        $query->orderByDesc('created_at');
+                        $query->with([
+                            'despachador:id,name,email',
+                            'repartidor:id,name,email'
+                        ])
+                        ->orderByDesc('created_at');
                     }
                 ])
                 ->where('estado', 'en_camino')
@@ -321,7 +329,11 @@ class SeguimientoRepartidorController extends Controller
                     'destinoHospital:id,nombre,direccion,telefono,email',
                     'destinoSede:id,nombre,direccion,telefono,email',
                     'seguimientos' => function ($query) {
-                        $query->orderByDesc('created_at');
+                        $query->with([
+                            'despachador:id,name,email',
+                            'repartidor:id,name,email'
+                        ])
+                        ->orderByDesc('created_at');
                     }
                 ])
                 ->whereIn('estado', ['entregado', 'recibido'])

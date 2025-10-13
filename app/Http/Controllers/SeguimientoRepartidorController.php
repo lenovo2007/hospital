@@ -272,17 +272,27 @@ class SeguimientoRepartidorController extends Controller
     public function movimientosEnCamino(Request $request, $sedeId)
     {
         try {
-            $movimientos = MovimientoStock::whereHas('seguimientos')
+            // Verificar si 'en_camino' está disponible en el enum
+            $enumCheck = DB::select("SHOW COLUMNS FROM movimientos_stock WHERE Field = 'estado'");
+            $hasEnCamino = !empty($enumCheck) && strpos($enumCheck[0]->Type, 'en_camino') !== false;
+            
+            // Usar los estados apropiados según disponibilidad
+            $estados = $hasEnCamino ? ['en_camino'] : ['despachado'];
+            
+            $movimientos = MovimientoStock::whereHas('seguimientos', function($query) {
+                    // Solo movimientos que tienen seguimientos con estado 'en_camino'
+                    $query->where('estado', 'en_camino');
+                })
                 ->with([
-                    'origenHospital:id,nombre',
-                    'origenSede:id,nombre',
-                    'destinoHospital:id,nombre',
-                    'destinoSede:id,nombre',
+                    'origenHospital:id,nombre,direccion,telefono,email',
+                    'origenSede:id,nombre,direccion,telefono,email',
+                    'destinoHospital:id,nombre,direccion,telefono,email',
+                    'destinoSede:id,nombre,direccion,telefono,email',
                     'seguimientos' => function ($query) {
                         $query->orderByDesc('created_at');
                     }
                 ])
-                ->where('estado', 'en_camino')
+                ->whereIn('estado', $estados)
                 ->where(function($query) use ($sedeId) {
                     $query->where('origen_sede_id', $sedeId)
                           ->orWhere('destino_sede_id', $sedeId);
@@ -316,10 +326,10 @@ class SeguimientoRepartidorController extends Controller
         try {
             $movimientos = MovimientoStock::whereHas('seguimientos')
                 ->with([
-                    'origenHospital:id,nombre',
-                    'origenSede:id,nombre',
-                    'destinoHospital:id,nombre',
-                    'destinoSede:id,nombre',
+                    'origenHospital:id,nombre,direccion,telefono,email',
+                    'origenSede:id,nombre,direccion,telefono,email',
+                    'destinoHospital:id,nombre,direccion,telefono,email',
+                    'destinoSede:id,nombre,direccion,telefono,email',
                     'seguimientos' => function ($query) {
                         $query->orderByDesc('created_at');
                     }

@@ -278,10 +278,10 @@ class SeguimientoRepartidorController extends Controller
         try {
             $movimientos = MovimientoStock::whereHas('seguimientos')
                 ->with([
-                    'origenHospital:id,nombre,direccion,telefono,email',
-                    'origenSede:id,nombre,direccion,telefono,email',
-                    'destinoHospital:id,nombre,direccion,telefono,email',
-                    'destinoSede:id,nombre,direccion,telefono,email',
+                    'origenHospital:id,nombre',
+                    'origenSede:id,nombre',
+                    'destinoHospital:id,nombre',
+                    'destinoSede:id,nombre',
                     'seguimientos' => function ($query) {
                         $query->with([
                             'despachador:id,name,email',
@@ -321,10 +321,10 @@ class SeguimientoRepartidorController extends Controller
         try {
             $movimientos = MovimientoStock::whereHas('seguimientos')
                 ->with([
-                    'origenHospital:id,nombre,direccion,telefono,email',
-                    'origenSede:id,nombre,direccion,telefono,email',
-                    'destinoHospital:id,nombre,direccion,telefono,email',
-                    'destinoSede:id,nombre,direccion,telefono,email',
+                    'origenHospital:id,nombre',
+                    'origenSede:id,nombre',
+                    'destinoHospital:id,nombre',
+                    'destinoSede:id,nombre',
                     'seguimientos' => function ($query) {
                         $query->with([
                             'despachador:id,name,email',

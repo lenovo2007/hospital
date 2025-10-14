@@ -283,7 +283,8 @@ class SeguimientoRepartidorController extends Controller
                     'destinoHospital:id,nombre',
                     'destinoSede:id,nombre',
                     'seguimientos' => function ($query) {
-                        $query->with([
+                        $query->where('estado', 'en_camino')
+                        ->with([
                             'despachador:id,nombre,email',
                             'repartidor:id,nombre,email'
                         ])

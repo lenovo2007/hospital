@@ -291,10 +291,7 @@ class SeguimientoRepartidorController extends Controller
                     }
                 ])
                 ->where('estado', 'en_camino')
-                ->where(function($query) use ($sedeId) {
-                    $query->where('origen_sede_id', $sedeId)
-                          ->orWhere('destino_sede_id', $sedeId);
-                })
+                ->where('destino_sede_id', $sedeId)
                 ->orderByDesc('created_at')
                 ->get();
 

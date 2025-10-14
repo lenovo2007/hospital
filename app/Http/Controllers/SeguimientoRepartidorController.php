@@ -151,8 +151,8 @@ class SeguimientoRepartidorController extends Controller
                 'seguimientos' => function ($query) use ($userId) {
                     $query->where('user_id_repartidor', $userId)
                           ->with([
-                              'despachador:id,name,email',
-                              'repartidor:id,name,email'
+                              'despachador:id,nombre,email',
+                              'repartidor:id,nombre,email'
                           ])
                           ->orderByDesc('created_at');
                 }
@@ -284,8 +284,8 @@ class SeguimientoRepartidorController extends Controller
                     'destinoSede:id,nombre',
                     'seguimientos' => function ($query) {
                         $query->with([
-                            'despachador:id,name,email',
-                            'repartidor:id,name,email'
+                            'despachador:id,nombre,email',
+                            'repartidor:id,nombre,email'
                         ])
                         ->orderByDesc('created_at');
                     }
@@ -327,8 +327,8 @@ class SeguimientoRepartidorController extends Controller
                     'destinoSede:id,nombre',
                     'seguimientos' => function ($query) {
                         $query->with([
-                            'despachador:id,name,email',
-                            'repartidor:id,name,email'
+                            'despachador:id,nombre,email',
+                            'repartidor:id,nombre,email'
                         ])
                         ->orderByDesc('created_at');
                     }

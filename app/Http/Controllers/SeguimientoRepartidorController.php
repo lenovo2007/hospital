@@ -34,7 +34,7 @@ class SeguimientoRepartidorController extends Controller
             DB::transaction(function () use ($data, $userId) {
                 // Buscar el movimiento
                 $movimiento = MovimientoStock::where('id', $data['movimiento_stock_id'])
-                    ->whereIn('estado', ['pendiente', 'despachado'])
+                    ->whereIn('estado', ['pendiente', 'despachado', 'en_camino'])
                     ->lockForUpdate()
                     ->first();
 

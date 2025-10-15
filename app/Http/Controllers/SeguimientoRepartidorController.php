@@ -279,10 +279,10 @@ class SeguimientoRepartidorController extends Controller
         try {
             $movimientos = MovimientoStock::whereHas('seguimientos')
                 ->with([
-                    'origenHospital:id,nombre',
-                    'origenSede:id,nombre',
-                    'destinoHospital:id,nombre',
-                    'destinoSede:id,nombre',
+                    'origenHospital',
+                    'origenSede',
+                    'destinoHospital',
+                    'destinoSede',
                     'seguimientos' => function ($query) {
                         $query->where('estado', 'en_camino')
                         ->with([

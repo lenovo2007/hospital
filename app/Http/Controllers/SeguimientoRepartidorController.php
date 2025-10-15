@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\LoteGrupo;
 use App\Models\MovimientoStock;
 use App\Models\Seguimiento;
 use Illuminate\Http\Request;
@@ -295,6 +296,23 @@ class SeguimientoRepartidorController extends Controller
                 ->where('destino_sede_id', $sedeId)
                 ->orderByDesc('created_at')
                 ->get();
+
+            $codigos = $movimientos->pluck('codigo_grupo')->filter()->unique()->values();
+
+            $lotesPorCodigo = $codigos->isNotEmpty()
+                ? LoteGrupo::with(['lote.insumo'])
+                    ->whereIn('codigo', $codigos)
+                    ->get()
+                    ->groupBy('codigo')
+                : collect();
+
+            $movimientos = $movimientos->map(function (MovimientoStock $movimiento) use ($lotesPorCodigo) {
+                $movimiento->lotes_grupos = $movimiento->codigo_grupo
+                    ? ($lotesPorCodigo->get($movimiento->codigo_grupo)?->values() ?? collect())
+                    : collect();
+
+                return $movimiento;
+            });
 
             return response()->json([
                 'status' => true,

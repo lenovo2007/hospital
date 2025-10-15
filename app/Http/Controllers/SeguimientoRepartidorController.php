@@ -332,6 +332,67 @@ class SeguimientoRepartidorController extends Controller
     }
 
     /**
+     * Obtener movimientos en camino por sede origen
+     * GET /api/repartidor/movimientos-en-camino/origen/{sede_id}
+     */
+    public function movimientosEnCaminoOrigen(Request $request, $sedeId)
+    {
+        try {
+            $movimientos = MovimientoStock::whereHas('seguimientos')
+                ->with([
+                    'origenHospital',
+                    'origenSede',
+                    'destinoHospital',
+                    'destinoSede',
+                    'seguimientos' => function ($query) {
+                        $query->where('estado', 'en_camino')
+                        ->with([
+                            'despachador:id,nombre,email',
+                            'repartidor:id,nombre,email'
+                        ])
+                        ->orderByDesc('created_at');
+                    }
+                ])
+                ->where('estado', 'en_camino')
+                ->where('origen_sede_id', $sedeId)
+                ->orderByDesc('created_at')
+                ->get();
+
+            $codigos = $movimientos->pluck('codigo_grupo')->filter()->unique()->values();
+
+            $lotesPorCodigo = $codigos->isNotEmpty()
+                ? LoteGrupo::with(['lote.insumo'])
+                    ->whereIn('codigo', $codigos)
+                    ->get()
+                    ->groupBy('codigo')
+                : collect();
+
+            $movimientos = $movimientos->map(function (MovimientoStock $movimiento) use ($lotesPorCodigo) {
+                $movimiento->lotes_grupos = $movimiento->codigo_grupo
+                    ? ($lotesPorCodigo->get($movimiento->codigo_grupo)?->values() ?? collect())
+                    : collect();
+
+                return $movimiento;
+            });
+
+            return response()->json([
+                'status' => true,
+                'mensaje' => 'Movimientos en camino desde sede origen obtenidos correctamente.',
+                'data' => $movimientos,
+            ], 200);
+
+        } catch (Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Error inesperado al obtener los movimientos en camino desde la sede origen: ' . $e->getMessage(),
+                'data' => null,
+            ], 500);
+        }
+    }
+
+    /**
      * Obtener movimientos entregados/recibidos por sede
      * GET /api/repartidor/movimientos-entregados/{sede_id}
      */

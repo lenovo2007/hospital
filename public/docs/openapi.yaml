@@ -3620,6 +3620,42 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/repartidor/movimientos-en-camino/origen/{sede_id}:
+    get:
+      summary: Obtener movimientos en camino por sede origen
+      description: |
+        Lista todos los movimientos con estado 'en_camino' que tengan registros de seguimiento
+        y cuyo origen corresponda con la sede especificada.
+      tags: [Repartidor]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sede_id
+          in: path
+          required: true
+          schema: { type: integer, minimum: 1 }
+          description: ID de la sede origen (coincide con origen_sede_id)
+      responses:
+        '200':
+          description: Movimientos en camino desde la sede origen obtenidos correctamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: boolean }
+                  mensaje: { type: string }
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/MovimientoStockComplete'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/repartidor/movimientos-entregados/{sede_id}:
     get:
       summary: Obtener movimientos entregados/recibidos por sede

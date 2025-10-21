@@ -282,7 +282,7 @@ class HospitalController extends Controller
     public function importExcel(Request $request)
     {
         $request->validate([
-            'file' => ['required','file','mimes:xlsx','max:10240']
+            'file' => ['required','file','mimes:xls,xlsx','max:10240']
         ]);
 
         // Verificar extensiones PHP requeridas

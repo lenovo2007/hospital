@@ -509,7 +509,7 @@ paths:
     post:
       summary: Importar hospitales desde Excel
       description: |
-        Importa hospitales desde un archivo Excel (.xlsx).
+        Importa hospitales desde un archivo Excel (.xls o .xlsx).
         
         **Formato del archivo:**
         - Columna A: RIF (puede ser NULL o '?')
@@ -548,7 +548,7 @@ paths:
                 file:
                   type: string
                   format: binary
-                  description: Archivo Excel (.xlsx) con los datos de hospitales
+                  description: Archivo Excel (.xls o .xlsx) con los datos de hospitales
       responses:
         '200':
           description: Importación completada

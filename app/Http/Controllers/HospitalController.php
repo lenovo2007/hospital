@@ -311,7 +311,8 @@ class HospitalController extends Controller
             $file = $request->file('file');
             $path = $file->getRealPath();
 
-            $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader('Xlsx');
+            // Detectar automáticamente el tipo de archivo (xls o xlsx)
+            $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($path);
             $reader->setReadDataOnly(true);
             $spreadsheet = $reader->load($path);
             $sheet = $spreadsheet->getActiveSheet();

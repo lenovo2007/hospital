@@ -110,32 +110,32 @@ class HospitalController extends Controller
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }
 
-    // GET /api/hospitales/rif/{rif}
-    public function showByRif(Request $request, string $rif)
+    // GET /api/hospitales/cod_sicm/{cod_sicm}
+    public function showByCodSicm(Request $request, string $cod_sicm)
     {
-        $hospital = Hospital::where('rif', $rif)->first();
+        $hospital = Hospital::where('cod_sicm', $cod_sicm)->first();
         if (!$hospital) {
             return response()->json([
                 'status' => true,
-                'mensaje' => 'Hospital no encontrado por ese RIF.',
+                'mensaje' => 'Hospital no encontrado por ese COD_SICM.',
                 'data' => null,
             ], 200, [], JSON_UNESCAPED_UNICODE);
         }
         return response()->json([
             'status' => true,
-            'mensaje' => 'Detalle de hospital por RIF.',
+            'mensaje' => 'Detalle de hospital por COD_SICM.',
             'data' => $hospital,
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }
 
-    // PUT /api/hospitales/rif/{rif}
-    public function updateByRif(Request $request, string $rif)
+    // PUT /api/hospitales/cod_sicm/{cod_sicm}
+    public function updateByCodSicm(Request $request, string $cod_sicm)
     {
-        $hospital = Hospital::where('rif', $rif)->first();
+        $hospital = Hospital::where('cod_sicm', $cod_sicm)->first();
         if (!$hospital) {
             return response()->json([
                 'status' => true,
-                'mensaje' => 'Hospital no encontrado por ese RIF.',
+                'mensaje' => 'Hospital no encontrado por ese COD_SICM.',
                 'data' => null,
             ], 200, [], JSON_UNESCAPED_UNICODE);
         }
@@ -168,7 +168,7 @@ class HospitalController extends Controller
 
         return response()->json([
             'status' => true,
-            'mensaje' => 'Hospital actualizado por RIF.',
+            'mensaje' => 'Hospital actualizado por COD_SICM.',
             'data' => $hospital,
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }

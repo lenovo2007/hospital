@@ -68,9 +68,9 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
     Route::delete('/users/{user}', [UserController::class, 'destroy']);
 
     // Hospitales CRUD
-    // Identificación por RIF (claridad de rutas)
-    Route::get('/hospitales/rif/{rif}', [HospitalController::class, 'showByRif']);
-    Route::put('/hospitales/rif/{rif}', [HospitalController::class, 'updateByRif']);
+    // Identificación por COD_SICM (claridad de rutas)
+    Route::get('/hospitales/cod_sicm/{cod_sicm}', [HospitalController::class, 'showByCodSicm']);
+    Route::put('/hospitales/cod_sicm/{cod_sicm}', [HospitalController::class, 'updateByCodSicm']);
     // Importación de hospitales desde Excel (.xlsx)
     Route::post('/hospitales/import', [HospitalController::class, 'importExcel'])
         ->withoutMiddleware(\App\Http\Middleware\CheckCrudPermissions::class);

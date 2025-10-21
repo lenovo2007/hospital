@@ -443,17 +443,19 @@ paths:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
 
-  /api/hospitales/rif/{rif}:
+  /api/hospitales/cod_sicm/{cod_sicm}:
     get:
-      summary: Ver hospital por RIF
+      summary: Ver hospital por COD_SICM
       tags: [Hospitales]
       security:
         - bearerAuth: []
       parameters:
-        - name: rif
+        - name: cod_sicm
           in: path
           required: true
           schema: { type: string }
+          description: Código SICM del hospital
+          example: "SICM-001"
       responses:
         '200':
           description: Hospital encontrado
@@ -463,15 +465,17 @@ paths:
                 $ref: '#/components/schemas/StandardResponse'
 
     put:
-      summary: Actualizar hospital por RIF
+      summary: Actualizar hospital por COD_SICM
       tags: [Hospitales]
       security:
         - bearerAuth: []
       parameters:
-        - name: rif
+        - name: cod_sicm
           in: path
           required: true
           schema: { type: string }
+          description: Código SICM del hospital
+          example: "SICM-001"
       requestBody:
         required: true
         content:

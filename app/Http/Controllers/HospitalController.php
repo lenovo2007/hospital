@@ -22,8 +22,8 @@ class HospitalController extends Controller
         if ($status !== 'all') {
             $query->where('status', $status);
         }
-        $items = $query->latest()->paginate(15);
-        $mensaje = $items->total() > 0 ? 'Listado de hospitales.' : 'hospitales no encontrado';
+        $items = $query->latest()->get();
+        $mensaje = $items->count() > 0 ? 'Listado de hospitales.' : 'hospitales no encontrado';
         return response()->json([
             'status' => true,
             'mensaje' => $mensaje,

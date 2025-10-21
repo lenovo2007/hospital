@@ -19,6 +19,7 @@ class Hospital extends Model
         'nombre_completo',
         'rif',
         'cod_sicm',
+        'codigo_alt',
         'email',
         'email_contacto',
         'telefono',
@@ -87,5 +88,44 @@ class Hospital extends Model
             'telefono' => 'No especificado',
             'email' => 'no-email@example.com',
         ]);
+    }
+
+    /**
+     * Generar el siguiente código alternativo único
+     *
+     * @return string
+     */
+    public static function generarCodigoAlt(): string
+    {
+        $ultimo = self::whereNotNull('codigo_alt')
+            ->orderByDesc('codigo_alt')
+            ->value('codigo_alt');
+
+        if (!$ultimo) {
+            return 'HOSP-0001';
+        }
+
+        // Extraer número del último código (formato: HOSP-0001)
+        if (preg_match('/HOSP-(\d+)/', $ultimo, $matches)) {
+            $ultimoNumero = (int) $matches[1];
+            $nuevoNumero = $ultimoNumero + 1;
+            return 'HOSP-' . str_pad($nuevoNumero, 4, '0', STR_PAD_LEFT);
+        }
+
+        return 'HOSP-0001';
+    }
+
+    /**
+     * Boot method to auto-generate codigo_alt
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($hospital) {
+            if (empty($hospital->codigo_alt)) {
+                $hospital->codigo_alt = self::generarCodigoAlt();
+            }
+        });
     }
 }

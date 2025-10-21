@@ -71,6 +71,9 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
     // Identificación por RIF (claridad de rutas)
     Route::get('/hospitales/rif/{rif}', [HospitalController::class, 'showByRif']);
     Route::put('/hospitales/rif/{rif}', [HospitalController::class, 'updateByRif']);
+    // Importación de hospitales desde Excel (.xlsx)
+    Route::post('/hospitales/import', [HospitalController::class, 'importExcel'])
+        ->withoutMiddleware(\App\Http\Middleware\CheckCrudPermissions::class);
     Route::get('/hospitales', [HospitalController::class, 'index']);
     Route::post('/hospitales', [HospitalController::class, 'store']);
     Route::get('/hospitales/{hospital}', [HospitalController::class, 'show']);

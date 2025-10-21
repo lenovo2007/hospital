@@ -348,27 +348,65 @@ class HospitalController extends Controller
                         continue;
                     }
 
-                    // Preparar ubicación JSON
+                    // Limpiar y validar RIF (convertir '?' a NULL)
+                    if ($rif === '?' || empty($rif)) {
+                        $rif = null;
+                    }
+
+                    // Limpiar y validar cod_sicm
+                    if ($cod_sicm === '?' || empty($cod_sicm)) {
+                        $cod_sicm = null;
+                    }
+
+                    // Limpiar y validar emails (evitar duplicados con valores genéricos)
+                    if (empty($email) || $email === '?' || strtoupper($email) === 'NO TIENE') {
+                        $email = null;
+                    }
+                    if (empty($email_contacto) || $email_contacto === '?') {
+                        $email_contacto = null;
+                    }
+
+                    // Truncar teléfono a 50 caracteres (límite de la BD)
+                    if (!empty($telefono) && $telefono !== '?') {
+                        $telefono = substr($telefono, 0, 50);
+                    } else {
+                        $telefono = null;
+                    }
+
+                    // Limpiar y validar coordenadas GPS
                     $ubicacion = null;
-                    if (!empty($lat) && !empty($lng)) {
-                        $ubicacion = ['lat' => $lat, 'lng' => $lng];
+                    if (!empty($lat) && !empty($lng) && $lat !== '?' && $lng !== '?') {
+                        // Extraer solo números y puntos de las coordenadas
+                        $latClean = preg_replace('/[^0-9.\-]/', '', $lat);
+                        $lngClean = preg_replace('/[^0-9.\-]/', '', $lng);
+                        
+                        // Validar que sean números válidos
+                        if (is_numeric($latClean) && is_numeric($lngClean)) {
+                            $latFloat = (float)$latClean;
+                            $lngFloat = (float)$lngClean;
+                            
+                            // Validar rangos válidos
+                            if ($latFloat >= -90 && $latFloat <= 90 && $lngFloat >= -180 && $lngFloat <= 180) {
+                                $ubicacion = ['lat' => (string)$latFloat, 'lng' => (string)$lngFloat];
+                            }
+                        }
                     }
 
                     // Preparar payload
                     $payload = [
                         'nombre' => $nombre,
-                        'rif' => !empty($rif) ? $rif : null,
-                        'cod_sicm' => !empty($cod_sicm) ? $cod_sicm : null,
+                        'rif' => $rif,
+                        'cod_sicm' => $cod_sicm,
                         'tipo' => !empty($tipo) ? $tipo : 'No especificado',
-                        'dependencia' => !empty($dependencia) ? $dependencia : null,
-                        'estado' => !empty($estado) ? $estado : null,
-                        'municipio' => !empty($municipio) ? $municipio : null,
-                        'parroquia' => !empty($parroquia) ? $parroquia : null,
-                        'email' => !empty($email) ? $email : null,
-                        'nombre_contacto' => !empty($nombre_contacto) ? $nombre_contacto : null,
-                        'email_contacto' => !empty($email_contacto) ? $email_contacto : null,
-                        'telefono' => !empty($telefono) ? $telefono : null,
-                        'direccion' => !empty($direccion) ? $direccion : null,
+                        'dependencia' => (!empty($dependencia) && $dependencia !== '?') ? $dependencia : null,
+                        'estado' => (!empty($estado) && $estado !== '?') ? $estado : null,
+                        'municipio' => (!empty($municipio) && $municipio !== '?') ? $municipio : null,
+                        'parroquia' => (!empty($parroquia) && $parroquia !== '?') ? $parroquia : null,
+                        'email' => $email,
+                        'nombre_contacto' => (!empty($nombre_contacto) && $nombre_contacto !== '?') ? $nombre_contacto : null,
+                        'email_contacto' => $email_contacto,
+                        'telefono' => $telefono,
+                        'direccion' => (!empty($direccion) && $direccion !== '?') ? $direccion : null,
                         'ubicacion' => $ubicacion,
                         'status' => 'activo',
                     ];
@@ -386,13 +424,35 @@ class HospitalController extends Controller
                     }
 
                     if ($existing) {
-                        // Actualizar
-                        $existing->update($payload);
-                        $updated++;
+                        // Actualizar - manejar conflictos de email
+                        try {
+                            // Si el email ya existe en otro hospital, no actualizar ese campo
+                            if ($payload['email'] && Hospital::where('email', $payload['email'])
+                                ->where('id', '!=', $existing->id)
+                                ->exists()) {
+                                $payload['email'] = $existing->email; // Mantener el email original
+                            }
+                            
+                            $existing->update($payload);
+                            $updated++;
+                        } catch (\Exception $e) {
+                            // Si falla la actualización, registrar error pero continuar
+                            $errors[] = ['fila' => $i, 'error' => 'Error al actualizar: ' . $e->getMessage()];
+                        }
                     } else {
-                        // Crear nuevo (codigo_alt se genera automáticamente)
-                        Hospital::create($payload);
-                        $created++;
+                        // Crear nuevo - manejar conflictos de email
+                        try {
+                            // Si el email ya existe, generar uno único o dejarlo NULL
+                            if ($payload['email'] && Hospital::where('email', $payload['email'])->exists()) {
+                                $payload['email'] = null; // Dejar NULL si hay conflicto
+                            }
+                            
+                            Hospital::create($payload);
+                            $created++;
+                        } catch (\Exception $e) {
+                            // Si falla la creación, registrar error pero continuar
+                            $errors[] = ['fila' => $i, 'error' => 'Error al crear: ' . $e->getMessage()];
+                        }
                     }
 
                 } catch (\Exception $e) {

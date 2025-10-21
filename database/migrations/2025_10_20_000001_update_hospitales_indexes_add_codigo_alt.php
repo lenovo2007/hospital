@@ -20,6 +20,9 @@ return new class extends Migration
                 } catch (\Exception $e) {
                     // El índice puede no existir en algunas instalaciones
                 }
+                
+                // Hacer el campo RIF nullable
+                $table->string('rif', 255)->nullable()->change();
             }
             
             // Agregar índice UNIQUE a cod_sicm (permitir NULL)

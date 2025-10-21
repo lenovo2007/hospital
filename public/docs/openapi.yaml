@@ -505,6 +505,104 @@ paths:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
 
+  /api/hospitales/import:
+    post:
+      summary: Importar hospitales desde Excel
+      description: |
+        Importa hospitales desde un archivo Excel (.xlsx).
+        
+        **Formato del archivo:**
+        - Columna A: RIF (puede ser NULL o '?')
+        - Columna B: COD_SICM (puede ser NULL o '?')
+        - Columna C: Nombre (requerido)
+        - Columna D: Tipo
+        - Columna E: Dependencia
+        - Columna F: Estado
+        - Columna G: Municipio
+        - Columna H: Parroquia
+        - Columna I: Email
+        - Columna J: Nombre Contacto
+        - Columna K: Email Contacto
+        - Columna L: Teléfono (máx 50 caracteres)
+        - Columna M: Dirección
+        - Columna N: Latitud
+        - Columna O: Longitud
+        
+        **Manejo de errores:**
+        - RIF NULL: Permitido
+        - Emails duplicados: Se establece como NULL
+        - Teléfonos largos: Se truncan a 50 caracteres
+        - Coordenadas inválidas: Se validan y limpian
+      tags: [Hospitales]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Archivo Excel (.xlsx) con los datos de hospitales
+      responses:
+        '200':
+          description: Importación completada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    example: true
+                  mensaje:
+                    type: string
+                    example: "Importación completada."
+                  data:
+                    type: object
+                    properties:
+                      creados:
+                        type: integer
+                        example: 214
+                      actualizados:
+                        type: integer
+                        example: 75
+                      omitidos:
+                        type: integer
+                        example: 2
+                      errores:
+                        type: integer
+                        example: 0
+                      detalles_omitidos:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            fila:
+                              type: integer
+                            motivo:
+                              type: string
+                      detalles_errores:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            fila:
+                              type: integer
+                            error:
+                              type: string
+        '400':
+          description: Error en el archivo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
   # ========================================
   # SEDES
   # ========================================
@@ -3942,6 +4040,327 @@ paths:
       responses:
         '200':
           description: Detalle de la distribución
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  # ========================================
+  # FICHAS DE INSUMOS
+  # ========================================
+  /api/ficha-insumos:
+    get:
+      summary: Listar fichas de insumos
+      description: Obtiene un listado paginado de fichas de insumos con filtros opcionales
+      tags: [Fichas de Insumos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: hospital_id
+          in: query
+          schema:
+            type: integer
+          description: Filtrar por hospital
+        - name: insumo_id
+          in: query
+          schema:
+            type: integer
+          description: Filtrar por insumo
+        - name: status
+          in: query
+          schema:
+            type: boolean
+          description: Filtrar por estado
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+          description: Cantidad de resultados por página
+      responses:
+        '200':
+          description: Listado de fichas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+    post:
+      summary: Crear una ficha de insumo
+      description: Crea una nueva ficha de insumo para un hospital
+      tags: [Fichas de Insumos]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - hospital_id
+                - insumo_id
+              properties:
+                hospital_id:
+                  type: integer
+                  example: 5
+                insumo_id:
+                  type: integer
+                  example: 123
+                cantidad:
+                  type: integer
+                  default: 0
+                  example: 0
+                status:
+                  type: boolean
+                  default: true
+                  example: true
+      responses:
+        '201':
+          description: Ficha creada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/ficha-insumos/{id}:
+    get:
+      summary: Obtener detalle de una ficha
+      tags: [Fichas de Insumos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detalle de la ficha
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+    put:
+      summary: Actualizar una ficha de insumo
+      tags: [Fichas de Insumos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cantidad:
+                  type: integer
+                  example: 50
+                status:
+                  type: boolean
+                  example: true
+      responses:
+        '200':
+          description: Ficha actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+    delete:
+      summary: Eliminar una ficha de insumo
+      tags: [Fichas de Insumos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Ficha eliminada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/ficha-insumos/generar/{hospital_id}:
+    post:
+      summary: Generar fichas de insumos para un hospital específico
+      description: |
+        Genera automáticamente fichas de todos los insumos activos para un hospital específico.
+        Cada ficha se crea con cantidad = 0.
+        
+        **Casos de uso:**
+        - Nuevo hospital registrado
+        - Hospital sin fichas de insumos
+        - Actualización masiva de fichas
+      tags: [Fichas de Insumos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: hospital_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID del hospital
+      responses:
+        '200':
+          description: Fichas generadas exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    example: true
+                  mensaje:
+                    type: string
+                    example: "Fichas de insumos generadas para el hospital."
+                  data:
+                    type: object
+                    properties:
+                      hospital_id:
+                        type: integer
+                        example: 5
+                      hospital_nombre:
+                        type: string
+                        example: "Hospital Central"
+                      total_insumos:
+                        type: integer
+                        example: 412
+                      fichas_creadas:
+                        type: integer
+                        example: 412
+                      fichas_existentes:
+                        type: integer
+                        example: 0
+        '404':
+          description: Hospital no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/ficha-insumos/generar-todos:
+    post:
+      summary: Generar fichas de insumos para TODOS los hospitales
+      description: |
+        Genera automáticamente fichas de todos los insumos activos para todos los hospitales activos.
+        
+        **Proceso:**
+        1. Obtiene todos los hospitales con status = 'activo'
+        2. Obtiene todos los insumos con status = true
+        3. Crea fichas para cada combinación hospital-insumo que no exista
+        
+        **Advertencia:** Esta operación puede tardar varios minutos si hay muchos hospitales e insumos.
+      tags: [Fichas de Insumos]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Fichas generadas exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    example: true
+                  mensaje:
+                    type: string
+                    example: "Fichas de insumos generadas para todos los hospitales."
+                  data:
+                    type: object
+                    properties:
+                      hospitales_procesados:
+                        type: integer
+                        example: 289
+                      total_insumos:
+                        type: integer
+                        example: 412
+                      fichas_creadas:
+                        type: integer
+                        example: 119068
+                      fichas_existentes:
+                        type: integer
+                        example: 0
+        '404':
+          description: No hay hospitales o insumos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/ficha-insumos/sincronizar-insumo/{insumo_id}:
+    post:
+      summary: Sincronizar un nuevo insumo en todos los hospitales
+      description: |
+        Cuando se registra un nuevo insumo, esta ruta crea automáticamente fichas
+        para ese insumo en todos los hospitales activos.
+        
+        **Casos de uso:**
+        - Nuevo insumo registrado
+        - Insumo reactivado
+        - Sincronización manual
+      tags: [Fichas de Insumos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: insumo_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID del insumo
+      responses:
+        '200':
+          description: Insumo sincronizado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    example: true
+                  mensaje:
+                    type: string
+                    example: "Insumo sincronizado en todos los hospitales."
+                  data:
+                    type: object
+                    properties:
+                      insumo_id:
+                        type: integer
+                        example: 413
+                      insumo_nombre:
+                        type: string
+                        example: "Paracetamol 500mg"
+                      hospitales_procesados:
+                        type: integer
+                        example: 289
+                      fichas_creadas:
+                        type: integer
+                        example: 289
+                      fichas_existentes:
+                        type: integer
+                        example: 0
+        '404':
+          description: Insumo no encontrado
           content:
             application/json:
               schema:

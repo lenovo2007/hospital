@@ -152,6 +152,14 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
     Route::get('/ficha-insumos/{ficha_insumo}', [FichaInsumoController::class, 'show']);
     Route::put('/ficha-insumos/{ficha_insumo}', [FichaInsumoController::class, 'update']);
     Route::delete('/ficha-insumos/{ficha_insumo}', [FichaInsumoController::class, 'destroy']);
+    
+    // Generación automática de fichas de insumos
+    Route::post('/ficha-insumos/generar/{hospital_id}', [FichaInsumoController::class, 'generarFichasHospital'])
+        ->withoutMiddleware(\App\Http\Middleware\CheckCrudPermissions::class);
+    Route::post('/ficha-insumos/generar-todos', [FichaInsumoController::class, 'generarFichasTodosHospitales'])
+        ->withoutMiddleware(\App\Http\Middleware\CheckCrudPermissions::class);
+    Route::post('/ficha-insumos/sincronizar-insumo/{insumo_id}', [FichaInsumoController::class, 'sincronizarNuevoInsumo'])
+        ->withoutMiddleware(\App\Http\Middleware\CheckCrudPermissions::class);
 
     // Inventario - Registro de lotes y almacenamiento
     Route::post('/inventario/registrar', [\App\Http\Controllers\InventarioController::class, 'registrar']);

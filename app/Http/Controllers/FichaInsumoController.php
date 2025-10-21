@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\FichaInsumo;
+use App\Models\Hospital;
+use App\Models\Insumo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Throwable;
@@ -106,6 +108,218 @@ class FichaInsumoController extends Controller
             return response()->json([
                 'status' => false,
                 'mensaje' => 'Error al eliminar la ficha de insumo.',
+                'data' => null,
+            ], 500);
+        }
+    }
+
+    /**
+     * Generar fichas de insumos para un hospital específico
+     * POST /api/ficha-insumos/generar/{hospital_id}
+     */
+    public function generarFichasHospital($hospital_id)
+    {
+        try {
+            $hospital = Hospital::findOrFail($hospital_id);
+            $insumos = Insumo::where('status', true)->get();
+
+            if ($insumos->isEmpty()) {
+                return response()->json([
+                    'status' => false,
+                    'mensaje' => 'No hay insumos registrados en el sistema.',
+                    'data' => null,
+                ], 404);
+            }
+
+            $creadas = 0;
+            $existentes = 0;
+
+            DB::transaction(function () use ($hospital_id, $insumos, &$creadas, &$existentes) {
+                foreach ($insumos as $insumo) {
+                    $existe = FichaInsumo::where('hospital_id', $hospital_id)
+                        ->where('insumo_id', $insumo->id)
+                        ->exists();
+
+                    if (!$existe) {
+                        FichaInsumo::create([
+                            'hospital_id' => $hospital_id,
+                            'insumo_id' => $insumo->id,
+                            'cantidad' => 0,
+                            'status' => true,
+                        ]);
+                        $creadas++;
+                    } else {
+                        $existentes++;
+                    }
+                }
+            });
+
+            return response()->json([
+                'status' => true,
+                'mensaje' => 'Fichas de insumos generadas para el hospital.',
+                'data' => [
+                    'hospital_id' => $hospital_id,
+                    'hospital_nombre' => $hospital->nombre,
+                    'total_insumos' => $insumos->count(),
+                    'fichas_creadas' => $creadas,
+                    'fichas_existentes' => $existentes,
+                ],
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Hospital no encontrado.',
+                'data' => null,
+            ], 404);
+        } catch (Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Error al generar fichas de insumos: ' . $e->getMessage(),
+                'data' => null,
+            ], 500);
+        }
+    }
+
+    /**
+     * Generar fichas de insumos para TODOS los hospitales
+     * POST /api/ficha-insumos/generar-todos
+     */
+    public function generarFichasTodosHospitales()
+    {
+        try {
+            $hospitales = Hospital::where('status', 'activo')->get();
+            $insumos = Insumo::where('status', true)->get();
+
+            if ($hospitales->isEmpty()) {
+                return response()->json([
+                    'status' => false,
+                    'mensaje' => 'No hay hospitales activos en el sistema.',
+                    'data' => null,
+                ], 404);
+            }
+
+            if ($insumos->isEmpty()) {
+                return response()->json([
+                    'status' => false,
+                    'mensaje' => 'No hay insumos registrados en el sistema.',
+                    'data' => null,
+                ], 404);
+            }
+
+            $totalCreadas = 0;
+            $totalExistentes = 0;
+            $hospitalesProcesados = 0;
+
+            DB::transaction(function () use ($hospitales, $insumos, &$totalCreadas, &$totalExistentes, &$hospitalesProcesados) {
+                foreach ($hospitales as $hospital) {
+                    foreach ($insumos as $insumo) {
+                        $existe = FichaInsumo::where('hospital_id', $hospital->id)
+                            ->where('insumo_id', $insumo->id)
+                            ->exists();
+
+                        if (!$existe) {
+                            FichaInsumo::create([
+                                'hospital_id' => $hospital->id,
+                                'insumo_id' => $insumo->id,
+                                'cantidad' => 0,
+                                'status' => true,
+                            ]);
+                            $totalCreadas++;
+                        } else {
+                            $totalExistentes++;
+                        }
+                    }
+                    $hospitalesProcesados++;
+                }
+            });
+
+            return response()->json([
+                'status' => true,
+                'mensaje' => 'Fichas de insumos generadas para todos los hospitales.',
+                'data' => [
+                    'hospitales_procesados' => $hospitalesProcesados,
+                    'total_insumos' => $insumos->count(),
+                    'fichas_creadas' => $totalCreadas,
+                    'fichas_existentes' => $totalExistentes,
+                ],
+            ]);
+        } catch (Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Error al generar fichas de insumos: ' . $e->getMessage(),
+                'data' => null,
+            ], 500);
+        }
+    }
+
+    /**
+     * Sincronizar fichas cuando se crea un nuevo insumo
+     * POST /api/ficha-insumos/sincronizar-insumo/{insumo_id}
+     */
+    public function sincronizarNuevoInsumo($insumo_id)
+    {
+        try {
+            $insumo = Insumo::findOrFail($insumo_id);
+            $hospitales = Hospital::where('status', 'activo')->get();
+
+            if ($hospitales->isEmpty()) {
+                return response()->json([
+                    'status' => false,
+                    'mensaje' => 'No hay hospitales activos en el sistema.',
+                    'data' => null,
+                ], 404);
+            }
+
+            $creadas = 0;
+            $existentes = 0;
+
+            DB::transaction(function () use ($insumo_id, $hospitales, &$creadas, &$existentes) {
+                foreach ($hospitales as $hospital) {
+                    $existe = FichaInsumo::where('hospital_id', $hospital->id)
+                        ->where('insumo_id', $insumo_id)
+                        ->exists();
+
+                    if (!$existe) {
+                        FichaInsumo::create([
+                            'hospital_id' => $hospital->id,
+                            'insumo_id' => $insumo_id,
+                            'cantidad' => 0,
+                            'status' => true,
+                        ]);
+                        $creadas++;
+                    } else {
+                        $existentes++;
+                    }
+                }
+            });
+
+            return response()->json([
+                'status' => true,
+                'mensaje' => 'Insumo sincronizado en todos los hospitales.',
+                'data' => [
+                    'insumo_id' => $insumo_id,
+                    'insumo_nombre' => $insumo->nombre,
+                    'hospitales_procesados' => $hospitales->count(),
+                    'fichas_creadas' => $creadas,
+                    'fichas_existentes' => $existentes,
+                ],
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Insumo no encontrado.',
+                'data' => null,
+            ], 404);
+        } catch (Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Error al sincronizar insumo: ' . $e->getMessage(),
                 'data' => null,
             ], 500);
         }

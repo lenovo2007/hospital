@@ -22,4 +22,20 @@ class FichaInsumo extends Model
         'status' => 'boolean',
         'cantidad' => 'integer',
     ];
+
+    /**
+     * Relación con Hospital
+     */
+    public function hospital()
+    {
+        return $this->belongsTo(Hospital::class);
+    }
+
+    /**
+     * Relación con Insumo
+     */
+    public function insumo()
+    {
+        return $this->belongsTo(Insumo::class);
+    }
 }

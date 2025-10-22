@@ -616,10 +616,10 @@ class UserController extends Controller
     }
 
     // Eliminar usuario
-    public function destroy(User $user)
+    public function destroy(User $user, Request $request)
     {
-        $actor = request()->user();
-        
+        $actor = $request->user();
+
         // Verificar si el usuario tiene permiso para eliminar usuarios
         if ((!$actor->can_crud_user || !$actor->can_delete) && !$actor->is_root) {
             return response()->json([
@@ -628,7 +628,7 @@ class UserController extends Controller
                 'data' => null,
             ], 403, [], JSON_UNESCAPED_UNICODE);
         }
-        
+
         // Si el usuario objetivo es root y el actor no es root, denegar
         if ($user->is_root && !$actor->is_root) {
             return response()->json([
@@ -637,13 +637,26 @@ class UserController extends Controller
                 'data' => null,
             ], 403, [], JSON_UNESCAPED_UNICODE);
         }
-        $this->authorize('delete', $user);
-        $user->delete();
-        return response()->json([
-            'status' => true,
-            'mensaje' => 'Usuario eliminado.',
-            'data' => null,
-        ], 200, [], JSON_UNESCAPED_UNICODE);
+
+        try {
+            $user->delete();
+            return response()->json([
+                'status' => true,
+                'mensaje' => 'Usuario eliminado.',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        } catch (\Throwable $e) {
+            \Log::error('Error al eliminar usuario', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Ocurrió un error al eliminar el usuario.',
+                'data' => null,
+            ], 500, [], JSON_UNESCAPED_UNICODE);
+        }
     }
 
     // POST /api/users/password/forgot (público)

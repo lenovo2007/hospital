@@ -3726,6 +3726,86 @@ paths:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
 
+  /api/inventario/sede/{sede_id}/por-vencer:
+    get:
+      summary: Obtener los 10 insumos próximos a vencer por sede
+      description: |
+        Devuelve los 10 insumos más próximos a vencer del inventario de una sede específica.
+        
+        **Funcionalidad:**
+        - Filtra por sede_id y status=true
+        - Solo incluye lotes con fecha de vencimiento válida (no NULL)
+        - Solo incluye lotes que aún no han vencido (fecha >= hoy)
+        - Ordena por fecha de vencimiento ascendente
+        - Calcula los días restantes hasta el vencimiento
+        - Limita el resultado a 10 registros
+      tags: [Inventario]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sede_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID de la sede
+      responses:
+        '200':
+          description: Listado de insumos próximos a vencer
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    example: true
+                  mensaje:
+                    type: string
+                    example: "Insumos próximos a vencer obtenidos exitosamente."
+                  data:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        insumo_id:
+                          type: integer
+                          example: 42
+                        codigo:
+                          type: string
+                          example: "42"
+                        nombre:
+                          type: string
+                          example: "ACETAMINOFEN 500MG TABLETA"
+                        presentacion:
+                          type: string
+                          example: "TABLETA"
+                        tipo:
+                          type: string
+                          example: "farmaceutico"
+                        lote_id:
+                          type: integer
+                          example: 15
+                        numero_lote:
+                          type: string
+                          example: "BT24042"
+                        fecha_vencimiento:
+                          type: string
+                          format: date
+                          example: "2025-11-15"
+                        cantidad:
+                          type: integer
+                          example: 1200
+                        dias_para_vencer:
+                          type: integer
+                          example: 23
+                          description: Número de días restantes hasta el vencimiento
+        '404':
+          description: Sede no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
 
   # ========================================
   # TIPOS HOSPITAL DISTRIBUCIONES

@@ -431,6 +431,115 @@ class InventarioController extends Controller
         }
     }
 
+    /**
+     * Listar los 10 insumos próximos a vencer del inventario de una sede
+     * 
+     * @param int $sedeId ID de la sede
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function listarPorVencerPorSede($sedeId)
+    {
+        try {
+            // Obtener el tipo de almacén de la sede
+            $sede = DB::table('sedes')->where('id', $sedeId)->first();
+            if (!$sede) {
+                return response()->json([
+                    'status' => false,
+                    'mensaje' => 'Sede no encontrada.',
+                    'data' => [],
+                ], 200, [], JSON_UNESCAPED_UNICODE);
+            }
+
+            // Determinar la tabla según el tipo de almacén
+            $tabla = match ($sede->tipo_almacen) {
+                'almacenCent' => 'almacenes_centrales',
+                'almacenPrin' => 'almacenes_principales',
+                'almacenFarm' => 'almacenes_farmacia',
+                'almacenPar' => 'almacenes_paralelo',
+                'almacenServApoyo' => 'almacenes_servicios_apoyo',
+                'almacenServAtenciones' => 'almacenes_servicios_atenciones',
+                default => null,
+            };
+
+            if (!$tabla || !Schema::hasTable($tabla)) {
+                return response()->json([
+                    'status' => false,
+                    'mensaje' => "No se encontró la tabla de almacén para el tipo: {$sede->tipo_almacen}",
+                    'data' => [],
+                ], 200, [], JSON_UNESCAPED_UNICODE);
+            }
+
+            // Obtener los 10 lotes próximos a vencer con fecha de vencimiento válida
+            $insumosProximosVencer = DB::table($tabla)
+                ->join('lotes', "$tabla.lote_id", '=', 'lotes.id')
+                ->join('insumos', 'lotes.id_insumo', '=', 'insumos.id')
+                ->where("$tabla.sede_id", $sedeId)
+                ->where("$tabla.status", true)
+                ->whereNotNull('lotes.fecha_vencimiento')
+                ->where('lotes.fecha_vencimiento', '>=', now()->toDateString())
+                ->select(
+                    'insumos.id as insumo_id',
+                    'insumos.codigo',
+                    'insumos.nombre',
+                    'insumos.presentacion',
+                    'insumos.tipo',
+                    'lotes.id as lote_id',
+                    'lotes.numero_lote',
+                    'lotes.fecha_vencimiento',
+                    DB::raw("$tabla.cantidad as cantidad"),
+                    DB::raw("DATEDIFF(lotes.fecha_vencimiento, CURDATE()) as dias_para_vencer")
+                )
+                ->orderBy('lotes.fecha_vencimiento', 'asc')
+                ->limit(10)
+                ->get();
+
+            if ($insumosProximosVencer->isEmpty()) {
+                return response()->json([
+                    'status' => true,
+                    'mensaje' => 'No hay insumos próximos a vencer en esta sede.',
+                    'data' => [],
+                ], 200, [], JSON_UNESCAPED_UNICODE);
+            }
+
+            // Formatear respuesta
+            $data = $insumosProximosVencer->map(function ($item) {
+                return [
+                    'insumo_id' => $item->insumo_id,
+                    'codigo' => $item->codigo,
+                    'nombre' => $item->nombre,
+                    'presentacion' => $item->presentacion,
+                    'tipo' => $item->tipo,
+                    'lote_id' => $item->lote_id,
+                    'numero_lote' => $item->numero_lote,
+                    'fecha_vencimiento' => $item->fecha_vencimiento,
+                    'cantidad' => (int) $item->cantidad,
+                    'dias_para_vencer' => (int) $item->dias_para_vencer,
+                ];
+            });
+
+            return response()->json([
+                'status' => true,
+                'mensaje' => 'Insumos próximos a vencer obtenidos exitosamente.',
+                'data' => $data,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+
+        } catch (Throwable $e) {
+            Log::error('Error en listarPorVencerPorSede', [
+                'exception' => $e,
+                'sedeId' => $sedeId,
+            ]);
+            $mensaje = 'Error al listar insumos próximos a vencer';
+            if (app()->environment('local')) {
+                $mensaje .= ': ' . $e->getMessage();
+            }
+            return response()->json([
+                'status' => false,
+                'mensaje' => $mensaje,
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
+    }
+
     // Método opcional para registrar en tablas específicas de almacén
     protected function registrarEnAlmacenEspecifico(array $data, int $loteId): array
     {

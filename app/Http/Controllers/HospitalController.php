@@ -393,16 +393,33 @@ class HospitalController extends Controller
                         }
                     }
 
+                    // Transformar tipo: I -> hospital_tipo1, II -> hospital_tipo2, III -> hospital_tipo3
+                    $tipoTransformado = 'No especificado';
+                    if (!empty($tipo)) {
+                        $tipoUpper = strtoupper(trim($tipo));
+                        if ($tipoUpper === 'I') {
+                            $tipoTransformado = 'hospital_tipo1';
+                        } elseif ($tipoUpper === 'II') {
+                            $tipoTransformado = 'hospital_tipo2';
+                        } elseif ($tipoUpper === 'III') {
+                            $tipoTransformado = 'hospital_tipo3';
+                        } elseif ($tipoUpper === 'IV') {
+                            $tipoTransformado = 'hospital_tipo4';
+                        } else {
+                            $tipoTransformado = $tipo;
+                        }
+                    }
+
                     // Preparar payload
                     $payload = [
                         'nombre' => $nombre,
                         'rif' => $rif,
                         'cod_sicm' => $cod_sicm,
-                        'tipo' => !empty($tipo) ? $tipo : 'No especificado',
-                        'dependencia' => (!empty($dependencia) && $dependencia !== '?') ? $dependencia : null,
-                        'estado' => (!empty($estado) && $estado !== '?') ? $estado : null,
-                        'municipio' => (!empty($municipio) && $municipio !== '?') ? $municipio : null,
-                        'parroquia' => (!empty($parroquia) && $parroquia !== '?') ? $parroquia : null,
+                        'tipo' => $tipoTransformado,
+                        'dependencia' => (!empty($dependencia) && $dependencia !== '?') ? strtolower($dependencia) : null,
+                        'estado' => (!empty($estado) && $estado !== '?') ? strtolower($estado) : null,
+                        'municipio' => (!empty($municipio) && $municipio !== '?') ? strtolower($municipio) : null,
+                        'parroquia' => (!empty($parroquia) && $parroquia !== '?') ? strtolower($parroquia) : null,
                         'email' => $email,
                         'nombre_contacto' => (!empty($nombre_contacto) && $nombre_contacto !== '?') ? $nombre_contacto : null,
                         'email_contacto' => $email_contacto,
@@ -418,9 +435,13 @@ class HospitalController extends Controller
                         $existing = Hospital::where('cod_sicm', $cod_sicm)->first();
                     }
                     if (!$existing) {
+                        // Usar valores en minúsculas para la búsqueda
+                        $estadoLower = (!empty($estado) && $estado !== '?') ? strtolower($estado) : null;
+                        $municipioLower = (!empty($municipio) && $municipio !== '?') ? strtolower($municipio) : null;
+                        
                         $existing = Hospital::where('nombre', $nombre)
-                            ->where('estado', $estado)
-                            ->where('municipio', $municipio)
+                            ->where('estado', $estadoLower)
+                            ->where('municipio', $municipioLower)
                             ->first();
                     }
 

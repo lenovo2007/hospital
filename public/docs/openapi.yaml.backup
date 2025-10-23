@@ -341,19 +341,6 @@ paths:
       responses:
         '200':
           description: Contraseña actualizada
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StandardResponse'
-
-  # ========================================
-  # HOSPITALES
-  # ========================================
-  /api/hospitales:
-    get:
-      summary: Listar hospitales
-      tags: [Hospitales]
-      security:
         - bearerAuth: []
       responses:
         '200':
@@ -365,7 +352,7 @@ paths:
 
     post:
       summary: Crear hospital
-      tags: [Hospitales]
+      tags: [Importaci�n Excel]
       security:
         - bearerAuth: []
       requestBody:
@@ -385,7 +372,7 @@ paths:
   /api/hospitales/{id}:
     get:
       summary: Ver detalle de hospital
-      tags: [Hospitales]
+      tags: [Importaci�n Excel]
       security:
         - bearerAuth: []
       parameters:
@@ -403,7 +390,7 @@ paths:
 
     put:
       summary: Actualizar hospital
-      tags: [Hospitales]
+      tags: [Importaci�n Excel]
       security:
         - bearerAuth: []
       parameters:
@@ -427,7 +414,7 @@ paths:
 
     delete:
       summary: Eliminar hospital
-      tags: [Hospitales]
+      tags: [Importaci�n Excel]
       security:
         - bearerAuth: []
       parameters:
@@ -446,7 +433,7 @@ paths:
   /api/hospitales/cod_sicm/{cod_sicm}:
     get:
       summary: Ver hospital por COD_SICM
-      tags: [Hospitales]
+      tags: [Importaci�n Excel]
       security:
         - bearerAuth: []
       parameters:
@@ -466,7 +453,7 @@ paths:
 
     put:
       summary: Actualizar hospital por COD_SICM
-      tags: [Hospitales]
+      tags: [Importaci�n Excel]
       security:
         - bearerAuth: []
       parameters:
@@ -493,7 +480,7 @@ paths:
   /api/hospitales/buscar_por_rif:
     get:
       summary: Buscar hospital por RIF
-      tags: [Hospitales]
+      tags: [Importaci�n Excel]
       security:
         - bearerAuth: []
       parameters:
@@ -504,6 +491,105 @@ paths:
       responses:
         '200':
           description: Hospital encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/hospitales/import:
+    post:
+      summary: Importar hospitales desde Excel
+      description: |
+        Importa hospitales desde un archivo Excel (.xls o .xlsx).
+        
+        **Formato del archivo:**
+        - Columna A: RIF (puede ser NULL o '?')
+        - Columna B: COD_SICM (puede ser NULL o '?')
+        - Columna C: Nombre (requerido)
+        - Columna D: Tipo
+        - Columna E: Dependencia
+        - Columna F: Estado
+        - Columna G: Municipio
+        - Columna H: Parroquia
+        - Columna I: Email
+        - Columna J: Nombre Contacto
+        - Columna K: Email Contacto
+        - Columna L: Teléfono (máx 50 caracteres)
+        - Columna M: Dirección
+        - Columna N: Latitud
+        - Columna O: Longitud
+        
+        **Procesamiento de datos:**
+        - **Campos de texto convertidos a minúsculas:** dependencia, estado, municipio, parroquia
+        - **Conversión UTF-8:** Se manejan correctamente acentos y caracteres especiales (girÓn → girón, alcalÁ → alcalá, josÉ → josé)
+        - **Tipo de hospital:** Se normaliza automáticamente (I → hospital_tipo1, II → hospital_tipo2, etc.)
+        - **Campos ignorados si son '?':** Todos los campos opcionales
+        - **Duplicados:** Se detectan por COD_SICM o por nombre+estado+municipio (comparación insensible a mayúsculas)
+      tags: [Importaci�n Excel]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Archivo Excel (.xls o .xlsx) con los datos de hospitales
+      responses:
+        '200':
+          description: Importación completada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    example: true
+                  mensaje:
+                    type: string
+                    example: "Importación completada."
+                  data:
+                    type: object
+                    properties:
+                      creados:
+                        type: integer
+                        example: 214
+                      actualizados:
+                        type: integer
+                        example: 75
+                      omitidos:
+                        type: integer
+                        example: 2
+                      errores:
+                        type: integer
+                        example: 0
+                      detalles_omitidos:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            fila:
+                              type: integer
+                            motivo:
+                              type: string
+                      detalles_errores:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            fila:
+                              type: integer
+                            error:
+                              type: string
+        '400':
+          description: Error en el archivo
           content:
             application/json:
               schema:
@@ -1213,7 +1299,7 @@ paths:
   /api/insumos:
     get:
       summary: Listar insumos
-      tags: [Insumos]
+      tags: [Importaci�n Excel]
       security:
         - bearerAuth: []
       parameters:
@@ -2393,7 +2479,7 @@ paths:
   /api/insumos/codigo/{codigo}:
     get:
       summary: Ver insumo por código
-      tags: [Insumos]
+      tags: [Importaci�n Excel]
       security:
         - bearerAuth: []
       parameters:
@@ -2411,7 +2497,7 @@ paths:
 
     put:
       summary: Actualizar insumo por código
-      tags: [Insumos]
+      tags: [Importaci�n Excel]
       security:
         - bearerAuth: []
       parameters:
@@ -2436,7 +2522,7 @@ paths:
   /api/insumos/sede/{sede_id}:
     get:
       summary: Listar insumos por sede
-      tags: [Insumos]
+      tags: [Importaci�n Excel]
       security:
         - bearerAuth: []
       parameters:
@@ -2447,6 +2533,91 @@ paths:
       responses:
         '200':
           description: Insumos de la sede
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/insumos/import:
+    post:
+      summary: Importar insumos desde archivo Excel
+      description: |
+        Importa insumos desde un archivo Excel (.xls o .xlsx).
+        
+        **Formato del archivo:**
+        - Columna A: CODIGO (puede ser NULL)
+        - Columna B: DESCRIPCION (requerido)
+        
+        **Funcionalidad:**
+        - Busca insumos por código principal o código alterno
+        - Crea nuevos insumos si no existen
+        - Actualiza información si ya existen
+        - Parseo inteligente de descripciones para extraer tipo, presentación y unidades
+        - **Soporte UTF-8:** Maneja correctamente acentos y caracteres especiales
+        - **Detección automática:** Identifica tipo de archivo (.xls o .xlsx)
+      tags: [Importaci�n Excel]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Archivo Excel (.xls o .xlsx) con datos de insumos
+      responses:
+        '200':
+          description: Importación procesada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    example: true
+                  mensaje:
+                    type: string
+                    example: "Importación procesada."
+                  data:
+                    type: object
+                    properties:
+                      creados:
+                        type: integer
+                        example: 25
+                      actualizados:
+                        type: integer
+                        example: 10
+                      omitidos:
+                        type: integer
+                        example: 0
+                      omitidos_detalle:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            fila:
+                              type: integer
+                            motivo:
+                              type: string
+                      errores:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            row:
+                              type: integer
+                            descripcion:
+                              type: string
+                            error:
+                              type: string
+        '400':
+          description: Error en el archivo o dependencias faltantes
           content:
             application/json:
               schema:
@@ -3684,7 +3855,7 @@ paths:
   /api/inventario/registrar:
     post:
       summary: Registrar inventario
-      tags: [Inventario]
+      tags: [Importaci�n Excel]
       security:
         - bearerAuth: []
       requestBody:
@@ -3704,11 +3875,117 @@ paths:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
 
+  /api/inventario/import:
+    post:
+      summary: Importar inventario desde archivo Excel
+      description: |
+        Importa inventario desde un archivo Excel (.xls o .xlsx) con el formato específico de columnas.
+        
+        **Formato del archivo:**
+        - Columna A: NOMBRE DEL INSUMO (requerido)
+        - Columna B: PRESENTACION
+        - Columna C: LOTE (requerido)
+        - Columna D: FECHA DE VENC. (opcional, NULL si es inválida)
+        - Columna E: TOTAL UNIDADES (requerido)
+        - Columna F: FECHA (fecha de ingreso, opcional, NULL si es inválida)
+        
+        **Funcionalidad:**
+        - **Búsqueda/Creación de insumos:** Por nombre exacto en `insumos`
+        - **Creación/Actualización de lotes:** Por (insumo_id, numero_lote, hospital_id)
+        - **Registro/Suma de stock:** En `almacenes_centrales` por (sede_id, lote_id, hospital_id)
+        - **Parseo de fechas:** Excel serial o string (YYYY-MM-DD, DD/MM/YYYY, etc.)
+        - **Fechas inválidas:** Se guardan como NULL en la base de datos
+        - **Detección automática:** Identifica tipo de archivo (.xls o .xlsx)
+        - **Validaciones:** Nombres y lotes no vacíos, cantidades > 0
+        
+        **Parámetros opcionales:**
+        - hospital_id: Por defecto 1 (almacén central)
+        - sede_id: Por defecto 1
+      tags: [Importaci�n Excel]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Archivo Excel (.xls o .xlsx) con datos de inventario
+                hospital_id:
+                  type: integer
+                  description: ID del hospital destino (opcional, por defecto 1)
+                  example: 1
+                sede_id:
+                  type: integer
+                  description: ID de la sede destino (opcional, por defecto 1)
+                  example: 1
+      responses:
+        '200':
+          description: Importación procesada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    example: true
+                  mensaje:
+                    type: string
+                    example: "Importación de inventario procesada."
+                  data:
+                    type: object
+                    properties:
+                      insumos_creados:
+                        type: integer
+                        example: 3
+                      lotes_creados:
+                        type: integer
+                        example: 5
+                      registros_stock_actualizados:
+                        type: integer
+                        example: 5
+                      omitidos:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            fila:
+                              type: integer
+                            motivo:
+                              type: string
+                      errores:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            fila:
+                              type: integer
+                            error:
+                              type: string
+        '400':
+          description: Datos inválidos o archivo no válido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/inventario/sede/{sede_id}:
     get:
       summary: Obtener inventario por sede
       description: Devuelve los insumos agrupados por insumo_id desde la tabla almacenCentral, filtrando por sede_id y status=true
-      tags: [Inventario]
+      tags: [Importaci�n Excel]
       security:
         - bearerAuth: []
       parameters:
@@ -4106,299 +4383,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
-
-  # ========================================
-  # IMPORTACION EXCEL
-  # ========================================
-  /api/hospitales/import:
-    post:
-      summary: Importar hospitales desde Excel
-      description: |
-        Importa hospitales desde un archivo Excel (.xls o .xlsx).
-        
-        **Formato del archivo:**
-        - Columna A: RIF (puede ser NULL o '?')
-        - Columna B: COD_SICM (puede ser NULL o '?')
-        - Columna C: Nombre (requerido)
-        - Columna D: Tipo
-        - Columna E: Dependencia
-        - Columna F: Estado
-        - Columna G: Municipio
-        - Columna H: Parroquia
-        - Columna I: Email
-        - Columna J: Nombre Contacto
-        - Columna K: Email Contacto
-        - Columna L: Teléfono (máx 50 caracteres)
-        - Columna M: Dirección
-        - Columna N: Latitud
-        - Columna O: Longitud
-        
-        **Procesamiento de datos:**
-        - **Campos de texto convertidos a minúsculas:** dependencia, estado, municipio, parroquia
-        - **Conversión UTF-8:** Se manejan correctamente acentos y caracteres especiales (girÓn → girón, alcalÁ → alcalá, josÉ → josé)
-        - **Tipo de hospital:** Se normaliza automáticamente (I → hospital_tipo1, II → hospital_tipo2, etc.)
-        - **Campos ignorados si son '?':** Todos los campos opcionales
-        - **Duplicados:** Se detectan por COD_SICM o por nombre+estado+municipio (comparación insensible a mayúsculas)
-      tags: [Importación Excel]
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              required:
-                - file
-              properties:
-                file:
-                  type: string
-                  format: binary
-                  description: Archivo Excel (.xls o .xlsx) con los datos de hospitales
-      responses:
-        '200':
-          description: Importación completada
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: boolean
-                    example: true
-                  mensaje:
-                    type: string
-                    example: "Importación completada."
-                  data:
-                    type: object
-                    properties:
-                      creados:
-                        type: integer
-                        example: 214
-                      actualizados:
-                        type: integer
-                        example: 75
-                      omitidos:
-                        type: integer
-                        example: 2
-                      errores:
-                        type: integer
-                        example: 0
-                      detalles_omitidos:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            fila:
-                              type: integer
-                            motivo:
-                              type: string
-                      detalles_errores:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            fila:
-                              type: integer
-                            error:
-                              type: string
-        '400':
-          description: Error en el archivo
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StandardResponse'
-
-  /api/insumos/import:
-    post:
-      summary: Importar insumos desde archivo Excel
-      description: |
-        Importa insumos desde un archivo Excel (.xls o .xlsx).
-        
-        **Formato del archivo:**
-        - Columna A: CODIGO (puede ser NULL)
-        - Columna B: DESCRIPCION (requerido)
-        
-        **Funcionalidad:**
-        - Busca insumos por código principal o código alterno
-        - Crea nuevos insumos si no existen (asigna codigo=id automáticamente)
-        - Actualiza información si ya existen
-        - Parseo inteligente de descripciones para extraer tipo, presentación y unidades
-        - **Soporte UTF-8:** Maneja correctamente acentos y caracteres especiales
-        - **Detección automática:** Identifica tipo de archivo (.xls o .xlsx)
-      tags: [Importación Excel]
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              required: [file]
-              properties:
-                file:
-                  type: string
-                  format: binary
-                  description: Archivo Excel (.xls o .xlsx) con datos de insumos
-      responses:
-        '200':
-          description: Importación procesada exitosamente
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: boolean
-                    example: true
-                  mensaje:
-                    type: string
-                    example: "Importación procesada."
-                  data:
-                    type: object
-                    properties:
-                      creados:
-                        type: integer
-                        example: 25
-                      actualizados:
-                        type: integer
-                        example: 10
-                      omitidos:
-                        type: integer
-                        example: 0
-                      omitidos_detalle:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            fila:
-                              type: integer
-                            motivo:
-                              type: string
-                      errores:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            row:
-                              type: integer
-                            descripcion:
-                              type: string
-                            error:
-                              type: string
-        '400':
-          description: Error en el archivo o dependencias faltantes
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StandardResponse'
-
-  /api/inventario/import:
-    post:
-      summary: Importar inventario desde archivo Excel
-      description: |
-        Importa inventario desde un archivo Excel (.xls o .xlsx) con el formato específico de columnas.
-        
-        **Formato del archivo:**
-        - Columna A: NOMBRE DEL INSUMO (requerido)
-        - Columna B: PRESENTACION
-        - Columna C: LOTE (requerido)
-        - Columna D: FECHA DE VENC. (opcional, NULL si es inválida)
-        - Columna E: TOTAL UNIDADES (requerido)
-        - Columna F: FECHA (fecha de ingreso, opcional, NULL si es inválida)
-        
-        **Funcionalidad:**
-        - **Búsqueda/Creación de insumos:** Por nombre exacto en `insumos` (asigna codigo=id y codigo_alterno automáticamente)
-        - **Creación/Actualización de lotes:** Por (insumo_id, numero_lote, hospital_id)
-        - **Registro/Suma de stock:** En `almacenes_centrales` por (sede_id, lote_id, hospital_id)
-        - **Parseo de fechas:** Excel serial o string (YYYY-MM-DD, DD/MM/YYYY, etc.)
-        - **Fechas inválidas:** Se detectan (00/00/0000) y se guardan como NULL en la base de datos
-        - **Detección automática:** Identifica tipo de archivo (.xls o .xlsx)
-        - **Validaciones:** Nombres y lotes no vacíos, cantidades > 0
-        
-        **Parámetros opcionales:**
-        - hospital_id: Por defecto 1 (almacén central)
-        - sede_id: Por defecto 1
-      tags: [Importación Excel]
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          multipart/form-data:
-            schema:
-              type: object
-              required: [file]
-              properties:
-                file:
-                  type: string
-                  format: binary
-                  description: Archivo Excel (.xls o .xlsx) con datos de inventario
-                hospital_id:
-                  type: integer
-                  description: ID del hospital destino (opcional, por defecto 1)
-                  example: 1
-                sede_id:
-                  type: integer
-                  description: ID de la sede destino (opcional, por defecto 1)
-                  example: 1
-      responses:
-        '200':
-          description: Importación procesada exitosamente
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  status:
-                    type: boolean
-                    example: true
-                  mensaje:
-                    type: string
-                    example: "Importación de inventario procesada."
-                  data:
-                    type: object
-                    properties:
-                      insumos_creados:
-                        type: integer
-                        example: 3
-                      lotes_creados:
-                        type: integer
-                        example: 5
-                      registros_stock_actualizados:
-                        type: integer
-                        example: 5
-                      omitidos:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            fila:
-                              type: integer
-                            motivo:
-                              type: string
-                      errores:
-                        type: array
-                        items:
-                          type: object
-                          properties:
-                            fila:
-                              type: integer
-                            error:
-                              type: string
-        '400':
-          description: Datos inválidos o archivo no válido
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StandardResponse'
-        '500':
-          description: Error interno del servidor
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
 
 # ========================================
 # COMPONENTS

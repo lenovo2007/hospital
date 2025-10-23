@@ -357,7 +357,14 @@ class InsumoController extends Controller
                         $updated++;
                     } else {
                         // Si no existe, crear nuevo registro
-                        Insumo::create($payload);
+                        $newInsumo = Insumo::create($payload);
+                        
+                        // Si no se proporcionó código, asignar codigo = id
+                        if (empty($payload['codigo'])) {
+                            $newInsumo->codigo = (string) $newInsumo->id;
+                            $newInsumo->save();
+                        }
+                        
                         $created++;
                     }
                 } catch (\Throwable $e) {

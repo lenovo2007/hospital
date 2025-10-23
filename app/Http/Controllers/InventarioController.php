@@ -97,20 +97,44 @@ class InventarioController extends Controller
             $parseFecha = function ($raw) {
                 try {
                     if ($raw === null || $raw === '') { return null; }
-                    if (is_numeric($raw)) {
-                        $dt = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($raw);
-                        return $dt ? $dt->format('Y-m-d') : null;
-                    }
+                    
+                    // Convertir a string y verificar patrones inválidos
                     $s = trim((string) $raw);
+                    // Detectar fechas inválidas como 00/00/0000, 0/0/0, etc.
+                    if (preg_match('/^0+[\/\-]0+[\/\-]0+$/', $s)) { return null; }
+                    
+                    if (is_numeric($raw)) {
+                        // Validar que el número serial sea válido (mayor a 0)
+                        if ($raw <= 0) { return null; }
+                        $dt = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($raw);
+                        if (!$dt) { return null; }
+                        // Validar que el año sea razonable (entre 1900 y 2100)
+                        $year = (int) $dt->format('Y');
+                        if ($year < 1900 || $year > 2100) { return null; }
+                        return $dt->format('Y-m-d');
+                    }
+                    
                     // Intentar varios formatos comunes
                     $fmts = ['Y-m-d','d/m/Y','n/j/Y','m/d/Y','d-m-Y','m-d-Y'];
                     foreach ($fmts as $fmt) {
                         $dt = \DateTime::createFromFormat($fmt, $s);
-                        if ($dt && $dt->format($fmt) === $s) { return $dt->format('Y-m-d'); }
+                        if ($dt && $dt->format($fmt) === $s) {
+                            // Validar que el año sea razonable
+                            $year = (int) $dt->format('Y');
+                            if ($year < 1900 || $year > 2100) { return null; }
+                            return $dt->format('Y-m-d');
+                        }
                     }
+                    
                     // Fallback parse
                     $ts = strtotime($s);
-                    return $ts ? date('Y-m-d', $ts) : null;
+                    if ($ts && $ts > 0) {
+                        $year = (int) date('Y', $ts);
+                        if ($year >= 1900 && $year <= 2100) {
+                            return date('Y-m-d', $ts);
+                        }
+                    }
+                    return null;
                 } catch (\Throwable $e) { return null; }
             };
 
@@ -140,6 +164,7 @@ class InventarioController extends Controller
                         $farmas = ['SUSPENSION','SUSPENSIÓN','TABLETA','AMPOLLA','JARABE','CREMA','GOTAS','CAPSULA','CÁPSULA','FRASCO'];
                         if ($presentacion && in_array(strtoupper($presentacion), $farmas, true)) { $tipo = 'farmaceutico'; }
 
+                        // Crear insumo sin código, se asignará después
                         $insumo = Insumo::create([
                             'codigo' => null,
                             'codigo_alterno' => null,
@@ -150,6 +175,12 @@ class InventarioController extends Controller
                             'presentacion' => $presentacion ?: null,
                             'status' => 'activo',
                         ]);
+                        
+                        // Asignar codigo = id y codigo_alterno automático
+                        $insumo->codigo = (string) $insumo->id;
+                        $insumo->codigo_alterno = 'ALT-' . str_pad($insumo->id, 6, '0', STR_PAD_LEFT);
+                        $insumo->save();
+                        
                         $createdInsumos++;
                     }
 

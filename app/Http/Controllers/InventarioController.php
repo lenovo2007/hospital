@@ -34,6 +34,188 @@ class InventarioController extends Controller
      *     }
      * }
      */
+
+    /**
+     * Importar inventario desde archivo Excel (.xls o .xlsx) con el siguiente formato de columnas:
+     * A:NRO | B:NOMBRE DEL INSUMO | C:PRESENTACION | D:LOTE | E:FECHA DE VENC. | F:ESTUCHES POR BULTO | G:UNIDAD DE MANEJO | H:CANT. DE BULTOS | I:RESTO | J:TOTAL UNIDADES | K:FECHA
+     * Reglas:
+     * - Buscar/crear el insumo por nombre (columna B).
+     * - Crear/obtener el lote por (insumo_id, numero_lote, hospital_id).
+     * - Registrar/Incrementar stock en almacenes_centrales (sede/hospital) sumando cantidad.
+     *
+     * Parámetros del request:
+     * - hospital_id (required)
+     * - sede_id (required)
+     */
+    public function importExcel(Request $request)
+    {
+        $validated = $request->validate([
+            'file' => ['required', 'file', 'mimes:xls,xlsx', 'max:10240'],
+            'hospital_id' => ['required', 'integer', 'exists:hospitales,id'],
+            'sede_id' => ['required', 'integer', 'exists:sedes,id'],
+        ]);
+
+        // Verificar dependencias de PhpSpreadsheet
+        if (!class_exists('PhpOffice\\PhpSpreadsheet\\IOFactory')) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Dependencia faltante: phpoffice/phpspreadsheet. Ejecute: composer require phpoffice/phpspreadsheet',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
+
+        try {
+            @ini_set('memory_limit', '512M');
+            /** @var \Illuminate\Http\UploadedFile $file */
+            $file = $request->file('file');
+            $path = $file->getRealPath();
+
+            // Detectar tipo de lector automáticamente (Xls o Xlsx)
+            $inputType = \PhpOffice\PhpSpreadsheet\IOFactory::identify($path);
+            $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader($inputType);
+            $reader->setReadDataOnly(true);
+            $spreadsheet = $reader->load($path);
+            $sheet = $spreadsheet->getActiveSheet();
+
+            // Columnas según especificación
+            $colNombre = 'B';
+            $colPresentacion = 'C';
+            $colLote = 'D';
+            $colFechaVenc = 'E';
+            $colEstuchesXBulto = 'F';
+            $colUnidadManejo = 'G'; // Informativa
+            $colCantBultos = 'H';
+            $colResto = 'I';
+            $colTotalUnidades = 'J';
+            $colFechaIngreso = 'K';
+
+            $createdInsumos = 0; $updatedStock = 0; $createdLotes = 0; $skipped = []; $errores = [];
+            $rowCount = (int) $sheet->getHighestRow();
+
+            // Helper para parsear fechas desde Excel (serial o string)
+            $parseFecha = function ($raw) {
+                try {
+                    if ($raw === null || $raw === '') { return null; }
+                    if (is_numeric($raw)) {
+                        $dt = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($raw);
+                        return $dt ? $dt->format('Y-m-d') : null;
+                    }
+                    $s = trim((string) $raw);
+                    // Intentar varios formatos comunes
+                    $fmts = ['Y-m-d','d/m/Y','n/j/Y','m/d/Y','d-m-Y','m-d-Y'];
+                    foreach ($fmts as $fmt) {
+                        $dt = \DateTime::createFromFormat($fmt, $s);
+                        if ($dt && $dt->format($fmt) === $s) { return $dt->format('Y-m-d'); }
+                    }
+                    // Fallback parse
+                    $ts = strtotime($s);
+                    return $ts ? date('Y-m-d', $ts) : null;
+                } catch (\Throwable $e) { return null; }
+            };
+
+            for ($i = 2; $i <= $rowCount; $i++) { // Asumimos encabezado en fila 1
+                try {
+                    $nombre = trim((string) ($sheet->getCell($colNombre.$i)->getValue() ?? ''));
+                    if ($nombre === '') { $skipped[] = ['fila' => $i, 'motivo' => 'Nombre del insumo vacío']; continue; }
+
+                    $presentacion = trim((string) ($sheet->getCell($colPresentacion.$i)->getValue() ?? ''));
+                    $loteCod = trim((string) ($sheet->getCell($colLote.$i)->getValue() ?? ''));
+                    if ($loteCod === '') { $skipped[] = ['fila' => $i, 'motivo' => 'Código de lote vacío']; continue; }
+
+                    $fechaVenc = $parseFecha($sheet->getCell($colFechaVenc.$i)->getValue());
+                    $fechaIngreso = $parseFecha($sheet->getCell($colFechaIngreso.$i)->getValue()) ?? date('Y-m-d');
+
+                    // Cantidad
+                    $totalUnidades = $sheet->getCell($colTotalUnidades.$i)->getValue();
+                    $total = is_numeric($totalUnidades) ? (int) $totalUnidades : null;
+                    if ($total === null) {
+                        $estuches = (int) ($sheet->getCell($colEstuchesXBulto.$i)->getValue() ?? 0);
+                        $bultos = (int) ($sheet->getCell($colCantBultos.$i)->getValue() ?? 0);
+                        $resto = (int) ($sheet->getCell($colResto.$i)->getValue() ?? 0);
+                        $total = max(0, ($estuches * $bultos) + $resto);
+                    }
+                    if ($total <= 0) { $skipped[] = ['fila' => $i, 'motivo' => 'Cantidad total no válida']; continue; }
+
+                    // Buscar/crear insumo por nombre exacto
+                    $insumo = Insumo::where('nombre', $nombre)->first();
+                    if (!$insumo) {
+                        // Determinar tipo básico por presentación
+                        $tipo = 'medico_quirurgico';
+                        $farmas = ['SUSPENSION','SUSPENSIÓN','TABLETA','AMPOLLA','JARABE','CREMA','GOTAS','CAPSULA','CÁPSULA','FRASCO'];
+                        if ($presentacion && in_array(strtoupper($presentacion), $farmas, true)) { $tipo = 'farmaceutico'; }
+
+                        $insumo = Insumo::create([
+                            'codigo' => null,
+                            'codigo_alterno' => null,
+                            'nombre' => $nombre,
+                            'tipo' => $tipo,
+                            'unidad_medida' => 'unidades',
+                            'cantidad_por_paquete' => 1,
+                            'presentacion' => $presentacion ?: null,
+                            'status' => 'activo',
+                        ]);
+                        $createdInsumos++;
+                    }
+
+                    // Buscar o crear lote (por insumo, lote y hospital)
+                    $lote = Lote::where('id_insumo', $insumo->id)
+                        ->where('numero_lote', $loteCod)
+                        ->where('hospital_id', $validated['hospital_id'])
+                        ->first();
+
+                    if (!$lote) {
+                        $lote = Lote::create([
+                            'id_insumo' => $insumo->id,
+                            'numero_lote' => $loteCod,
+                            'fecha_vencimiento' => $fechaVenc ?? date('Y-m-d'),
+                            'fecha_ingreso' => $fechaIngreso,
+                            'hospital_id' => $validated['hospital_id'],
+                        ]);
+                        $createdLotes++;
+                    } else {
+                        // Actualizar fechas si vienen
+                        $dirty = false;
+                        if ($fechaVenc && $lote->fecha_vencimiento != $fechaVenc) { $lote->fecha_vencimiento = $fechaVenc; $dirty = true; }
+                        if ($fechaIngreso && $lote->fecha_ingreso != $fechaIngreso) { $lote->fecha_ingreso = $fechaIngreso; $dirty = true; }
+                        if ($dirty) { $lote->save(); }
+                    }
+
+                    // Registrar/Incrementar en almacén central (sumar si existe)
+                    $res = $this->registrarEnAlmacenEspecifico([
+                        'almacen_tipo' => 'almacenCent',
+                        'cantidad' => $total,
+                        'hospital_id' => $validated['hospital_id'],
+                        'sede_id' => $validated['sede_id'],
+                    ], $lote->id);
+
+                    $updatedStock++;
+                } catch (\Throwable $e) {
+                    $errores[] = ['fila' => $i, 'error' => $e->getMessage()];
+                }
+            }
+
+            // Liberar memoria
+            if (isset($spreadsheet)) { $spreadsheet->disconnectWorksheets(); unset($spreadsheet); $reader = null; }
+
+            return response()->json([
+                'status' => true,
+                'mensaje' => 'Importación de inventario procesada.',
+                'data' => [
+                    'insumos_creados' => $createdInsumos,
+                    'lotes_creados' => $createdLotes,
+                    'registros_stock_actualizados' => $updatedStock,
+                    'omitidos' => $skipped,
+                    'errores' => $errores,
+                ],
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Error al procesar el archivo: ' . $e->getMessage(),
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
+    }
     public function registrar(Request $request)
     {
         $validated = $request->validate([

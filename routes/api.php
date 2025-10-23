@@ -163,6 +163,8 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
 
     // Inventario - Registro de lotes y almacenamiento
     Route::post('/inventario/registrar', [\App\Http\Controllers\InventarioController::class, 'registrar']);
+    // Importación de inventario desde Excel (.xls/.xlsx)
+    Route::post('/inventario/import', [\App\Http\Controllers\InventarioController::class, 'importExcel']);
 
     // Almacenes Servicios de Apoyo CRUD
     Route::get('/almacenes_servicios_apoyo', [AlmacenServiciosApoyoController::class, 'index']);

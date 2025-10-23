@@ -248,7 +248,7 @@ class InsumoController extends Controller
     public function importExcel(Request $request)
     {
         $request->validate([
-            'file' => ['required','file','mimes:xlsx','max:10240']
+            'file' => ['required','file','mimes:xls,xlsx','max:10240']
         ]);
 
         // Prechecks: required PHP extensions for reading XLSX
@@ -279,7 +279,9 @@ class InsumoController extends Controller
             $file = $request->file('file');
             $path = $file->getRealPath();
 
-            $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader('Xlsx');
+            // Detectar tipo de archivo y crear lector apropiado (Xls o Xlsx)
+            $inputType = \PhpOffice\PhpSpreadsheet\IOFactory::identify($path);
+            $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader($inputType);
             $reader->setReadDataOnly(true);
             $spreadsheet = $reader->load($path);
             $sheet = $spreadsheet->getActiveSheet();

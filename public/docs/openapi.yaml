@@ -2554,6 +2554,20 @@ paths:
   /api/insumos/import:
     post:
       summary: Importar insumos desde archivo Excel
+      description: |
+        Importa insumos desde un archivo Excel (.xls o .xlsx).
+        
+        **Formato del archivo:**
+        - Columna A: CODIGO (puede ser NULL)
+        - Columna B: DESCRIPCION (requerido)
+        
+        **Funcionalidad:**
+        - Busca insumos por código principal o código alterno
+        - Crea nuevos insumos si no existen
+        - Actualiza información si ya existen
+        - Parseo inteligente de descripciones para extraer tipo, presentación y unidades
+        - **Soporte UTF-8:** Maneja correctamente acentos y caracteres especiales
+        - **Detección automática:** Identifica tipo de archivo (.xls o .xlsx)
       tags: [Insumos]
       security:
         - bearerAuth: []
@@ -2568,9 +2582,55 @@ paths:
                 file:
                   type: string
                   format: binary
+                  description: Archivo Excel (.xls o .xlsx) con datos de insumos
       responses:
         '200':
-          description: Importación procesada
+          description: Importación procesada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    example: true
+                  mensaje:
+                    type: string
+                    example: "Importación procesada."
+                  data:
+                    type: object
+                    properties:
+                      creados:
+                        type: integer
+                        example: 25
+                      actualizados:
+                        type: integer
+                        example: 10
+                      omitidos:
+                        type: integer
+                        example: 0
+                      omitidos_detalle:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            fila:
+                              type: integer
+                            motivo:
+                              type: string
+                      errores:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            row:
+                              type: integer
+                            descripcion:
+                              type: string
+                            error:
+                              type: string
+        '400':
+          description: Error en el archivo o dependencias faltantes
           content:
             application/json:
               schema:

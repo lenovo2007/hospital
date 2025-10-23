@@ -44,16 +44,20 @@ class InventarioController extends Controller
      * - Registrar/Incrementar stock en almacenes_centrales (sede/hospital) sumando cantidad.
      *
      * Parámetros del request:
-     * - hospital_id (required)
-     * - sede_id (required)
+     * - hospital_id (opcional, por defecto: 1)
+     * - sede_id (opcional, por defecto: 1)
      */
     public function importExcel(Request $request)
     {
         $validated = $request->validate([
             'file' => ['required', 'file', 'mimes:xls,xlsx', 'max:10240'],
-            'hospital_id' => ['required', 'integer', 'exists:hospitales,id'],
-            'sede_id' => ['required', 'integer', 'exists:sedes,id'],
+            'hospital_id' => ['nullable', 'integer', 'exists:hospitales,id'],
+            'sede_id' => ['nullable', 'integer', 'exists:sedes,id'],
         ]);
+
+        // Valores por defecto: hospital_id=1 (almacén central), sede_id=1
+        $validated['hospital_id'] = $validated['hospital_id'] ?? 1;
+        $validated['sede_id'] = $validated['sede_id'] ?? 1;
 
         // Verificar dependencias de PhpSpreadsheet
         if (!class_exists('PhpOffice\\PhpSpreadsheet\\IOFactory')) {

@@ -3888,6 +3888,117 @@ paths:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
 
+  /api/inventario/import:
+    post:
+      summary: Importar inventario desde archivo Excel
+      description: |
+        Importa inventario desde un archivo Excel (.xls o .xlsx) con el formato específico de columnas.
+        
+        **Formato del archivo:**
+        - Columna A: NRO (número de fila)
+        - Columna B: NOMBRE DEL INSUMO (requerido)
+        - Columna C: PRESENTACION
+        - Columna D: LOTE (requerido)
+        - Columna E: FECHA DE VENC.
+        - Columna F: ESTUCHES POR BULTO
+        - Columna G: UNIDAD DE MANEJO (informativa)
+        - Columna H: CANT. DE BULTOS
+        - Columna I: RESTO
+        - Columna J: TOTAL UNIDADES
+        - Columna K: FECHA (fecha de ingreso)
+        
+        **Funcionalidad:**
+        - **Búsqueda/Creación de insumos:** Por nombre exacto en `insumos`
+        - **Creación/Actualización de lotes:** Por (insumo_id, numero_lote, hospital_id)
+        - **Registro/Suma de stock:** En `almacenes_centrales` por (sede_id, lote_id, hospital_id)
+        - **Cálculo de cantidad:** Prioriza J, si no usa (F×H)+I
+        - **Parseo de fechas:** Excel serial o string (YYYY-MM-DD, DD/MM/YYYY, etc.)
+        - **Detección automática:** Identifica tipo de archivo (.xls o .xlsx)
+        - **Validaciones:** Nombres y lotes no vacíos, cantidades > 0
+        
+        **Parámetros opcionales:**
+        - hospital_id: Por defecto 1 (almacén central)
+        - sede_id: Por defecto 1
+      tags: [Inventario]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Archivo Excel (.xls o .xlsx) con datos de inventario
+                hospital_id:
+                  type: integer
+                  description: ID del hospital destino (opcional, por defecto 1)
+                  example: 1
+                sede_id:
+                  type: integer
+                  description: ID de la sede destino (opcional, por defecto 1)
+                  example: 1
+      responses:
+        '200':
+          description: Importación procesada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    example: true
+                  mensaje:
+                    type: string
+                    example: "Importación de inventario procesada."
+                  data:
+                    type: object
+                    properties:
+                      insumos_creados:
+                        type: integer
+                        example: 3
+                      lotes_creados:
+                        type: integer
+                        example: 5
+                      registros_stock_actualizados:
+                        type: integer
+                        example: 5
+                      omitidos:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            fila:
+                              type: integer
+                            motivo:
+                              type: string
+                      errores:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            fila:
+                              type: integer
+                            error:
+                              type: string
+        '400':
+          description: Datos inválidos o archivo no válido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/inventario/sede/{sede_id}:
     get:
       summary: Obtener inventario por sede

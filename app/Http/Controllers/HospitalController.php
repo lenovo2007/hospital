@@ -394,18 +394,26 @@ class HospitalController extends Controller
                     }
 
                     // Transformar tipo: I -> hospital_tipo1, II -> hospital_tipo2, III -> hospital_tipo3
+                    // Manejar confusión entre I (i mayúscula) y L (l mayúscula/minúscula)
                     $tipoTransformado = 'No especificado';
                     if (!empty($tipo)) {
-                        $tipoUpper = strtoupper(trim($tipo));
-                        if ($tipoUpper === 'I') {
+                        // Normalizar: reemplazar todas las L y l por I
+                        $tipoNormalizado = str_replace(['L', 'l'], 'I', trim($tipo));
+                        $tipoNormalizado = strtoupper($tipoNormalizado);
+                        
+                        // Contar cuántas I hay para determinar el tipo
+                        $cantidadI = substr_count($tipoNormalizado, 'I');
+                        
+                        if ($cantidadI === 1) {
                             $tipoTransformado = 'hospital_tipo1';
-                        } elseif ($tipoUpper === 'II') {
+                        } elseif ($cantidadI === 2) {
                             $tipoTransformado = 'hospital_tipo2';
-                        } elseif ($tipoUpper === 'III') {
+                        } elseif ($cantidadI === 3) {
                             $tipoTransformado = 'hospital_tipo3';
-                        } elseif ($tipoUpper === 'IV') {
+                        } elseif ($cantidadI === 4 || $tipoNormalizado === 'IV') {
                             $tipoTransformado = 'hospital_tipo4';
                         } else {
+                            // Si no coincide con ningún patrón, mantener el valor original
                             $tipoTransformado = $tipo;
                         }
                     }

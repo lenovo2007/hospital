@@ -532,11 +532,12 @@ paths:
         - Columna N: Latitud
         - Columna O: Longitud
         
-        **Manejo de errores:**
-        - RIF NULL: Permitido
-        - Emails duplicados: Se establece como NULL
-        - Teléfonos largos: Se truncan a 50 caracteres
-        - Coordenadas inválidas: Se validan y limpian
+        **Procesamiento de datos:**
+        - **Campos de texto convertidos a minúsculas:** dependencia, estado, municipio, parroquia
+        - **Conversión UTF-8:** Se manejan correctamente acentos y caracteres especiales (girÓn → girón, alcalÁ → alcalá, josÉ → josé)
+        - **Tipo de hospital:** Se normaliza automáticamente (I → hospital_tipo1, II → hospital_tipo2, etc.)
+        - **Campos ignorados si son '?':** Todos los campos opcionales
+        - **Duplicados:** Se detectan por COD_SICM o por nombre+estado+municipio (comparación insensible a mayúsculas)
       tags: [Hospitales]
       security:
         - bearerAuth: []

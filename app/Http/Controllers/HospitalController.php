@@ -424,10 +424,10 @@ class HospitalController extends Controller
                         'rif' => $rif,
                         'cod_sicm' => $cod_sicm,
                         'tipo' => $tipoTransformado,
-                        'dependencia' => (!empty($dependencia) && $dependencia !== '?') ? strtolower($dependencia) : null,
-                        'estado' => (!empty($estado) && $estado !== '?') ? strtolower($estado) : null,
-                        'municipio' => (!empty($municipio) && $municipio !== '?') ? strtolower($municipio) : null,
-                        'parroquia' => (!empty($parroquia) && $parroquia !== '?') ? strtolower($parroquia) : null,
+                        'dependencia' => (!empty($dependencia) && $dependencia !== '?') ? mb_strtolower($dependencia) : null,
+                        'estado' => (!empty($estado) && $estado !== '?') ? mb_strtolower($estado) : null,
+                        'municipio' => (!empty($municipio) && $municipio !== '?') ? mb_strtolower($municipio) : null,
+                        'parroquia' => (!empty($parroquia) && $parroquia !== '?') ? mb_strtolower($parroquia) : null,
                         'email' => $email,
                         'nombre_contacto' => (!empty($nombre_contacto) && $nombre_contacto !== '?') ? $nombre_contacto : null,
                         'email_contacto' => $email_contacto,
@@ -444,9 +444,9 @@ class HospitalController extends Controller
                     }
                     if (!$existing) {
                         // Usar valores en minúsculas para la búsqueda
-                        $estadoLower = (!empty($estado) && $estado !== '?') ? strtolower($estado) : null;
-                        $municipioLower = (!empty($municipio) && $municipio !== '?') ? strtolower($municipio) : null;
-                        
+                        $estadoLower = (!empty($estado) && $estado !== '?') ? mb_strtolower($estado) : null;
+                        $municipioLower = (!empty($municipio) && $municipio !== '?') ? mb_strtolower($municipio) : null;
+
                         $existing = Hospital::where('nombre', $nombre)
                             ->where('estado', $estadoLower)
                             ->where('municipio', $municipioLower)

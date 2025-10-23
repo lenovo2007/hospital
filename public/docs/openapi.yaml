@@ -3895,24 +3895,19 @@ paths:
         Importa inventario desde un archivo Excel (.xls o .xlsx) con el formato específico de columnas.
         
         **Formato del archivo:**
-        - Columna A: NRO (número de fila)
-        - Columna B: NOMBRE DEL INSUMO (requerido)
-        - Columna C: PRESENTACION
-        - Columna D: LOTE (requerido)
-        - Columna E: FECHA DE VENC.
-        - Columna F: ESTUCHES POR BULTO
-        - Columna G: UNIDAD DE MANEJO (informativa)
-        - Columna H: CANT. DE BULTOS
-        - Columna I: RESTO
-        - Columna J: TOTAL UNIDADES
-        - Columna K: FECHA (fecha de ingreso)
+        - Columna A: NOMBRE DEL INSUMO (requerido)
+        - Columna B: PRESENTACION
+        - Columna C: LOTE (requerido)
+        - Columna D: FECHA DE VENC. (opcional, NULL si es inválida)
+        - Columna E: TOTAL UNIDADES (requerido)
+        - Columna F: FECHA (fecha de ingreso, opcional, NULL si es inválida)
         
         **Funcionalidad:**
         - **Búsqueda/Creación de insumos:** Por nombre exacto en `insumos`
         - **Creación/Actualización de lotes:** Por (insumo_id, numero_lote, hospital_id)
         - **Registro/Suma de stock:** En `almacenes_centrales` por (sede_id, lote_id, hospital_id)
-        - **Cálculo de cantidad:** Prioriza J, si no usa (F×H)+I
         - **Parseo de fechas:** Excel serial o string (YYYY-MM-DD, DD/MM/YYYY, etc.)
+        - **Fechas inválidas:** Se guardan como NULL en la base de datos
         - **Detección automática:** Identifica tipo de archivo (.xls o .xlsx)
         - **Validaciones:** Nombres y lotes no vacíos, cantidades > 0
         

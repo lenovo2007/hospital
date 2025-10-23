@@ -37,11 +37,12 @@ class InventarioController extends Controller
 
     /**
      * Importar inventario desde archivo Excel (.xls o .xlsx) con el siguiente formato de columnas:
-     * A:NRO | B:NOMBRE DEL INSUMO | C:PRESENTACION | D:LOTE | E:FECHA DE VENC. | F:ESTUCHES POR BULTO | G:UNIDAD DE MANEJO | H:CANT. DE BULTOS | I:RESTO | J:TOTAL UNIDADES | K:FECHA
+     * A:NOMBRE DEL INSUMO | B:PRESENTACION | C:LOTE | D:FECHA DE VENC. | E:TOTAL UNIDADES | F:FECHA (fecha ingreso)
      * Reglas:
-     * - Buscar/crear el insumo por nombre (columna B).
+     * - Buscar/crear el insumo por nombre (columna A).
      * - Crear/obtener el lote por (insumo_id, numero_lote, hospital_id).
      * - Registrar/Incrementar stock en almacenes_centrales (sede/hospital) sumando cantidad.
+     * - Las fechas inválidas se ignoran (se guardan como NULL).
      *
      * Parámetros del request:
      * - hospital_id (opcional, por defecto: 1)
@@ -81,17 +82,13 @@ class InventarioController extends Controller
             $spreadsheet = $reader->load($path);
             $sheet = $spreadsheet->getActiveSheet();
 
-            // Columnas según especificación
-            $colNombre = 'B';
-            $colPresentacion = 'C';
-            $colLote = 'D';
-            $colFechaVenc = 'E';
-            $colEstuchesXBulto = 'F';
-            $colUnidadManejo = 'G'; // Informativa
-            $colCantBultos = 'H';
-            $colResto = 'I';
-            $colTotalUnidades = 'J';
-            $colFechaIngreso = 'K';
+            // Columnas según especificación actualizada
+            $colNombre = 'A';          // NOMBRE DEL INSUMO
+            $colPresentacion = 'B';    // PRESENTACION
+            $colLote = 'C';            // LOTE
+            $colFechaVenc = 'D';       // FECHA DE VENC.
+            $colTotalUnidades = 'E';   // TOTAL UNIDADES
+            $colFechaIngreso = 'F';    // FECHA (fecha ingreso)
 
             $createdInsumos = 0; $updatedStock = 0; $createdLotes = 0; $skipped = []; $errores = [];
             $rowCount = (int) $sheet->getHighestRow();
@@ -126,18 +123,13 @@ class InventarioController extends Controller
                     $loteCod = trim((string) ($sheet->getCell($colLote.$i)->getValue() ?? ''));
                     if ($loteCod === '') { $skipped[] = ['fila' => $i, 'motivo' => 'Código de lote vacío']; continue; }
 
+                    // Parsear fechas (pueden ser NULL si son inválidas)
                     $fechaVenc = $parseFecha($sheet->getCell($colFechaVenc.$i)->getValue());
-                    $fechaIngreso = $parseFecha($sheet->getCell($colFechaIngreso.$i)->getValue()) ?? date('Y-m-d');
+                    $fechaIngreso = $parseFecha($sheet->getCell($colFechaIngreso.$i)->getValue());
 
-                    // Cantidad
+                    // Cantidad (directamente de columna E)
                     $totalUnidades = $sheet->getCell($colTotalUnidades.$i)->getValue();
-                    $total = is_numeric($totalUnidades) ? (int) $totalUnidades : null;
-                    if ($total === null) {
-                        $estuches = (int) ($sheet->getCell($colEstuchesXBulto.$i)->getValue() ?? 0);
-                        $bultos = (int) ($sheet->getCell($colCantBultos.$i)->getValue() ?? 0);
-                        $resto = (int) ($sheet->getCell($colResto.$i)->getValue() ?? 0);
-                        $total = max(0, ($estuches * $bultos) + $resto);
-                    }
+                    $total = is_numeric($totalUnidades) ? (int) $totalUnidades : 0;
                     if ($total <= 0) { $skipped[] = ['fila' => $i, 'motivo' => 'Cantidad total no válida']; continue; }
 
                     // Buscar/crear insumo por nombre exacto
@@ -171,13 +163,13 @@ class InventarioController extends Controller
                         $lote = Lote::create([
                             'id_insumo' => $insumo->id,
                             'numero_lote' => $loteCod,
-                            'fecha_vencimiento' => $fechaVenc ?? date('Y-m-d'),
-                            'fecha_ingreso' => $fechaIngreso,
+                            'fecha_vencimiento' => $fechaVenc, // NULL si es inválida
+                            'fecha_ingreso' => $fechaIngreso,  // NULL si es inválida
                             'hospital_id' => $validated['hospital_id'],
                         ]);
                         $createdLotes++;
                     } else {
-                        // Actualizar fechas si vienen
+                        // Actualizar fechas solo si vienen válidas
                         $dirty = false;
                         if ($fechaVenc && $lote->fecha_vencimiento != $fechaVenc) { $lote->fecha_vencimiento = $fechaVenc; $dirty = true; }
                         if ($fechaIngreso && $lote->fecha_ingreso != $fechaIngreso) { $lote->fecha_ingreso = $fechaIngreso; $dirty = true; }

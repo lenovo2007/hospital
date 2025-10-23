@@ -128,8 +128,8 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
         ->where('sedeId', '[0-9]+')
         ->withoutMiddleware(\App\Http\Middleware\CheckCrudPermissions::class);
     
-    Route::get('/inventario/sede/{sedeId}/por-vencer', [\App\Http\Controllers\InventarioController::class, 'listarPorVencerPorSede'])
-        ->where('sedeId', '[0-9]+')
+    Route::get('/inventario/hospital/{hospitalId}/por-vencer', [\App\Http\Controllers\InventarioController::class, 'listarPorVencerPorHospital'])
+        ->where('hospitalId', '[0-9]+')
         ->withoutMiddleware(\App\Http\Middleware\CheckCrudPermissions::class);
 
     // Movimientos de stock CRUD

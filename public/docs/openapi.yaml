@@ -3726,29 +3726,31 @@ paths:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
 
-  /api/inventario/sede/{sede_id}/por-vencer:
+  /api/inventario/hospital/{hospital_id}/por-vencer:
     get:
-      summary: Obtener los 10 insumos próximos a vencer por sede
+      summary: Obtener los 10 insumos próximos a vencer por hospital
       description: |
-        Devuelve los 10 insumos más próximos a vencer del inventario de una sede específica.
-        
+        Devuelve los 10 insumos más próximos a vencer del inventario de todas las sedes de un hospital específico.
+
         **Funcionalidad:**
-        - Filtra por sede_id y status=true
+        - Obtiene todas las sedes del hospital especificado
+        - Filtra por hospital_id y status=true en todas las tablas de almacén
         - Solo incluye lotes con fecha de vencimiento válida (no NULL)
         - Solo incluye lotes que aún no han vencido (fecha >= hoy)
         - Ordena por fecha de vencimiento ascendente
         - Calcula los días restantes hasta el vencimiento
         - Limita el resultado a 10 registros
+        - Incluye información de la sede donde se encuentra cada lote
       tags: [Inventario]
       security:
         - bearerAuth: []
       parameters:
-        - name: sede_id
+        - name: hospital_id
           in: path
           required: true
           schema:
             type: integer
-          description: ID de la sede
+          description: ID del hospital
       responses:
         '200':
           description: Listado de insumos próximos a vencer
@@ -3800,8 +3802,16 @@ paths:
                           type: integer
                           example: 23
                           description: Número de días restantes hasta el vencimiento
+                        sede_id:
+                          type: integer
+                          example: 1
+                          description: ID de la sede donde se encuentra el lote
+                        sede_nombre:
+                          type: string
+                          example: "Almacén Central"
+                          description: Nombre de la sede donde se encuentra el lote
         '404':
-          description: Sede no encontrada
+          description: Hospital no encontrado o sin sedes
           content:
             application/json:
               schema:

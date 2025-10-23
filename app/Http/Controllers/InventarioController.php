@@ -432,77 +432,91 @@ class InventarioController extends Controller
     }
 
     /**
-     * Listar los 10 insumos próximos a vencer del inventario de una sede
-     * 
-     * @param int $sedeId ID de la sede
+     * Listar los 10 insumos próximos a vencer del inventario de un hospital
+     *
+     * @param int $hospitalId ID del hospital
      * @return \Illuminate\Http\JsonResponse
      */
-    public function listarPorVencerPorSede($sedeId)
+    public function listarPorVencerPorHospital($hospitalId)
     {
         try {
-            // Obtener el tipo de almacén de la sede
-            $sede = DB::table('sedes')->where('id', $sedeId)->first();
-            if (!$sede) {
+            // Obtener todas las sedes del hospital
+            $sedes = DB::table('sedes')->where('hospital_id', $hospitalId)->get();
+            if ($sedes->isEmpty()) {
                 return response()->json([
                     'status' => false,
-                    'mensaje' => 'Sede no encontrada.',
+                    'mensaje' => 'Hospital no encontrado o no tiene sedes registradas.',
                     'data' => [],
                 ], 200, [], JSON_UNESCAPED_UNICODE);
             }
 
-            // Determinar la tabla según el tipo de almacén
-            $tabla = match ($sede->tipo_almacen) {
-                'almacenCent' => 'almacenes_centrales',
-                'almacenPrin' => 'almacenes_principales',
-                'almacenFarm' => 'almacenes_farmacia',
-                'almacenPar' => 'almacenes_paralelo',
-                'almacenServApoyo' => 'almacenes_servicios_apoyo',
-                'almacenServAtenciones' => 'almacenes_servicios_atenciones',
-                default => null,
-            };
+            // Obtener todos los tipos de almacén únicos de las sedes del hospital
+            $tiposAlmacen = $sedes->pluck('tipo_almacen')->unique()->values();
 
-            if (!$tabla || !Schema::hasTable($tabla)) {
-                return response()->json([
-                    'status' => false,
-                    'mensaje' => "No se encontró la tabla de almacén para el tipo: {$sede->tipo_almacen}",
-                    'data' => [],
-                ], 200, [], JSON_UNESCAPED_UNICODE);
+            $allResults = collect();
+
+            // Para cada tipo de almacén, consultar la tabla correspondiente
+            foreach ($tiposAlmacen as $tipoAlmacen) {
+                $tabla = match ($tipoAlmacen) {
+                    'almacenCent' => 'almacenes_centrales',
+                    'almacenPrin' => 'almacenes_principales',
+                    'almacenFarm' => 'almacenes_farmacia',
+                    'almacenPar' => 'almacenes_paralelo',
+                    'almacenServApoyo' => 'almacenes_servicios_apoyo',
+                    'almacenServAtenciones' => 'almacenes_servicios_atenciones',
+                    default => null,
+                };
+
+                if (!$tabla || !Schema::hasTable($tabla)) {
+                    continue; // Saltar tipos de almacén no válidos
+                }
+
+                // Obtener sedes que usan este tipo de almacén
+                $sedesPorTipo = $sedes->where('tipo_almacen', $tipoAlmacen);
+
+                // Obtener lotes próximos a vencer para todas las sedes de este tipo
+                $insumosProximosVencer = DB::table($tabla)
+                    ->join('lotes', "$tabla.lote_id", '=', 'lotes.id')
+                    ->join('insumos', 'lotes.id_insumo', '=', 'insumos.id')
+                    ->whereIn("$tabla.sede_id", $sedesPorTipo->pluck('id'))
+                    ->where("$tabla.hospital_id", $hospitalId)
+                    ->where("$tabla.status", true)
+                    ->whereNotNull('lotes.fecha_vencimiento')
+                    ->where('lotes.fecha_vencimiento', '>=', now()->toDateString())
+                    ->select(
+                        'insumos.id as insumo_id',
+                        'insumos.codigo',
+                        'insumos.nombre',
+                        'insumos.presentacion',
+                        'insumos.tipo',
+                        'lotes.id as lote_id',
+                        'lotes.numero_lote',
+                        'lotes.fecha_vencimiento',
+                        DB::raw("$tabla.cantidad as cantidad"),
+                        DB::raw("DATEDIFF(lotes.fecha_vencimiento, CURDATE()) as dias_para_vencer"),
+                        DB::raw("$tabla.sede_id as sede_id"),
+                        'sedes.nombre as sede_nombre'
+                    )
+                    ->join('sedes', "$tabla.sede_id", '=', 'sedes.id')
+                    ->orderBy('lotes.fecha_vencimiento', 'asc')
+                    ->get();
+
+                $allResults = $allResults->merge($insumosProximosVencer);
             }
 
-            // Obtener los 10 lotes próximos a vencer con fecha de vencimiento válida
-            $insumosProximosVencer = DB::table($tabla)
-                ->join('lotes', "$tabla.lote_id", '=', 'lotes.id')
-                ->join('insumos', 'lotes.id_insumo', '=', 'insumos.id')
-                ->where("$tabla.sede_id", $sedeId)
-                ->where("$tabla.status", true)
-                ->whereNotNull('lotes.fecha_vencimiento')
-                ->where('lotes.fecha_vencimiento', '>=', now()->toDateString())
-                ->select(
-                    'insumos.id as insumo_id',
-                    'insumos.codigo',
-                    'insumos.nombre',
-                    'insumos.presentacion',
-                    'insumos.tipo',
-                    'lotes.id as lote_id',
-                    'lotes.numero_lote',
-                    'lotes.fecha_vencimiento',
-                    DB::raw("$tabla.cantidad as cantidad"),
-                    DB::raw("DATEDIFF(lotes.fecha_vencimiento, CURDATE()) as dias_para_vencer")
-                )
-                ->orderBy('lotes.fecha_vencimiento', 'asc')
-                ->limit(10)
-                ->get();
-
-            if ($insumosProximosVencer->isEmpty()) {
+            if ($allResults->isEmpty()) {
                 return response()->json([
                     'status' => true,
-                    'mensaje' => 'No hay insumos próximos a vencer en esta sede.',
+                    'mensaje' => 'No hay insumos próximos a vencer en este hospital.',
                     'data' => [],
                 ], 200, [], JSON_UNESCAPED_UNICODE);
             }
 
+            // Ordenar todos los resultados por fecha de vencimiento y tomar los primeros 10
+            $top10Results = $allResults->sortBy('fecha_vencimiento')->take(10);
+
             // Formatear respuesta
-            $data = $insumosProximosVencer->map(function ($item) {
+            $data = $top10Results->map(function ($item) {
                 return [
                     'insumo_id' => $item->insumo_id,
                     'codigo' => $item->codigo,
@@ -514,6 +528,8 @@ class InventarioController extends Controller
                     'fecha_vencimiento' => $item->fecha_vencimiento,
                     'cantidad' => (int) $item->cantidad,
                     'dias_para_vencer' => (int) $item->dias_para_vencer,
+                    'sede_id' => $item->sede_id,
+                    'sede_nombre' => $item->sede_nombre,
                 ];
             });
 
@@ -524,9 +540,9 @@ class InventarioController extends Controller
             ], 200, [], JSON_UNESCAPED_UNICODE);
 
         } catch (Throwable $e) {
-            Log::error('Error en listarPorVencerPorSede', [
+            Log::error('Error en listarPorVencerPorHospital', [
                 'exception' => $e,
-                'sedeId' => $sedeId,
+                'hospitalId' => $hospitalId,
             ]);
             $mensaje = 'Error al listar insumos próximos a vencer';
             if (app()->environment('local')) {

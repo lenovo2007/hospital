@@ -1,0 +1,351 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Exceptions\StockException;
+use App\Models\Hospital;
+use App\Models\Insumo;
+use App\Models\Lote;
+use App\Models\TipoHospitalDistribucion;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use Throwable;
+
+class DistribucionExcelController extends Controller
+{
+    /**
+     * Importar y distribuir insumos desde Excel según porcentajes por tipo de hospital
+     * 
+     * POST /api/distribucion/import
+     * 
+     * Formato del archivo Excel:
+     * - Columna A: ITEM (número)
+     * - Columna B: DESCRIPCION (MATERIAL MMQ) - nombre del insumo
+     * - Columna C: PARA DESPACHAR - cantidad total a distribuir
+     * 
+     * Proceso:
+     * 1. Consulta hospitales del estado Falcón
+     * 2. Obtiene porcentajes de distribución por tipo de hospital
+     * 3. Distribuye cantidades según porcentajes (trunca decimales)
+     * 4. Crea movimientos de despacho desde almacén central a principal de cada hospital
+     */
+    public function importarYDistribuir(Request $request)
+    {
+        $validated = $request->validate([
+            'file' => ['required', 'file', 'mimes:xls,xlsx', 'max:10240'],
+        ]);
+
+        $file = $request->file('file');
+        $userId = (int) $request->user()->id;
+
+        try {
+            // 1. Obtener hospitales del estado Falcón
+            $hospitalesFalcon = Hospital::where('estado', 'falcon')
+                ->where('status', true)
+                ->get();
+
+            if ($hospitalesFalcon->isEmpty()) {
+                return response()->json([
+                    'status' => false,
+                    'mensaje' => 'No se encontraron hospitales activos en el estado Falcón.',
+                    'data' => null,
+                ], 200, [], JSON_UNESCAPED_UNICODE);
+            }
+
+            // Agrupar hospitales por tipo
+            $hospitalesPorTipo = $hospitalesFalcon->groupBy('tipo');
+
+            // 2. Obtener porcentajes de distribución
+            $porcentajes = TipoHospitalDistribucion::first();
+            if (!$porcentajes) {
+                return response()->json([
+                    'status' => false,
+                    'mensaje' => 'No se encontró configuración de porcentajes de distribución.',
+                    'data' => null,
+                ], 200, [], JSON_UNESCAPED_UNICODE);
+            }
+
+            // 3. Leer archivo Excel
+            $spreadsheet = IOFactory::load($file->getPathname());
+            $sheet = $spreadsheet->getActiveSheet();
+            $highestRow = $sheet->getHighestRow();
+
+            $insumosDistribuidos = [];
+            $movimientosCreados = 0;
+            $errores = [];
+            $omitidos = [];
+
+            // Procesar cada fila del Excel (empezar desde fila 2 para saltar encabezados)
+            for ($row = 2; $row <= $highestRow; $row++) {
+                try {
+                    $item = $sheet->getCell("A{$row}")->getValue();
+                    $descripcion = trim((string) $sheet->getCell("B{$row}")->getValue());
+                    $paraDespachar = $sheet->getCell("C{$row}")->getValue();
+
+                    // Validar datos básicos
+                    if (empty($descripcion) || empty($paraDespachar) || $paraDespachar <= 0) {
+                        $omitidos[] = [
+                            'fila' => $row,
+                            'motivo' => 'Descripción vacía o cantidad inválida',
+                        ];
+                        continue;
+                    }
+
+                    $cantidadTotal = (int) $paraDespachar;
+
+                    // Buscar insumo por nombre
+                    $insumo = Insumo::where('nombre', $descripcion)->first();
+                    if (!$insumo) {
+                        $errores[] = [
+                            'fila' => $row,
+                            'descripcion' => $descripcion,
+                            'error' => 'Insumo no encontrado en la base de datos',
+                        ];
+                        continue;
+                    }
+
+                    // Buscar lote disponible en almacén central (hospital_id=1, sede_id=1)
+                    $lote = DB::table('almacenes_centrales')
+                        ->join('lotes', 'almacenes_centrales.lote_id', '=', 'lotes.id')
+                        ->where('lotes.id_insumo', $insumo->id)
+                        ->where('almacenes_centrales.hospital_id', 1)
+                        ->where('almacenes_centrales.sede_id', 1)
+                        ->where('almacenes_centrales.status', true)
+                        ->where('almacenes_centrales.cantidad', '>=', $cantidadTotal)
+                        ->select('lotes.id as lote_id', 'almacenes_centrales.cantidad')
+                        ->orderBy('lotes.fecha_vencimiento', 'asc')
+                        ->first();
+
+                    if (!$lote) {
+                        $errores[] = [
+                            'fila' => $row,
+                            'descripcion' => $descripcion,
+                            'error' => "Stock insuficiente en almacén central. Requerido: {$cantidadTotal}",
+                        ];
+                        continue;
+                    }
+
+                    // 4. Calcular distribución por tipo de hospital
+                    $distribucion = $this->calcularDistribucion(
+                        $cantidadTotal,
+                        $porcentajes,
+                        $hospitalesPorTipo
+                    );
+
+                    // 5. Crear movimientos de despacho para cada hospital
+                    $movimientosPorInsumo = 0;
+                    foreach ($distribucion as $tipoHospital => $hospitalesConCantidad) {
+                        foreach ($hospitalesConCantidad as $hospitalData) {
+                            if ($hospitalData['cantidad'] <= 0) {
+                                continue;
+                            }
+
+                            // Obtener sede principal del hospital destino
+                            $sedeDestino = DB::table('sedes')
+                                ->where('hospital_id', $hospitalData['hospital_id'])
+                                ->where('tipo_almacen', 'almacenPrin')
+                                ->first();
+
+                            if (!$sedeDestino) {
+                                $errores[] = [
+                                    'fila' => $row,
+                                    'descripcion' => $descripcion,
+                                    'error' => "Hospital {$hospitalData['hospital_nombre']} no tiene sede principal configurada",
+                                ];
+                                continue;
+                            }
+
+                            // Crear movimiento usando el método interno
+                            $this->crearMovimientoDespacho(
+                                $lote->lote_id,
+                                $hospitalData['cantidad'],
+                                $hospitalData['hospital_id'],
+                                $sedeDestino->id,
+                                $userId,
+                                "Distribución automática - {$descripcion}"
+                            );
+
+                            $movimientosPorInsumo++;
+                        }
+                    }
+
+                    $insumosDistribuidos[] = [
+                        'fila' => $row,
+                        'insumo' => $descripcion,
+                        'cantidad_total' => $cantidadTotal,
+                        'movimientos_creados' => $movimientosPorInsumo,
+                    ];
+
+                    $movimientosCreados += $movimientosPorInsumo;
+
+                } catch (Throwable $e) {
+                    $errores[] = [
+                        'fila' => $row,
+                        'descripcion' => $descripcion ?? 'N/A',
+                        'error' => $e->getMessage(),
+                    ];
+                    Log::error('Error procesando fila de distribución', [
+                        'fila' => $row,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            return response()->json([
+                'status' => true,
+                'mensaje' => 'Distribución procesada exitosamente.',
+                'data' => [
+                    'insumos_distribuidos' => count($insumosDistribuidos),
+                    'movimientos_creados' => $movimientosCreados,
+                    'hospitales_falcon' => $hospitalesFalcon->count(),
+                    'omitidos' => count($omitidos),
+                    'errores' => count($errores),
+                    'detalle_insumos' => $insumosDistribuidos,
+                    'detalle_omitidos' => $omitidos,
+                    'detalle_errores' => $errores,
+                ],
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+
+        } catch (Throwable $e) {
+            Log::error('Error en importación de distribución', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Error al procesar el archivo de distribución: ' . $e->getMessage(),
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
+    }
+
+    /**
+     * Calcula la distribución de cantidades según porcentajes por tipo de hospital
+     * Trunca decimales (no redondea)
+     */
+    private function calcularDistribucion(int $cantidadTotal, TipoHospitalDistribucion $porcentajes, $hospitalesPorTipo): array
+    {
+        $distribucion = [];
+
+        $tiposMap = [
+            'hospital_tipo1' => 'tipo1',
+            'hospital_tipo2' => 'tipo2',
+            'hospital_tipo3' => 'tipo3',
+            'hospital_tipo4' => 'tipo4',
+        ];
+
+        foreach ($tiposMap as $tipoHospital => $campoPortcentaje) {
+            if (!isset($hospitalesPorTipo[$tipoHospital])) {
+                continue;
+            }
+
+            $hospitales = $hospitalesPorTipo[$tipoHospital];
+            $porcentaje = (float) $porcentajes->$campoPortcentaje;
+            $cantidadHospitales = $hospitales->count();
+
+            if ($cantidadHospitales === 0 || $porcentaje <= 0) {
+                continue;
+            }
+
+            // Calcular cantidad total para este tipo de hospital
+            $cantidadTipo = ($cantidadTotal * $porcentaje) / 100;
+            
+            // Truncar decimal (no redondear)
+            $cantidadTipoEntero = (int) $cantidadTipo;
+
+            // Distribuir equitativamente entre hospitales del mismo tipo
+            $cantidadPorHospital = $cantidadTipoEntero / $cantidadHospitales;
+            
+            // Truncar decimal (no redondear)
+            $cantidadPorHospitalEntero = (int) $cantidadPorHospital;
+
+            $distribucion[$tipoHospital] = [];
+
+            foreach ($hospitales as $hospital) {
+                $distribucion[$tipoHospital][] = [
+                    'hospital_id' => $hospital->id,
+                    'hospital_nombre' => $hospital->nombre,
+                    'cantidad' => $cantidadPorHospitalEntero,
+                ];
+            }
+        }
+
+        return $distribucion;
+    }
+
+    /**
+     * Crea un movimiento de despacho desde almacén central a principal
+     */
+    private function crearMovimientoDespacho(
+        int $loteId,
+        int $cantidad,
+        int $destinoHospitalId,
+        int $destinoSedeId,
+        int $userId,
+        string $observaciones
+    ): void {
+        DB::transaction(function () use ($loteId, $cantidad, $destinoHospitalId, $destinoSedeId, $userId, $observaciones) {
+            // Descontar del almacén central
+            $registro = DB::table('almacenes_centrales')
+                ->where('hospital_id', 1)
+                ->where('sede_id', 1)
+                ->where('lote_id', $loteId)
+                ->where('status', true)
+                ->lockForUpdate()
+                ->first();
+
+            if (!$registro) {
+                throw new StockException("No se encontró el lote {$loteId} en almacén central.");
+            }
+
+            if ((int) $registro->cantidad < $cantidad) {
+                throw new StockException("Stock insuficiente para lote {$loteId}. Disponible: {$registro->cantidad}, Solicitado: {$cantidad}");
+            }
+
+            $nuevaCantidad = (int) $registro->cantidad - $cantidad;
+
+            DB::table('almacenes_centrales')
+                ->where('id', $registro->id)
+                ->update([
+                    'cantidad' => $nuevaCantidad,
+                    'status' => $nuevaCantidad > 0,
+                    'updated_at' => now(),
+                ]);
+
+            // Crear grupo de lote
+            $codigoGrupo = 'LG-' . strtoupper(uniqid());
+            DB::table('lote_grupos')->insert([
+                'codigo' => $codigoGrupo,
+                'lote_id' => $loteId,
+                'cantidad' => $cantidad,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            // Crear movimiento de stock
+            DB::table('movimientos_stock')->insert([
+                'tipo' => 'transferencia',
+                'tipo_movimiento' => 'despacho',
+                'origen_hospital_id' => 1,
+                'origen_sede_id' => 1,
+                'destino_hospital_id' => $destinoHospitalId,
+                'destino_sede_id' => $destinoSedeId,
+                'origen_almacen_tipo' => 'almacenCent',
+                'destino_almacen_tipo' => 'almacenPrin',
+                'cantidad_salida_total' => $cantidad,
+                'cantidad_entrada_total' => 0,
+                'discrepancia_total' => false,
+                'fecha_despacho' => now()->toDateString(),
+                'observaciones' => $observaciones,
+                'estado' => 'pendiente',
+                'codigo_grupo' => $codigoGrupo,
+                'user_id' => $userId,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        });
+    }
+}

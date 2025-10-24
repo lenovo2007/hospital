@@ -4490,6 +4490,135 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/distribucion/import:
+    post:
+      summary: Importar y distribuir insumos desde Excel a hospitales de Falcón
+      description: |
+        Importa un archivo Excel con insumos y los distribuye automáticamente a todos los hospitales del estado Falcón según porcentajes configurados por tipo de hospital.
+        
+        **Formato del archivo:**
+        - Columna A: ITEM (número de ítem)
+        - Columna B: DESCRIPCION (MATERIAL MMQ) - nombre exacto del insumo
+        - Columna C: PARA DESPACHAR - cantidad total a distribuir
+        
+        **Proceso de distribución:**
+        1. **Filtrado de hospitales:** Solo hospitales del estado Falcón activos
+        2. **Consulta de porcentajes:** Obtiene configuración de `tipos_hospital_distribuciones`
+        3. **Cálculo de distribución:**
+           - Aplica porcentaje según tipo de hospital (tipo1, tipo2, tipo3, tipo4)
+           - Distribuye equitativamente entre hospitales del mismo tipo
+           - **Trunca decimales** (no redondea) en todos los cálculos
+        4. **Creación de movimientos:**
+           - Tipo: despacho
+           - Origen: almacenCent (hospital_id=1, sede_id=1)
+           - Destino: almacenPrin de cada hospital
+           - Estado: pendiente
+        5. **Validaciones:**
+           - Insumo debe existir en la base de datos
+           - Stock suficiente en almacén central
+           - Hospital destino debe tener sede principal configurada
+        
+        **Ejemplo de distribución:**
+        - Total a despachar: 10000 unidades
+        - Porcentaje Tipo I: 40% → 4000 unidades
+        - Si hay 5 hospitales Tipo I → 800 unidades c/u
+        - Decimales se truncan (no redondean)
+      tags: [Importación Excel]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Archivo Excel (.xls o .xlsx) con datos de distribución
+      responses:
+        '200':
+          description: Distribución procesada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    example: true
+                  mensaje:
+                    type: string
+                    example: "Distribución procesada exitosamente."
+                  data:
+                    type: object
+                    properties:
+                      insumos_distribuidos:
+                        type: integer
+                        example: 24
+                        description: Número de insumos procesados exitosamente
+                      movimientos_creados:
+                        type: integer
+                        example: 120
+                        description: Total de movimientos de despacho creados
+                      hospitales_falcon:
+                        type: integer
+                        example: 15
+                        description: Número de hospitales en Falcón
+                      omitidos:
+                        type: integer
+                        example: 0
+                        description: Filas omitidas por datos inválidos
+                      errores:
+                        type: integer
+                        example: 0
+                        description: Filas con errores
+                      detalle_insumos:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            fila:
+                              type: integer
+                              example: 2
+                            insumo:
+                              type: string
+                              example: "ACETAMINOFEN 120MG/5ML SUSPENSION"
+                            cantidad_total:
+                              type: integer
+                              example: 64504
+                            movimientos_creados:
+                              type: integer
+                              example: 8
+                      detalle_omitidos:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            fila:
+                              type: integer
+                            motivo:
+                              type: string
+                      detalle_errores:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            fila:
+                              type: integer
+                            descripcion:
+                              type: string
+                            error:
+                              type: string
+        '400':
+          description: Archivo inválido o configuración faltante
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
 # ========================================
 # COMPONENTS
 # ========================================

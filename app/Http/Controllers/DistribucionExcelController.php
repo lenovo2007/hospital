@@ -306,32 +306,34 @@ class DistribucionExcelController extends Controller
             }
 
             $hospitales = $hospitalesPorTipo[$tipoHospital];
-            $porcentaje = (float) $porcentajes->$campoPortcentaje;
+            $porcentajeTipo = (float) $porcentajes->$campoPortcentaje;
             $cantidadHospitales = $hospitales->count();
 
-            if ($cantidadHospitales === 0 || $porcentaje <= 0) {
+            if ($cantidadHospitales === 0 || $porcentajeTipo <= 0) {
                 continue;
             }
 
-            // Calcular cantidad total para este tipo de hospital
-            $cantidadTipo = ($cantidadTotal * $porcentaje) / 100;
+            // Nueva lógica: Dividir el porcentaje del tipo entre el total de hospitales de ese tipo
+            // Ejemplo: tipo1 = 15% / 138 hospitales = 0.10869%
+            $porcentajePorHospital = $porcentajeTipo / $cantidadHospitales;
             
-            // Truncar decimal (no redondear)
-            $cantidadTipoEntero = (int) $cantidadTipo;
-
-            // Distribuir equitativamente entre hospitales del mismo tipo
-            $cantidadPorHospital = $cantidadTipoEntero / $cantidadHospitales;
-            
-            // Truncar decimal (no redondear)
-            $cantidadPorHospitalEntero = (int) $cantidadPorHospital;
+            // Redondear a 2 decimales: si el tercer decimal es >= 5, redondear hacia arriba
+            $porcentajePorHospital = round($porcentajePorHospital, 2);
 
             $distribucion[$tipoHospital] = [];
 
             foreach ($hospitales as $hospital) {
+                // Calcular cantidad para este hospital usando su porcentaje individual
+                $cantidadPorHospital = ($cantidadTotal * $porcentajePorHospital) / 100;
+                
+                // Truncar decimal (no redondear la cantidad final)
+                $cantidadPorHospitalEntero = (int) $cantidadPorHospital;
+
                 $distribucion[$tipoHospital][] = [
                     'hospital_id' => $hospital->id,
                     'hospital_nombre' => $hospital->nombre,
                     'cantidad' => $cantidadPorHospitalEntero,
+                    'porcentaje_individual' => $porcentajePorHospital, // Para debugging
                 ];
             }
         }

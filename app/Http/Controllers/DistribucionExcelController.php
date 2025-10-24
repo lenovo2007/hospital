@@ -73,9 +73,12 @@ class DistribucionExcelController extends Controller
             $highestRow = $sheet->getHighestRow();
 
             $insumosDistribuidos = [];
-            $movimientosCreados = 0;
             $errores = [];
             $omitidos = [];
+            
+            // Estructura para agrupar lotes por hospital
+            // $lotesPorHospital[hospital_id][sede_id][] = ['lote_id' => X, 'cantidad' => Y]
+            $lotesPorHospital = [];
 
             // Procesar cada fila del Excel (empezar desde fila 2 para saltar encabezados)
             for ($row = 2; $row <= $highestRow; $row++) {
@@ -142,8 +145,7 @@ class DistribucionExcelController extends Controller
                         continue;
                     }
 
-                    // 5. Crear movimientos de despacho para cada hospital
-                    $movimientosPorInsumo = 0;
+                    // 5. Agrupar lotes por hospital para crear un solo movimiento por hospital
                     foreach ($distribucion as $tipoHospital => $hospitalesConCantidad) {
                         foreach ($hospitalesConCantidad as $hospitalData) {
                             if ($hospitalData['cantidad'] <= 0) {
@@ -165,17 +167,24 @@ class DistribucionExcelController extends Controller
                                 continue;
                             }
 
-                            // Crear movimiento usando el método interno
-                            $this->crearMovimientoDespacho(
-                                $lote->lote_id,
-                                $hospitalData['cantidad'],
-                                $hospitalData['hospital_id'],
-                                $sedeDestino->id,
-                                $userId,
-                                "Distribución automática - {$descripcion}"
-                            );
+                            $hospitalId = $hospitalData['hospital_id'];
+                            $sedeId = $sedeDestino->id;
 
-                            $movimientosPorInsumo++;
+                            // Inicializar estructura si no existe
+                            if (!isset($lotesPorHospital[$hospitalId])) {
+                                $lotesPorHospital[$hospitalId] = [
+                                    'sede_id' => $sedeId,
+                                    'hospital_nombre' => $hospitalData['hospital_nombre'],
+                                    'lotes' => [],
+                                ];
+                            }
+
+                            // Agregar lote a la lista del hospital
+                            $lotesPorHospital[$hospitalId]['lotes'][] = [
+                                'lote_id' => $lote->lote_id,
+                                'cantidad' => $hospitalData['cantidad'],
+                                'insumo' => $descripcion,
+                            ];
                         }
                     }
 
@@ -183,10 +192,8 @@ class DistribucionExcelController extends Controller
                         'fila' => $row,
                         'insumo' => $descripcion,
                         'cantidad_total' => $cantidadTotal,
-                        'movimientos_creados' => $movimientosPorInsumo,
+                        'cantidad_distribuida' => $cantidadRealNecesaria,
                     ];
-
-                    $movimientosCreados += $movimientosPorInsumo;
 
                 } catch (Throwable $e) {
                     $errores[] = [
@@ -201,6 +208,31 @@ class DistribucionExcelController extends Controller
                 }
             }
 
+            // 6. Crear un movimiento por hospital con todos sus lotes
+            $movimientosCreados = 0;
+            foreach ($lotesPorHospital as $hospitalId => $hospitalData) {
+                try {
+                    $this->crearMovimientoAgrupado(
+                        $hospitalData['lotes'],
+                        $hospitalId,
+                        $hospitalData['sede_id'],
+                        $userId,
+                        "Distribución automática a {$hospitalData['hospital_nombre']}"
+                    );
+                    $movimientosCreados++;
+                } catch (Throwable $e) {
+                    $errores[] = [
+                        'fila' => 'N/A',
+                        'descripcion' => "Movimiento para hospital {$hospitalData['hospital_nombre']}",
+                        'error' => $e->getMessage(),
+                    ];
+                    Log::error('Error creando movimiento agrupado', [
+                        'hospital_id' => $hospitalId,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
             return response()->json([
                 'status' => true,
                 'mensaje' => 'Distribución procesada exitosamente.',
@@ -208,6 +240,7 @@ class DistribucionExcelController extends Controller
                     'insumos_distribuidos' => count($insumosDistribuidos),
                     'movimientos_creados' => $movimientosCreados,
                     'hospitales_falcon' => $hospitalesFalcon->count(),
+                    'hospitales_con_movimientos' => count($lotesPorHospital),
                     'omitidos' => count($omitidos),
                     'errores' => count($errores),
                     'detalle_insumos' => $insumosDistribuidos,
@@ -285,58 +318,74 @@ class DistribucionExcelController extends Controller
     }
 
     /**
-     * Crea un movimiento de despacho desde almacén central a principal
+     * Crea un movimiento agrupado con múltiples lotes para un hospital
+     * 
+     * @param array $lotes Array de lotes: [['lote_id' => X, 'cantidad' => Y, 'insumo' => 'nombre'], ...]
+     * @param int $destinoHospitalId
+     * @param int $destinoSedeId
+     * @param int $userId
+     * @param string $observaciones
      */
-    private function crearMovimientoDespacho(
-        int $loteId,
-        int $cantidad,
+    private function crearMovimientoAgrupado(
+        array $lotes,
         int $destinoHospitalId,
         int $destinoSedeId,
         int $userId,
         string $observaciones
     ): void {
-        DB::transaction(function () use ($loteId, $cantidad, $destinoHospitalId, $destinoSedeId, $userId, $observaciones) {
-            // Descontar del almacén central
-            $registro = DB::table('almacenes_centrales')
-                ->where('hospital_id', 1)
-                ->where('sede_id', 1)
-                ->where('lote_id', $loteId)
-                ->where('status', true)
-                ->lockForUpdate()
-                ->first();
+        DB::transaction(function () use ($lotes, $destinoHospitalId, $destinoSedeId, $userId, $observaciones) {
+            // Generar código de grupo único para este movimiento
+            $codigoGrupo = 'LG-' . strtoupper(uniqid());
+            $cantidadTotalSalida = 0;
 
-            if (!$registro) {
-                throw new StockException("No se encontró el lote {$loteId} en almacén central.");
-            }
+            // Procesar cada lote: descontar stock y crear registro en lotes_grupos
+            foreach ($lotes as $loteData) {
+                $loteId = $loteData['lote_id'];
+                $cantidad = $loteData['cantidad'];
 
-            if ((int) $registro->cantidad < $cantidad) {
-                throw new StockException("Stock insuficiente para lote {$loteId}. Disponible: {$registro->cantidad}, Solicitado: {$cantidad}");
-            }
+                // Descontar del almacén central
+                $registro = DB::table('almacenes_centrales')
+                    ->where('hospital_id', 1)
+                    ->where('sede_id', 1)
+                    ->where('lote_id', $loteId)
+                    ->where('status', true)
+                    ->lockForUpdate()
+                    ->first();
 
-            $nuevaCantidad = (int) $registro->cantidad - $cantidad;
+                if (!$registro) {
+                    throw new StockException("No se encontró el lote {$loteId} en almacén central.");
+                }
 
-            DB::table('almacenes_centrales')
-                ->where('id', $registro->id)
-                ->update([
-                    'cantidad' => $nuevaCantidad,
-                    'status' => $nuevaCantidad > 0,
+                if ((int) $registro->cantidad < $cantidad) {
+                    throw new StockException("Stock insuficiente para lote {$loteId}. Disponible: {$registro->cantidad}, Solicitado: {$cantidad}");
+                }
+
+                $nuevaCantidad = (int) $registro->cantidad - $cantidad;
+
+                DB::table('almacenes_centrales')
+                    ->where('id', $registro->id)
+                    ->update([
+                        'cantidad' => $nuevaCantidad,
+                        'status' => $nuevaCantidad > 0,
+                        'updated_at' => now(),
+                    ]);
+
+                // Crear registro en lotes_grupos con el mismo codigo_grupo
+                DB::table('lotes_grupos')->insert([
+                    'codigo' => $codigoGrupo,
+                    'lote_id' => $loteId,
+                    'cantidad_salida' => $cantidad,
+                    'cantidad_entrada' => 0,
+                    'discrepancia' => false,
+                    'status' => true,
+                    'created_at' => now(),
                     'updated_at' => now(),
                 ]);
 
-            // Crear grupo de lote
-            $codigoGrupo = 'LG-' . strtoupper(uniqid());
-            DB::table('lotes_grupos')->insert([
-                'codigo' => $codigoGrupo,
-                'lote_id' => $loteId,
-                'cantidad_salida' => $cantidad,
-                'cantidad_entrada' => 0,
-                'discrepancia' => false,
-                'status' => true,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
+                $cantidadTotalSalida += $cantidad;
+            }
 
-            // Crear movimiento de stock
+            // Crear UN SOLO movimiento de stock con todos los lotes agrupados
             DB::table('movimientos_stock')->insert([
                 'tipo' => 'transferencia',
                 'tipo_movimiento' => 'despacho',
@@ -346,7 +395,7 @@ class DistribucionExcelController extends Controller
                 'destino_sede_id' => $destinoSedeId,
                 'origen_almacen_tipo' => 'almacenCent',
                 'destino_almacen_tipo' => 'almacenPrin',
-                'cantidad_salida_total' => $cantidad,
+                'cantidad_salida_total' => $cantidadTotalSalida,
                 'cantidad_entrada_total' => 0,
                 'discrepancia_total' => false,
                 'fecha_despacho' => now()->toDateString(),

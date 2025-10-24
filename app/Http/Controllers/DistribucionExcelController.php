@@ -41,21 +41,19 @@ class DistribucionExcelController extends Controller
         $userId = (int) $request->user()->id;
 
         try {
-            // 1. Obtener hospitales del estado Falcón
-            $hospitalesFalcon = Hospital::where('estado', 'falcon')
-                ->where('status', true)
-                ->get();
+            // 1. Obtener todos los hospitales activos
+            $hospitales = Hospital::where('status', true)->get();
 
-            if ($hospitalesFalcon->isEmpty()) {
+            if ($hospitales->isEmpty()) {
                 return response()->json([
                     'status' => false,
-                    'mensaje' => 'No se encontraron hospitales activos en el estado Falcón.',
+                    'mensaje' => 'No se encontraron hospitales activos.',
                     'data' => null,
                 ], 200, [], JSON_UNESCAPED_UNICODE);
             }
 
             // Agrupar hospitales por tipo
-            $hospitalesPorTipo = $hospitalesFalcon->groupBy('tipo');
+            $hospitalesPorTipo = $hospitales->groupBy('tipo');
 
             // 2. Obtener porcentajes de distribución
             $porcentajes = TipoHospitalDistribucion::first();
@@ -263,7 +261,7 @@ class DistribucionExcelController extends Controller
                 'data' => [
                     'insumos_distribuidos' => count($insumosDistribuidos),
                     'movimientos_creados' => $movimientosCreados,
-                    'hospitales_falcon' => $hospitalesFalcon->count(),
+                    'hospitales_totales' => $hospitales->count(),
                     'hospitales_con_movimientos' => count($lotesPorHospital),
                     'omitidos' => count($omitidos),
                     'errores' => count($errores),

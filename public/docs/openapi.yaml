@@ -4492,9 +4492,9 @@ paths:
 
   /api/distribucion/import:
     post:
-      summary: Importar y distribuir insumos desde Excel a hospitales de Falcón
+      summary: Importar y distribuir insumos desde Excel a todos los hospitales
       description: |
-        Importa un archivo Excel con insumos y los distribuye automáticamente a todos los hospitales del estado Falcón según porcentajes configurados por tipo de hospital.
+        Importa un archivo Excel con insumos y los distribuye automáticamente a todos los hospitales activos según porcentajes configurados por tipo de hospital.
         
         **Formato del archivo:**
         - Columna A: ITEM (número de ítem)
@@ -4502,7 +4502,7 @@ paths:
         - Columna C: PARA DESPACHAR - cantidad total a distribuir
         
         **Proceso de distribución:**
-        1. **Filtrado de hospitales:** Solo hospitales del estado Falcón activos
+        1. **Filtrado de hospitales:** Todos los hospitales activos (status=true)
         2. **Consulta de porcentajes:** Obtiene configuración de `tipos_hospital_distribuciones`
         3. **Cálculo de distribución:**
            - Aplica porcentaje según tipo de hospital (tipo1, tipo2, tipo3, tipo4)
@@ -4563,10 +4563,10 @@ paths:
                         type: integer
                         example: 120
                         description: Total de movimientos de despacho creados
-                      hospitales_falcon:
+                      hospitales_totales:
                         type: integer
-                        example: 15
-                        description: Número de hospitales en Falcón
+                        example: 25
+                        description: Número total de hospitales activos
                       omitidos:
                         type: integer
                         example: 0

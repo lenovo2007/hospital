@@ -106,14 +106,29 @@ class DistribucionExcelController extends Controller
                         continue;
                     }
 
-                    // Buscar lote disponible en almacén central (hospital_id=1, sede_id=1)
+                    // 4. Calcular distribución por tipo de hospital
+                    $distribucion = $this->calcularDistribucion(
+                        $cantidadTotal,
+                        $porcentajes,
+                        $hospitalesPorTipo
+                    );
+
+                    // Calcular cantidad real necesaria después de aplicar porcentajes
+                    $cantidadRealNecesaria = 0;
+                    foreach ($distribucion as $tipoHospital => $hospitalesConCantidad) {
+                        foreach ($hospitalesConCantidad as $hospitalData) {
+                            $cantidadRealNecesaria += $hospitalData['cantidad'];
+                        }
+                    }
+
+                    // Buscar lote disponible en almacén central con la cantidad real necesaria
                     $lote = DB::table('almacenes_centrales')
                         ->join('lotes', 'almacenes_centrales.lote_id', '=', 'lotes.id')
                         ->where('lotes.id_insumo', $insumo->id)
                         ->where('almacenes_centrales.hospital_id', 1)
                         ->where('almacenes_centrales.sede_id', 1)
                         ->where('almacenes_centrales.status', true)
-                        ->where('almacenes_centrales.cantidad', '>=', $cantidadTotal)
+                        ->where('almacenes_centrales.cantidad', '>=', $cantidadRealNecesaria)
                         ->select('lotes.id as lote_id', 'almacenes_centrales.cantidad')
                         ->orderBy('lotes.fecha_vencimiento', 'asc')
                         ->first();
@@ -122,17 +137,10 @@ class DistribucionExcelController extends Controller
                         $errores[] = [
                             'fila' => $row,
                             'descripcion' => $descripcion,
-                            'error' => "Stock insuficiente en almacén central. Requerido: {$cantidadTotal}",
+                            'error' => "Stock insuficiente en almacén central. Cantidad en Excel: {$cantidadTotal}, Requerido después de porcentajes: {$cantidadRealNecesaria}",
                         ];
                         continue;
                     }
-
-                    // 4. Calcular distribución por tipo de hospital
-                    $distribucion = $this->calcularDistribucion(
-                        $cantidadTotal,
-                        $porcentajes,
-                        $hospitalesPorTipo
-                    );
 
                     // 5. Crear movimientos de despacho para cada hospital
                     $movimientosPorInsumo = 0;
@@ -317,7 +325,7 @@ class DistribucionExcelController extends Controller
 
             // Crear grupo de lote
             $codigoGrupo = 'LG-' . strtoupper(uniqid());
-            DB::table('lote_grupos')->insert([
+            DB::table('lotes_grupos')->insert([
                 'codigo' => $codigoGrupo,
                 'lote_id' => $loteId,
                 'cantidad' => $cantidad,

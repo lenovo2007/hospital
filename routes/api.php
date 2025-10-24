@@ -247,6 +247,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
         Route::get('/pacientes-estados', [EstadisticasController::class, 'pacientesEstados']);
         Route::get('/flujo-inventario', [EstadisticasController::class, 'flujoInventario']);
         Route::get('/insumos-recientes', [EstadisticasController::class, 'insumosRecientes']);
+        Route::get('/hospitales-distribucion', [EstadisticasController::class, 'hospitalesDistribucion']);
         
         // Rutas específicas por sede
         Route::get('/dashboard/sede/{sede_id}', [EstadisticasController::class, 'dashboardPorSede']);

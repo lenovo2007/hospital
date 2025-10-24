@@ -1154,4 +1154,76 @@ class EstadisticasController extends Controller
             default => 'almacenes_centrales',
         };
     }
+
+    /**
+     * Estadísticas de hospitales por tipo y porcentajes de distribución
+     * GET /api/estadisticas/hospitales-distribucion
+     */
+    public function hospitalesDistribucion(Request $request)
+    {
+        // Obtener todos los hospitales activos agrupados por tipo
+        $hospitalesPorTipo = DB::table('hospitales')
+            ->where('status', true)
+            ->select('tipo', DB::raw('COUNT(*) as total'))
+            ->groupBy('tipo')
+            ->get()
+            ->keyBy('tipo');
+
+        // Obtener porcentajes de distribución de la tabla tipos_hospital_distribuciones
+        $porcentajes = DB::table('tipos_hospital_distribuciones')->first();
+
+        if (!$porcentajes) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'No se encontró configuración de porcentajes de distribución.',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
+
+        // Mapeo de tipos de hospital
+        $tiposMap = [
+            'hospital_tipo1' => 'tipo1',
+            'hospital_tipo2' => 'tipo2',
+            'hospital_tipo3' => 'tipo3',
+            'hospital_tipo4' => 'tipo4',
+        ];
+
+        $resultado = [];
+        $totalHospitales = 0;
+
+        foreach ($tiposMap as $tipoHospital => $campoPorcentaje) {
+            $totalTipo = $hospitalesPorTipo->get($tipoHospital)?->total ?? 0;
+            $porcentajeTipo = (float) $porcentajes->$campoPorcentaje;
+            
+            // Calcular porcentaje individual por hospital
+            $porcentajeIndividual = $totalTipo > 0 ? round($porcentajeTipo / $totalTipo, 2) : 0;
+
+            $resultado[] = [
+                'tipo' => $tipoHospital,
+                'total_hospitales' => $totalTipo,
+                'porcentaje_tipo' => $porcentajeTipo,
+                'porcentaje_individual' => $porcentajeIndividual,
+                'descripcion' => "Cada hospital recibe {$porcentajeIndividual}% del total"
+            ];
+
+            $totalHospitales += $totalTipo;
+        }
+
+        return response()->json([
+            'status' => true,
+            'mensaje' => 'Estadísticas de hospitales por tipo obtenidas exitosamente.',
+            'data' => [
+                'total_hospitales_activos' => $totalHospitales,
+                'por_tipo' => $resultado,
+                'porcentajes_configurados' => [
+                    'tipo1' => (float) $porcentajes->tipo1,
+                    'tipo2' => (float) $porcentajes->tipo2,
+                    'tipo3' => (float) $porcentajes->tipo3,
+                    'tipo4' => (float) $porcentajes->tipo4,
+                    'total' => (float) $porcentajes->tipo1 + (float) $porcentajes->tipo2 + (float) $porcentajes->tipo3 + (float) $porcentajes->tipo4,
+                ],
+                'fecha_consulta' => now()->format('Y-m-d H:i:s')
+            ]
+        ], 200, [], JSON_UNESCAPED_UNICODE);
+    }
 }

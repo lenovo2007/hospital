@@ -2390,6 +2390,124 @@ paths:
                       resumen: { type: object }
                       fecha_actualizacion: { type: string }
 
+  /api/estadisticas/hospitales-distribucion:
+    get:
+      summary: Estadísticas de hospitales por tipo y porcentajes de distribución
+      description: |
+        Obtiene el total de hospitales activos agrupados por tipo y muestra los porcentajes de distribución configurados.
+        
+        **Información proporcionada:**
+        - Total de hospitales activos por cada tipo
+        - Porcentaje asignado a cada tipo en la tabla `tipos_hospital_distribuciones`
+        - Porcentaje individual que recibe cada hospital del tipo
+        - Validación de que los porcentajes sumen 100%
+        
+        **Cálculo del porcentaje individual:**
+        - Porcentaje individual = Porcentaje del tipo / Total de hospitales del tipo
+        - Ejemplo: Tipo 1 = 15% / 138 hospitales = 0.11% por hospital
+        - Se redondea a 2 decimales
+        
+        **Uso:**
+        Este endpoint es útil para:
+        - Verificar la distribución antes de ejecutar importaciones
+        - Entender cómo se calculan los porcentajes individuales
+        - Auditar la configuración de distribución
+      tags: [Estadísticas]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Estadísticas de hospitales obtenidas exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    example: true
+                  mensaje:
+                    type: string
+                    example: "Estadísticas de hospitales por tipo obtenidas exitosamente."
+                  data:
+                    type: object
+                    properties:
+                      total_hospitales_activos:
+                        type: integer
+                        example: 293
+                        description: Total de hospitales activos en el sistema
+                      por_tipo:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            tipo:
+                              type: string
+                              example: "hospital_tipo1"
+                              description: Identificador del tipo de hospital
+                            total_hospitales:
+                              type: integer
+                              example: 138
+                              description: Cantidad de hospitales de este tipo
+                            porcentaje_tipo:
+                              type: number
+                              format: float
+                              example: 15.0
+                              description: Porcentaje asignado al tipo en la configuración
+                            porcentaje_individual:
+                              type: number
+                              format: float
+                              example: 0.11
+                              description: Porcentaje que recibe cada hospital (redondeado a 2 decimales)
+                            descripcion:
+                              type: string
+                              example: "Cada hospital recibe 0.11% del total"
+                              description: Mensaje descriptivo del cálculo
+                      porcentajes_configurados:
+                        type: object
+                        properties:
+                          tipo1:
+                            type: number
+                            format: float
+                            example: 15.0
+                          tipo2:
+                            type: number
+                            format: float
+                            example: 30.0
+                          tipo3:
+                            type: number
+                            format: float
+                            example: 40.0
+                          tipo4:
+                            type: number
+                            format: float
+                            example: 15.0
+                          total:
+                            type: number
+                            format: float
+                            example: 100.0
+                            description: Suma total de todos los porcentajes
+                      fecha_consulta:
+                        type: string
+                        format: date-time
+                        example: "2025-10-24 03:55:00"
+                        description: Timestamp de cuando se realizó la consulta
+        '200 (sin configuración)':
+          description: No se encontró configuración de porcentajes
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    example: false
+                  mensaje:
+                    type: string
+                    example: "No se encontró configuración de porcentajes de distribución."
+                  data:
+                    type: null
+
   /api/insumos/codigo/{codigo}:
     get:
       summary: Ver insumo por código

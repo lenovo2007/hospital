@@ -328,7 +328,10 @@ class DistribucionExcelController extends Controller
             DB::table('lotes_grupos')->insert([
                 'codigo' => $codigoGrupo,
                 'lote_id' => $loteId,
-                'cantidad' => $cantidad,
+                'cantidad_salida' => $cantidad,
+                'cantidad_entrada' => 0,
+                'discrepancia' => false,
+                'status' => true,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);

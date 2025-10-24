@@ -124,28 +124,30 @@ class DistribucionExcelController extends Controller
                         }
                     }
 
-                    // Buscar lote disponible en almacén central con la cantidad real necesaria
-                    $lote = DB::table('almacenes_centrales')
+                    // Buscar TODOS los lotes disponibles ordenados por fecha de vencimiento (FIFO)
+                    $lotesDisponibles = DB::table('almacenes_centrales')
                         ->join('lotes', 'almacenes_centrales.lote_id', '=', 'lotes.id')
                         ->where('lotes.id_insumo', $insumo->id)
                         ->where('almacenes_centrales.hospital_id', 1)
                         ->where('almacenes_centrales.sede_id', 1)
                         ->where('almacenes_centrales.status', true)
-                        ->where('almacenes_centrales.cantidad', '>=', $cantidadRealNecesaria)
-                        ->select('lotes.id as lote_id', 'almacenes_centrales.cantidad')
+                        ->where('almacenes_centrales.cantidad', '>', 0)
+                        ->select('lotes.id as lote_id', 'almacenes_centrales.cantidad', 'lotes.fecha_vencimiento')
                         ->orderBy('lotes.fecha_vencimiento', 'asc')
-                        ->first();
+                        ->get();
 
-                    if (!$lote) {
+                    // Verificar si hay stock total suficiente
+                    $stockTotalDisponible = $lotesDisponibles->sum('cantidad');
+                    if ($stockTotalDisponible < $cantidadRealNecesaria) {
                         $errores[] = [
                             'fila' => $row,
                             'descripcion' => $descripcion,
-                            'error' => "Stock insuficiente en almacén central. Cantidad en Excel: {$cantidadTotal}, Requerido después de porcentajes: {$cantidadRealNecesaria}",
+                            'error' => "Stock total insuficiente en almacén central. Disponible: {$stockTotalDisponible}, Requerido después de porcentajes: {$cantidadRealNecesaria}",
                         ];
                         continue;
                     }
 
-                    // 5. Agrupar lotes por hospital para crear un solo movimiento por hospital
+                    // 5. Distribuir por hospital usando múltiples lotes (FIFO)
                     foreach ($distribucion as $tipoHospital => $hospitalesConCantidad) {
                         foreach ($hospitalesConCantidad as $hospitalData) {
                             if ($hospitalData['cantidad'] <= 0) {
@@ -169,6 +171,7 @@ class DistribucionExcelController extends Controller
 
                             $hospitalId = $hospitalData['hospital_id'];
                             $sedeId = $sedeDestino->id;
+                            $cantidadNecesaria = $hospitalData['cantidad'];
 
                             // Inicializar estructura si no existe
                             if (!isset($lotesPorHospital[$hospitalId])) {
@@ -179,12 +182,33 @@ class DistribucionExcelController extends Controller
                                 ];
                             }
 
-                            // Agregar lote a la lista del hospital
-                            $lotesPorHospital[$hospitalId]['lotes'][] = [
-                                'lote_id' => $lote->lote_id,
-                                'cantidad' => $hospitalData['cantidad'],
-                                'insumo' => $descripcion,
-                            ];
+                            // Asignar lotes usando FIFO (primero los que vencen primero)
+                            $cantidadRestante = $cantidadNecesaria;
+                            foreach ($lotesDisponibles as $loteDisponible) {
+                                if ($cantidadRestante <= 0) {
+                                    break;
+                                }
+
+                                $cantidadDisponibleLote = (int) $loteDisponible->cantidad;
+                                if ($cantidadDisponibleLote <= 0) {
+                                    continue;
+                                }
+
+                                // Tomar lo que se pueda de este lote
+                                $cantidadATomar = min($cantidadRestante, $cantidadDisponibleLote);
+
+                                // Agregar este lote a la lista del hospital
+                                $lotesPorHospital[$hospitalId]['lotes'][] = [
+                                    'lote_id' => $loteDisponible->lote_id,
+                                    'cantidad' => $cantidadATomar,
+                                    'insumo' => $descripcion,
+                                    'fecha_vencimiento' => $loteDisponible->fecha_vencimiento,
+                                ];
+
+                                // Actualizar cantidad disponible del lote (en memoria)
+                                $loteDisponible->cantidad = $cantidadDisponibleLote - $cantidadATomar;
+                                $cantidadRestante -= $cantidadATomar;
+                            }
                         }
                     }
 

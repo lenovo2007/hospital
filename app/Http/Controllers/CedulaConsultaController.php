@@ -147,68 +147,51 @@ class CedulaConsultaController extends Controller
     {
         $datos = [];
 
-        // Intentar múltiples patrones para cada campo (más flexible)
+        // Usar DOTALL (s) para que . incluya saltos de línea
+        // Usar \s+ para capturar cualquier tipo de espacio en blanco
         
-        // Extraer Cédula - múltiples patrones
-        if (preg_match('/<strong>C[eé]dula:<\/strong>\s*(\d+)/i', $html, $matches)) {
-            $datos['cedula'] = $matches[1];
-        } elseif (preg_match('/<p><strong>C[eé]dula:<\/strong>\s*(\d+)/i', $html, $matches)) {
-            $datos['cedula'] = $matches[1];
+        // Extraer Cédula
+        if (preg_match('/<strong>C[eé]dula:<\/strong>\s+(\d+)/ius', $html, $matches)) {
+            $datos['cedula'] = trim($matches[1]);
         }
 
-        // Extraer RIF - múltiples patrones
-        if (preg_match('/<strong>RIF:<\/strong>\s*([VEJGvejg]-?\d+)/i', $html, $matches)) {
-            $datos['rif'] = strtoupper(str_replace('-', '', $matches[1]));
-        } elseif (preg_match('/<p><strong>RIF:<\/strong>\s*([VEJGvejg]-?\d+)/i', $html, $matches)) {
-            $datos['rif'] = strtoupper(str_replace('-', '', $matches[1]));
+        // Extraer RIF
+        if (preg_match('/<strong>RIF:<\/strong>\s+([VEJGvejg]-?\d+)/ius', $html, $matches)) {
+            $datos['rif'] = strtoupper(str_replace('-', '', trim($matches[1])));
         }
 
         // Extraer Primer Apellido
-        if (preg_match('/<strong>Primer Apellido:<\/strong>\s*([^<]+)/i', $html, $matches)) {
-            $datos['primer_apellido'] = trim($matches[1]);
-        } elseif (preg_match('/<p><strong>Primer Apellido:<\/strong>\s*([^<]+)/i', $html, $matches)) {
+        if (preg_match('/<strong>Primer\s+Apellido:<\/strong>\s+([^<]+)/ius', $html, $matches)) {
             $datos['primer_apellido'] = trim($matches[1]);
         }
 
         // Extraer Segundo Apellido
-        if (preg_match('/<strong>Segundo Apellido:<\/strong>\s*([^<]+)/i', $html, $matches)) {
-            $datos['segundo_apellido'] = trim($matches[1]);
-        } elseif (preg_match('/<p><strong>Segundo Apellido:<\/strong>\s*([^<]+)/i', $html, $matches)) {
+        if (preg_match('/<strong>Segundo\s+Apellido:<\/strong>\s+([^<]+)/ius', $html, $matches)) {
             $datos['segundo_apellido'] = trim($matches[1]);
         }
 
         // Extraer Nombres
-        if (preg_match('/<strong>Nombres:<\/strong>\s*([^<]+)/i', $html, $matches)) {
-            $datos['nombres'] = trim($matches[1]);
-        } elseif (preg_match('/<p><strong>Nombres:<\/strong>\s*([^<]+)/i', $html, $matches)) {
+        if (preg_match('/<strong>Nombres:<\/strong>\s+([^<]+)/ius', $html, $matches)) {
             $datos['nombres'] = trim($matches[1]);
         }
 
         // Extraer Estado
-        if (preg_match('/<strong>Estado:<\/strong>\s*([^<]+)/i', $html, $matches)) {
-            $datos['estado'] = trim($matches[1]);
-        } elseif (preg_match('/<p><strong>Estado:<\/strong>\s*([^<]+)/i', $html, $matches)) {
+        if (preg_match('/<strong>Estado:<\/strong>\s+([^<]+)/ius', $html, $matches)) {
             $datos['estado'] = trim($matches[1]);
         }
 
         // Extraer Municipio
-        if (preg_match('/<strong>Municipio:<\/strong>\s*([^<]+)/i', $html, $matches)) {
-            $datos['municipio'] = trim($matches[1]);
-        } elseif (preg_match('/<p><strong>Municipio:<\/strong>\s*([^<]+)/i', $html, $matches)) {
+        if (preg_match('/<strong>Municipio:<\/strong>\s+([^<]+)/ius', $html, $matches)) {
             $datos['municipio'] = trim($matches[1]);
         }
 
         // Extraer Parroquia
-        if (preg_match('/<strong>Parroquia:<\/strong>\s*([^<]+)/i', $html, $matches)) {
-            $datos['parroquia'] = trim($matches[1]);
-        } elseif (preg_match('/<p><strong>Parroquia:<\/strong>\s*([^<]+)/i', $html, $matches)) {
+        if (preg_match('/<strong>Parroquia:<\/strong>\s+([^<]+)/ius', $html, $matches)) {
             $datos['parroquia'] = trim($matches[1]);
         }
 
         // Extraer Centro Electoral
-        if (preg_match('/<strong>Centro Electoral:<\/strong>\s*([^<]+)/i', $html, $matches)) {
-            $datos['centro_electoral'] = trim($matches[1]);
-        } elseif (preg_match('/<p><strong>Centro Electoral:<\/strong>\s*([^<]+)/i', $html, $matches)) {
+        if (preg_match('/<strong>Centro\s+Electoral:<\/strong>\s+([^<]+)/ius', $html, $matches)) {
             $datos['centro_electoral'] = trim($matches[1]);
         }
 
@@ -218,6 +201,7 @@ class CedulaConsultaController extends Controller
             'rif_encontrado' => isset($datos['rif']),
             'nombres_encontrados' => isset($datos['nombres']),
             'estado_encontrado' => isset($datos['estado']),
+            'datos_completos' => $datos,
         ]);
 
         return $datos;

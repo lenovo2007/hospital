@@ -21,8 +21,9 @@ class CedulaConsultaController extends Controller
         $cedula = $validated['cedula'];
 
         try {
-            // 1. Obtener la página inicial para extraer el CAPTCHA
-            $response = Http::timeout(30)
+            // 1. Obtener la página inicial para extraer el CAPTCHA y las cookies de sesión
+            $response = Http::withOptions(['cookies' => true])
+                ->timeout(30)
                 ->withHeaders([
                     'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                     'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
@@ -39,6 +40,13 @@ class CedulaConsultaController extends Controller
             }
 
             $html = $response->body();
+            
+            // Extraer cookies de la respuesta
+            $cookies = $response->cookies();
+
+            Log::info('Cookies recibidas', [
+                'cookies' => $cookies->toArray(),
+            ]);
 
             // 2. Extraer la pregunta del CAPTCHA usando regex
             preg_match('/CAPTCHA:\s*¿Cuánto es\s*(\d+)\s*\+\s*(\d+)\?/', $html, $matches);
@@ -61,14 +69,16 @@ class CedulaConsultaController extends Controller
                 'respuesta' => $captchaRespuesta
             ]);
 
-            // 3. Enviar el formulario con los datos
-            $responsePost = Http::timeout(30)
+            // 3. Enviar el formulario con los datos y las cookies de sesión
+            $responsePost = Http::withCookies($cookies->toArray(), 'sistemaspnp.com')
+                ->timeout(30)
                 ->asForm()
                 ->withHeaders([
                     'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
                     'Accept' => 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
                     'Accept-Language' => 'es-ES,es;q=0.9,en;q=0.8',
                     'Referer' => 'https://www.sistemaspnp.com/cedula/',
+                    'Origin' => 'https://www.sistemaspnp.com',
                 ])
                 ->post('https://www.sistemaspnp.com/cedula/resultado.php', [
                     'cedula' => $cedula,

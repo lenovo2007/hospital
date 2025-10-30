@@ -289,4 +289,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
     Route::delete('/lote-grupo/{id}', [LoteGrupoController::class, 'destroy']);
     Route::get('/lote-grupo/estadisticas', [LoteGrupoController::class, 'estadisticas']);
 
+    // Consulta de cédula venezolana
+    Route::post('/cedula/consultar', [\App\Http\Controllers\CedulaConsultaController::class, 'consultar']);
+
 });

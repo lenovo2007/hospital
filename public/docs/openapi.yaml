@@ -5324,3 +5324,135 @@ components:
           maxLength: 1000
           nullable: true
           description: Observaciones del repartidor
+
+  /api/cedula/consultar:
+    post:
+      summary: Consultar datos de cédula venezolana
+      description: |
+        Consulta los datos personales y de registro electoral de una cédula venezolana mediante scraping de la página sistemaspnp.com.
+        
+        **Proceso automático:**
+        1. Obtiene la página inicial y extrae el CAPTCHA matemático
+        2. Resuelve automáticamente la suma del CAPTCHA (números del 1 al 10)
+        3. Envía el formulario con la cédula y respuesta del CAPTCHA
+        4. Extrae y estructura los datos del resultado
+        
+        **Datos obtenidos:**
+        - **Datos Personales:** Cédula, RIF, nombres y apellidos
+        - **Datos CNE:** Estado, municipio, parroquia y centro electoral
+        
+        **Validaciones:**
+        - La cédula debe tener entre 6 y 8 dígitos
+        - Solo números sin letras ni caracteres especiales
+        
+        **Nota:** Este endpoint realiza scraping de un sitio externo. El tiempo de respuesta puede variar según la disponibilidad del servicio.
+      tags: [Utilidades]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - cedula
+              properties:
+                cedula:
+                  type: string
+                  pattern: '^\d{6,8}$'
+                  example: "18481144"
+                  description: Número de cédula venezolana (6 a 8 dígitos)
+      responses:
+        '200':
+          description: Consulta procesada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    example: true
+                  mensaje:
+                    type: string
+                    example: "Datos de cédula obtenidos exitosamente."
+                  data:
+                    type: object
+                    properties:
+                      cedula:
+                        type: string
+                        example: "18481144"
+                        description: Número de cédula
+                      rif:
+                        type: string
+                        example: "V184811444"
+                        description: RIF asociado a la cédula
+                      primer_apellido:
+                        type: string
+                        example: "GARCIA"
+                        description: Primer apellido
+                      segundo_apellido:
+                        type: string
+                        example: "ESSER"
+                        description: Segundo apellido
+                      nombres:
+                        type: string
+                        example: "JOSEPH AUGUSTO"
+                        description: Nombres completos
+                      estado:
+                        type: string
+                        example: "FALCON"
+                        description: Estado de registro electoral
+                      municipio:
+                        type: string
+                        example: "MIRANDA"
+                        description: Municipio de registro electoral
+                      parroquia:
+                        type: string
+                        example: "SAN GABRIEL"
+                        description: Parroquia de registro electoral
+                      centro_electoral:
+                        type: string
+                        example: "ESCUELA PREVOCACIONAL FRANCISCO DE MIRANDA"
+                        description: Centro electoral asignado
+        '200 (error)':
+          description: Error en la consulta
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    example: false
+                  mensaje:
+                    type: string
+                    example: "No se encontraron datos para la cédula proporcionada."
+                  data:
+                    type: null
+              examples:
+                no_encontrado:
+                  summary: Cédula no encontrada
+                  value:
+                    status: false
+                    mensaje: "No se encontraron datos para la cédula proporcionada."
+                    data: null
+                error_conexion:
+                  summary: Error de conexión
+                  value:
+                    status: false
+                    mensaje: "Error al conectar con el servicio de consulta."
+                    data: null
+                error_captcha:
+                  summary: Error en CAPTCHA
+                  value:
+                    status: false
+                    mensaje: "No se pudo extraer el CAPTCHA de la página."
+                    data: null
+        '400':
+          description: Datos de entrada inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'

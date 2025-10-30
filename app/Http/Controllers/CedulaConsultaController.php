@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use GuzzleHttp\Cookie\CookieJar;
 
 class CedulaConsultaController extends Controller
 {
@@ -21,8 +22,11 @@ class CedulaConsultaController extends Controller
         $cedula = $validated['cedula'];
 
         try {
+            // Crear un CookieJar para mantener las cookies entre peticiones
+            $cookieJar = new CookieJar();
+
             // 1. Obtener la página inicial para extraer el CAPTCHA y las cookies de sesión
-            $response = Http::withOptions(['cookies' => true])
+            $response = Http::withOptions(['cookies' => $cookieJar])
                 ->timeout(30)
                 ->withHeaders([
                     'User-Agent' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -40,12 +44,9 @@ class CedulaConsultaController extends Controller
             }
 
             $html = $response->body();
-            
-            // Extraer cookies de la respuesta
-            $cookies = $response->cookies();
 
-            Log::info('Cookies recibidas', [
-                'cookies' => $cookies->toArray(),
+            Log::info('Cookies almacenadas en CookieJar', [
+                'count' => $cookieJar->count(),
             ]);
 
             // 2. Extraer la pregunta del CAPTCHA usando regex
@@ -69,8 +70,8 @@ class CedulaConsultaController extends Controller
                 'respuesta' => $captchaRespuesta
             ]);
 
-            // 3. Enviar el formulario con los datos y las cookies de sesión
-            $responsePost = Http::withCookies($cookies->toArray(), 'sistemaspnp.com')
+            // 3. Enviar el formulario con los datos usando el mismo CookieJar
+            $responsePost = Http::withOptions(['cookies' => $cookieJar])
                 ->timeout(30)
                 ->asForm()
                 ->withHeaders([

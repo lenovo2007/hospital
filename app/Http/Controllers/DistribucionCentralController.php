@@ -86,7 +86,7 @@ class DistribucionCentralController extends Controller
                     'discrepancia_total' => false,
                     'fecha_despacho' => $data['fecha_despacho'],
                     'observaciones' => $data['observaciones'] ?? null,
-                    'estado' => 'pendiente',
+                    'estado' => ((int)$data['origen_hospital_id'] === (int)$data['destino_hospital_id']) ? 'despachado' : 'pendiente',
                     'codigo_grupo' => $codigoGrupo,
                     'user_id' => $userId,
                 ]);

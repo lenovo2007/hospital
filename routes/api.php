@@ -143,6 +143,11 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
     Route::get('/movimientos-stock/origen_sede/{origen_sede_id}', [MovimientoStockController::class, 'porOrigenSede'])
         ->where('origen_sede_id', '[0-9]+');
 
+    // Estadísticas de movimientos por hospital
+    Route::get('/estadisticas/movimientos/hospital/{hospital_id}', [MovimientoStockController::class, 'estadisticasPorHospital'])
+        ->where('hospital_id', '[0-9]+')
+        ->withoutMiddleware(\App\Http\Middleware\CheckCrudPermissions::class);
+
     // Discrepancias de movimientos CRUD
     Route::get('/movimientos-stock/discrepancias', [MovimientoDiscrepanciaController::class, 'index']);
     Route::post('/movimientos-stock/discrepancias', [MovimientoDiscrepanciaController::class, 'store']);

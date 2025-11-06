@@ -41,7 +41,7 @@ class InventarioController extends Controller
      * Reglas:
      * - Buscar/crear el insumo por nombre (columna A).
      * - Crear/obtener el lote por (insumo_id, numero_lote, hospital_id).
-     * - Registrar/Incrementar stock en almacenes_centrales (sede/hospital) sumando cantidad.
+     * - Actualizar stock en almacenes_centrales (sede/hospital) con la cantidad del archivo (no suma, reemplaza).
      * - Las fechas inválidas se ignoran (se guardan como NULL).
      *
      * Parámetros del request:
@@ -207,8 +207,8 @@ class InventarioController extends Controller
                         if ($dirty) { $lote->save(); }
                     }
 
-                    // Registrar/Incrementar en almacén central (sumar si existe)
-                    $res = $this->registrarEnAlmacenEspecifico([
+                    // Actualizar cantidad en almacén central (reemplazar, no sumar)
+                    $res = $this->actualizarStockEnAlmacen([
                         'almacen_tipo' => 'almacenCent',
                         'cantidad' => $total,
                         'hospital_id' => $validated['hospital_id'],
@@ -556,7 +556,7 @@ class InventarioController extends Controller
         }
     }
 
-    // Método opcional para registrar en tablas específicas de almacén
+    // Método opcional para registrar en tablas específicas de almacén (suma cantidad)
     protected function registrarEnAlmacenEspecifico(array $data, int $loteId): array
     {
         $tabla = match ($data['almacen_tipo']) {
@@ -602,6 +602,66 @@ class InventarioController extends Controller
             ];
         }
 
+        $id = DB::table($tabla)->insertGetId(array_merge($clave, [
+            'cantidad' => $cantidad,
+            'status' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]));
+
+        return [
+            'id' => $id,
+            'cantidad' => $cantidad,
+        ];
+    }
+
+    // Método para actualizar stock en almacén (reemplaza cantidad, no suma)
+    protected function actualizarStockEnAlmacen(array $data, int $loteId): array
+    {
+        $tabla = match ($data['almacen_tipo']) {
+            'almacenCent' => 'almacenes_centrales',
+            'almacenPrin' => 'almacenes_principales',
+            'almacenFarm' => 'almacenes_farmacia',
+            'almacenPar' => 'almacenes_paralelo',
+            'almacenServApoyo' => 'almacenes_servicios_apoyo',
+            'almacenServAtenciones' => 'almacenes_servicios_atenciones',
+            default => null,
+        };
+
+        if (!$tabla || !Schema::hasTable($tabla)) {
+            throw new \RuntimeException("No se encontró la tabla destino para el tipo de almacén {$data['almacen_tipo']}");
+        }
+
+        $clave = [
+            'sede_id' => $data['sede_id'],
+            'lote_id' => $loteId,
+            'hospital_id' => $data['hospital_id'],
+        ];
+
+        $cantidad = (int) $data['cantidad'];
+
+        $registroExistente = DB::table($tabla)
+            ->where($clave)
+            ->lockForUpdate()
+            ->first();
+
+        if ($registroExistente) {
+            // Actualizar cantidad (reemplazar, no sumar)
+            DB::table($tabla)
+                ->where('id', $registroExistente->id)
+                ->update([
+                    'cantidad' => $cantidad,
+                    'status' => true,
+                    'updated_at' => now(),
+                ]);
+
+            return [
+                'id' => $registroExistente->id,
+                'cantidad' => $cantidad,
+            ];
+        }
+
+        // Si no existe, crear nuevo registro
         $id = DB::table($tabla)->insertGetId(array_merge($clave, [
             'cantidad' => $cantidad,
             'status' => true,

@@ -2906,6 +2906,107 @@ paths:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
 
+  /api/estadisticas/movimientos/hospital/{hospital_id}:
+    get:
+      summary: Obtener estadísticas de movimientos por hospital
+      description: |
+        Devuelve todos los movimientos de stock relacionados con un hospital específico,
+        separando los movimientos donde el hospital es destino de aquellos donde es origen.
+        Los movimientos de origen se agrupan por sede de origen.
+      tags: [Estadísticas, Movimientos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: hospital_id
+          in: path
+          required: true
+          schema: { type: integer }
+          description: ID del hospital
+      responses:
+        '200':
+          description: Estadísticas de movimientos obtenidas exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: boolean }
+                  mensaje: { type: string }
+                  data:
+                    type: object
+                    properties:
+                      hospital_id: { type: integer }
+                      movimientos_como_destino:
+                        type: array
+                        description: Movimientos donde el hospital es el destino
+                        items:
+                          type: object
+                      movimientos_como_origen_por_sede:
+                        type: array
+                        description: Movimientos donde el hospital es origen, agrupados por sede
+                        items:
+                          type: object
+                          properties:
+                            sede_id: { type: integer }
+                            sede: { type: object }
+                            movimientos: { type: array }
+              examples:
+                estadisticas-hospital:
+                  value:
+                    status: true
+                    mensaje: Estadísticas de movimientos por hospital.
+                    data:
+                      hospital_id: 1
+                      movimientos_como_destino:
+                        - id: 15
+                          tipo: transferencia
+                          destino_hospital_id: 1
+                          destino_sede_id: 2
+                          origen_hospital_id: 2
+                          origen_sede_id: 3
+                          estado: completado
+                          destino_hospital:
+                            id: 1
+                            nombre: Hospital Central
+                          destino_sede:
+                            id: 2
+                            nombre: Sede Principal
+                          origen_hospital:
+                            id: 2
+                            nombre: Hospital Regional
+                          origen_sede:
+                            id: 3
+                            nombre: Sede Norte
+                          lotes_grupos:
+                            - id: 20
+                              lote_id: 5
+                              cantidad: 100
+                              lote:
+                                id: 5
+                                numero_lote: LOTE-001
+                                insumo:
+                                  id: 10
+                                  nombre: Guantes quirúrgicos
+                      movimientos_como_origen_por_sede:
+                        - sede_id: 1
+                          sede:
+                            id: 1
+                            nombre: Sede Central
+                          movimientos:
+                            - id: 22
+                              tipo: transferencia
+                              origen_hospital_id: 1
+                              origen_sede_id: 1
+                              destino_hospital_id: 3
+                              destino_sede_id: 5
+                              estado: pendiente
+        '500':
+          description: Error al obtener estadísticas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/movimientos-stock:
     get:
       summary: Listar movimientos de stock
@@ -2924,11 +3025,19 @@ paths:
           schema:
             type: string
             enum: [pendiente, completado, inconsistente, cancelado]
-        - name: hospital_id
+        - name: destino_hospital_id
           in: query
           required: false
           schema: { type: integer }
-        - name: sede_id
+        - name: destino_sede_id
+          in: query
+          required: false
+          schema: { type: integer }
+        - name: origen_hospital_id
+          in: query
+          required: false
+          schema: { type: integer }
+        - name: origen_sede_id
           in: query
           required: false
           schema: { type: integer }

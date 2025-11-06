@@ -217,6 +217,116 @@ class MovimientoStockController extends Controller
         };
     }
 
+    public function estadisticasPorHospital(int $hospitalId, Request $request)
+    {
+        try {
+            // Movimientos donde el hospital es DESTINO
+            $movimientosDestino = MovimientoStock::with([
+                'destinoHospital', 
+                'destinoSede', 
+                'origenHospital', 
+                'origenSede', 
+                'usuario', 
+                'usuarioReceptor'
+            ])
+                ->where('destino_hospital_id', $hospitalId)
+                ->orderByDesc('created_at')
+                ->get();
+
+            // Cargar lotes_grupos y relaciones para movimientos destino
+            $movimientosDestino = $this->cargarLotesYRelaciones($movimientosDestino);
+
+            // Movimientos donde el hospital es ORIGEN (agrupados por sede de origen)
+            $movimientosOrigen = MovimientoStock::with([
+                'destinoHospital', 
+                'destinoSede', 
+                'origenHospital', 
+                'origenSede', 
+                'usuario', 
+                'usuarioReceptor'
+            ])
+                ->where('origen_hospital_id', $hospitalId)
+                ->orderByDesc('created_at')
+                ->get();
+
+            // Cargar lotes_grupos y relaciones para movimientos origen
+            $movimientosOrigen = $this->cargarLotesYRelaciones($movimientosOrigen);
+
+            // Agrupar movimientos de origen por sede
+            $movimientosOrigenPorSede = $movimientosOrigen->groupBy('origen_sede_id')->map(function ($movimientos, $sedeId) {
+                $sede = $movimientos->first()?->origenSede;
+                return [
+                    'sede_id' => $sedeId,
+                    'sede' => $sede,
+                    'movimientos' => $movimientos->values(),
+                ];
+            })->values();
+
+            return response()->json([
+                'status' => true,
+                'mensaje' => 'Estadísticas de movimientos por hospital.',
+                'data' => [
+                    'hospital_id' => $hospitalId,
+                    'movimientos_como_destino' => $movimientosDestino,
+                    'movimientos_como_origen_por_sede' => $movimientosOrigenPorSede,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Error al obtener estadísticas: ' . $e->getMessage(),
+                'data' => null,
+            ], 500);
+        }
+    }
+
+    private function cargarLotesYRelaciones($movimientos)
+    {
+        $codigos = $movimientos->pluck('codigo_grupo')->filter()->unique()->values();
+
+        $lotesPorCodigo = $codigos->isNotEmpty()
+            ? LoteGrupo::whereIn('codigo', $codigos)->get()->groupBy('codigo')
+            : collect();
+
+        $loteIds = $lotesPorCodigo->isNotEmpty()
+            ? $lotesPorCodigo->flatten(1)->pluck('lote_id')->filter()->unique()
+            : collect();
+
+        $lotesPorId = $loteIds->isNotEmpty()
+            ? Lote::with('insumo')->whereIn('id', $loteIds)->get()->keyBy('id')
+            : collect();
+
+        return $movimientos->map(function (MovimientoStock $movimiento) use ($lotesPorCodigo, $lotesPorId) {
+            $codigo = $movimiento->codigo_grupo;
+            $movimiento->lotes_grupos = $codigo
+                ? ($lotesPorCodigo->get($codigo)?->values() ?? collect())
+                : collect();
+
+            $movimiento->lotes_grupos = $movimiento->lotes_grupos->map(function (LoteGrupo $grupo) use ($lotesPorId) {
+                $grupo->lote = $lotesPorId->get($grupo->lote_id);
+                return $grupo;
+            });
+
+            $almacenOrigen = $this->resolveAlmacenInfo($movimiento->origen_almacen_tipo, $movimiento->origen_almacen_id);
+            $almacenDestino = $this->resolveAlmacenInfo($movimiento->destino_almacen_tipo, $movimiento->destino_almacen_id);
+
+            $movimiento->origen_almacen_nombre = $almacenOrigen['nombre'] ?? null;
+            $movimiento->origen_almacen_detalle = $almacenOrigen['detalle'];
+            $movimiento->destino_almacen_nombre = $almacenDestino['nombre'] ?? null;
+            $movimiento->destino_almacen_detalle = $almacenDestino['detalle'];
+
+            $movimiento->destino_hospital = $movimiento->destinoHospital;
+            $movimiento->destino_sede = $movimiento->destinoSede;
+            $movimiento->origen_hospital = $movimiento->origenHospital;
+            $movimiento->origen_sede = $movimiento->origenSede;
+
+            $movimiento->hospital = $movimiento->destinoHospital;
+            $movimiento->sede = $movimiento->destinoSede;
+
+            return $movimiento;
+        });
+    }
+
     public function show(MovimientoStock $movimientos_stock)
     {
         return response()->json([

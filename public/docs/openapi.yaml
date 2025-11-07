@@ -3007,6 +3007,185 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
 
+  /api/estadisticas/inventario/hospital/{hospital_id}:
+    get:
+      summary: Obtener inventario consolidado por hospital
+      description: |
+        Devuelve todos los insumos del hospital agrupados por tipo de almacén (excluye almacén central).
+        Incluye insumos de ingresos directos y un total general con sumas desglosadas.
+      tags: [Estadísticas, Inventario]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: hospital_id
+          in: path
+          required: true
+          schema: { type: integer }
+          description: ID del hospital
+      responses:
+        '200':
+          description: Inventario consolidado obtenido exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: boolean }
+                  mensaje: { type: string }
+                  data:
+                    type: object
+                    properties:
+                      hospital_id: { type: integer }
+                      por_almacen:
+                        type: object
+                        description: Insumos agrupados por tipo de almacén
+                      ingresos_directos:
+                        type: object
+                        description: Insumos provenientes de ingresos directos
+                      total_general:
+                        type: object
+                        description: Total consolidado de todos los insumos
+        '500':
+          description: Error al obtener inventario
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/estadisticas/despachos-pacientes/hospital/{hospital_id}:
+    get:
+      summary: Obtener despachos a pacientes por hospital
+      description: |
+        Devuelve todos los despachos a pacientes del hospital con filtro de fecha.
+        Incluye los insumos despachados y agrupa por paciente.
+      tags: [Estadísticas, Despachos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: hospital_id
+          in: path
+          required: true
+          schema: { type: integer }
+          description: ID del hospital
+        - name: fecha
+          in: query
+          required: false
+          schema: { type: string, format: date }
+          description: Fecha de referencia (por defecto hoy)
+        - name: tipo_filtro
+          in: query
+          required: false
+          schema: { type: string, enum: [dia, mes, año, anio] }
+          description: Tipo de filtro de fecha (por defecto dia)
+      responses:
+        '200':
+          description: Despachos obtenidos exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: boolean }
+                  mensaje: { type: string }
+                  data:
+                    type: object
+                    properties:
+                      hospital_id: { type: integer }
+                      filtro:
+                        type: object
+                        properties:
+                          fecha: { type: string }
+                          tipo: { type: string }
+                      total_despachos: { type: integer }
+                      total_pacientes: { type: integer }
+                      despachos_por_paciente:
+                        type: array
+                        description: Despachos agrupados por paciente
+        '500':
+          description: Error al obtener despachos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/estadisticas/traza-insumo/hospital/{hospital_id}:
+    get:
+      summary: Obtener trazabilidad de insumo por hospital
+      description: |
+        Devuelve el seguimiento completo de un insumo desde almacén central hasta paciente.
+        Incluye movimientos de stock, despachos a pacientes e ingresos directos.
+      tags: [Estadísticas, Trazabilidad]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: hospital_id
+          in: path
+          required: true
+          schema: { type: integer }
+          description: ID del hospital
+        - name: insumo_id
+          in: query
+          required: true
+          schema: { type: integer }
+          description: ID del insumo a rastrear
+        - name: fecha
+          in: query
+          required: false
+          schema: { type: string, format: date }
+          description: Fecha de referencia (por defecto hoy)
+        - name: tipo_filtro
+          in: query
+          required: false
+          schema: { type: string, enum: [dia, semana, mes] }
+          description: Tipo de filtro de fecha (por defecto mes)
+      responses:
+        '200':
+          description: Trazabilidad obtenida exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: boolean }
+                  mensaje: { type: string }
+                  data:
+                    type: object
+                    properties:
+                      hospital_id: { type: integer }
+                      filtro:
+                        type: object
+                        properties:
+                          fecha: { type: string }
+                          tipo: { type: string }
+                          fecha_desde: { type: string }
+                          fecha_hasta: { type: string }
+                      trazabilidad:
+                        type: object
+                        properties:
+                          insumo: { type: object }
+                          movimientos_stock: { type: object }
+                          despachos_pacientes: { type: object }
+                          ingresos_directos: { type: object }
+                          resumen: { type: object }
+        '400':
+          description: Parámetro insumo_id requerido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Insumo no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error al obtener trazabilidad
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/movimientos-stock:
     get:
       summary: Listar movimientos de stock

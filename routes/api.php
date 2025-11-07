@@ -148,6 +148,21 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
         ->where('hospital_id', '[0-9]+')
         ->withoutMiddleware(\App\Http\Middleware\CheckCrudPermissions::class);
 
+    // Estadísticas de inventario por hospital
+    Route::get('/estadisticas/inventario/hospital/{hospital_id}', [\App\Http\Controllers\EstadisticasController::class, 'inventarioPorHospital'])
+        ->where('hospital_id', '[0-9]+')
+        ->withoutMiddleware(\App\Http\Middleware\CheckCrudPermissions::class);
+
+    // Estadísticas de despachos a pacientes por hospital
+    Route::get('/estadisticas/despachos-pacientes/hospital/{hospital_id}', [\App\Http\Controllers\EstadisticasController::class, 'despachosPacientesPorHospital'])
+        ->where('hospital_id', '[0-9]+')
+        ->withoutMiddleware(\App\Http\Middleware\CheckCrudPermissions::class);
+
+    // Estadísticas de trazabilidad de insumo por hospital
+    Route::get('/estadisticas/traza-insumo/hospital/{hospital_id}', [\App\Http\Controllers\EstadisticasController::class, 'trazaInsumoPorHospital'])
+        ->where('hospital_id', '[0-9]+')
+        ->withoutMiddleware(\App\Http\Middleware\CheckCrudPermissions::class);
+
     // Discrepancias de movimientos CRUD
     Route::get('/movimientos-stock/discrepancias', [MovimientoDiscrepanciaController::class, 'index']);
     Route::post('/movimientos-stock/discrepancias', [MovimientoDiscrepanciaController::class, 'store']);

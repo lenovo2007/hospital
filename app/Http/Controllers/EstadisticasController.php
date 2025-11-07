@@ -1226,4 +1226,506 @@ class EstadisticasController extends Controller
             ]
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }
+
+    /**
+     * Inventario consolidado por hospital - Todos los insumos agrupados por tipo de almacén
+     * GET /api/estadisticas/inventario/hospital/{hospital_id}
+     */
+    public function inventarioPorHospital(Request $request, int $hospitalId)
+    {
+        try {
+            // Tablas de almacenes (excluir almacenes_centrales)
+            $tablasAlmacenes = [
+                'almacenes_principales' => 'Almacén Principal',
+                'almacenes_farmacia' => 'Almacén Farmacia',
+                'almacenes_paralelo' => 'Almacén Paralelo',
+                'almacenes_servicios_apoyo' => 'Almacén Servicios de Apoyo',
+                'almacenes_servicios_atenciones' => 'Almacén Servicios de Atención',
+            ];
+
+            $insumosPorAlmacen = [];
+            $totalGeneral = [];
+            $insumosDeIngresosDirectos = [];
+
+            // Recorrer cada tabla de almacén
+            foreach ($tablasAlmacenes as $tabla => $nombreAlmacen) {
+                $insumos = DB::table($tabla . ' as a')
+                    ->join('lotes as l', 'a.lote_id', '=', 'l.id')
+                    ->join('insumos as i', 'l.id_insumo', '=', 'i.id')
+                    ->leftJoin('sedes as s', 'a.sede_id', '=', 's.id')
+                    ->where('a.hospital_id', $hospitalId)
+                    ->where('a.status', true)
+                    ->where('a.cantidad', '>', 0)
+                    ->select(
+                        'i.id as insumo_id',
+                        'i.nombre as insumo_nombre',
+                        'i.codigo as insumo_codigo',
+                        'i.presentacion',
+                        'l.id as lote_id',
+                        'l.numero_lote',
+                        'l.fecha_vencimiento',
+                        'a.cantidad',
+                        'a.sede_id',
+                        's.nombre as sede_nombre',
+                        DB::raw("'$nombreAlmacen' as tipo_almacen")
+                    )
+                    ->get();
+
+                $insumosPorAlmacen[$tabla] = [
+                    'nombre_almacen' => $nombreAlmacen,
+                    'total_insumos_diferentes' => $insumos->unique('insumo_id')->count(),
+                    'cantidad_total' => $insumos->sum('cantidad'),
+                    'insumos' => $insumos->groupBy('insumo_id')->map(function ($lotes, $insumoId) {
+                        $primerLote = $lotes->first();
+                        return [
+                            'insumo_id' => $insumoId,
+                            'nombre' => $primerLote->insumo_nombre,
+                            'codigo' => $primerLote->insumo_codigo,
+                            'presentacion' => $primerLote->presentacion,
+                            'cantidad_total' => $lotes->sum('cantidad'),
+                            'lotes' => $lotes->map(function ($lote) {
+                                return [
+                                    'lote_id' => $lote->lote_id,
+                                    'numero_lote' => $lote->numero_lote,
+                                    'fecha_vencimiento' => $lote->fecha_vencimiento,
+                                    'cantidad' => $lote->cantidad,
+                                    'sede_id' => $lote->sede_id,
+                                    'sede_nombre' => $lote->sede_nombre,
+                                ];
+                            })->values(),
+                        ];
+                    })->values(),
+                ];
+
+                // Acumular para total general
+                foreach ($insumos as $insumo) {
+                    if (!isset($totalGeneral[$insumo->insumo_id])) {
+                        $totalGeneral[$insumo->insumo_id] = [
+                            'insumo_id' => $insumo->insumo_id,
+                            'nombre' => $insumo->insumo_nombre,
+                            'codigo' => $insumo->insumo_codigo,
+                            'presentacion' => $insumo->presentacion,
+                            'cantidad_total' => 0,
+                            'por_almacen' => [],
+                        ];
+                    }
+                    $totalGeneral[$insumo->insumo_id]['cantidad_total'] += $insumo->cantidad;
+                    
+                    if (!isset($totalGeneral[$insumo->insumo_id]['por_almacen'][$nombreAlmacen])) {
+                        $totalGeneral[$insumo->insumo_id]['por_almacen'][$nombreAlmacen] = 0;
+                    }
+                    $totalGeneral[$insumo->insumo_id]['por_almacen'][$nombreAlmacen] += $insumo->cantidad;
+                }
+            }
+
+            // Obtener insumos de ingresos directos
+            $ingresosDirectos = DB::table('ingresos_directos as id')
+                ->join('lotes_grupos as lg', 'id.codigo_lotes_grupo', '=', 'lg.codigo')
+                ->join('lotes as l', 'lg.lote_id', '=', 'l.id')
+                ->join('insumos as i', 'l.id_insumo', '=', 'i.id')
+                ->where('id.hospital_id', $hospitalId)
+                ->where('id.status', true)
+                ->select(
+                    'i.id as insumo_id',
+                    'i.nombre as insumo_nombre',
+                    'i.codigo as insumo_codigo',
+                    'i.presentacion',
+                    'id.codigo_ingreso',
+                    'id.tipo_ingreso',
+                    'id.fecha_ingreso',
+                    'lg.cantidad_entrada as cantidad'
+                )
+                ->get();
+
+            $insumosDeIngresosDirectos = $ingresosDirectos->groupBy('insumo_id')->map(function ($ingresos, $insumoId) {
+                $primerIngreso = $ingresos->first();
+                return [
+                    'insumo_id' => $insumoId,
+                    'nombre' => $primerIngreso->insumo_nombre,
+                    'codigo' => $primerIngreso->insumo_codigo,
+                    'presentacion' => $primerIngreso->presentacion,
+                    'cantidad_total' => $ingresos->sum('cantidad'),
+                    'ingresos' => $ingresos->map(function ($ingreso) {
+                        return [
+                            'codigo_ingreso' => $ingreso->codigo_ingreso,
+                            'tipo_ingreso' => $ingreso->tipo_ingreso,
+                            'fecha_ingreso' => $ingreso->fecha_ingreso,
+                            'cantidad' => $ingreso->cantidad,
+                        ];
+                    })->values(),
+                ];
+            })->values();
+
+            // Agregar insumos de ingresos directos al total general
+            foreach ($ingresosDirectos as $ingreso) {
+                if (!isset($totalGeneral[$ingreso->insumo_id])) {
+                    $totalGeneral[$ingreso->insumo_id] = [
+                        'insumo_id' => $ingreso->insumo_id,
+                        'nombre' => $ingreso->insumo_nombre,
+                        'codigo' => $ingreso->insumo_codigo,
+                        'presentacion' => $ingreso->presentacion,
+                        'cantidad_total' => 0,
+                        'por_almacen' => [],
+                    ];
+                }
+                $totalGeneral[$ingreso->insumo_id]['cantidad_total'] += $ingreso->cantidad;
+                
+                if (!isset($totalGeneral[$ingreso->insumo_id]['por_almacen']['Ingresos Directos'])) {
+                    $totalGeneral[$ingreso->insumo_id]['por_almacen']['Ingresos Directos'] = 0;
+                }
+                $totalGeneral[$ingreso->insumo_id]['por_almacen']['Ingresos Directos'] += $ingreso->cantidad;
+            }
+
+            return response()->json([
+                'status' => true,
+                'mensaje' => 'Inventario consolidado por hospital.',
+                'data' => [
+                    'hospital_id' => $hospitalId,
+                    'por_almacen' => $insumosPorAlmacen,
+                    'ingresos_directos' => [
+                        'total_insumos_diferentes' => $insumosDeIngresosDirectos->count(),
+                        'cantidad_total' => $ingresosDirectos->sum('cantidad'),
+                        'insumos' => $insumosDeIngresosDirectos,
+                    ],
+                    'total_general' => [
+                        'total_insumos_diferentes' => count($totalGeneral),
+                        'cantidad_total' => array_sum(array_column($totalGeneral, 'cantidad_total')),
+                        'insumos' => array_values($totalGeneral),
+                    ],
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Error al obtener inventario: ' . $e->getMessage(),
+                'data' => null,
+            ], 500);
+        }
+    }
+
+    /**
+     * Despachos a pacientes por hospital con filtro de fecha
+     * GET /api/estadisticas/despachos-pacientes/hospital/{hospital_id}
+     */
+    public function despachosPacientesPorHospital(Request $request, int $hospitalId)
+    {
+        try {
+            $fecha = $request->get('fecha');
+            $tipoFiltro = $request->get('tipo_filtro', 'dia'); // dia, mes, año
+
+            if (!$fecha) {
+                $fecha = now()->toDateString();
+            }
+
+            $fechaCarbon = Carbon::parse($fecha);
+
+            // Construir query base
+            $query = DespachoPaciente::with([
+                'hospital',
+                'sede',
+                'usuario',
+                'usuarioEntrega',
+            ])
+                ->where('hospital_id', $hospitalId)
+                ->where('status', true);
+
+            // Aplicar filtro según tipo
+            switch ($tipoFiltro) {
+                case 'dia':
+                    $query->whereDate('fecha_despacho', $fechaCarbon->toDateString());
+                    break;
+                case 'mes':
+                    $query->whereMonth('fecha_despacho', $fechaCarbon->month)
+                          ->whereYear('fecha_despacho', $fechaCarbon->year);
+                    break;
+                case 'año':
+                case 'anio':
+                    $query->whereYear('fecha_despacho', $fechaCarbon->year);
+                    break;
+                default:
+                    $query->whereDate('fecha_despacho', $fechaCarbon->toDateString());
+            }
+
+            $despachos = $query->orderByDesc('fecha_despacho')->get();
+
+            // Cargar insumos despachados para cada despacho
+            $despachos = $despachos->map(function ($despacho) {
+                $lotesGrupos = DB::table('lotes_grupos as lg')
+                    ->join('lotes as l', 'lg.lote_id', '=', 'l.id')
+                    ->join('insumos as i', 'l.id_insumo', '=', 'i.id')
+                    ->where('lg.codigo', $despacho->codigo_despacho)
+                    ->select(
+                        'lg.id as lote_grupo_id',
+                        'lg.lote_id',
+                        'lg.cantidad_salida',
+                        'l.numero_lote',
+                        'l.fecha_vencimiento',
+                        'i.id as insumo_id',
+                        'i.nombre as insumo_nombre',
+                        'i.codigo as insumo_codigo',
+                        'i.presentacion'
+                    )
+                    ->get();
+
+                $despacho->insumos_despachados = $lotesGrupos;
+                $despacho->total_insumos_diferentes = $lotesGrupos->unique('insumo_id')->count();
+                
+                return $despacho;
+            });
+
+            // Agrupar por paciente (cédula)
+            $despachosPorPaciente = $despachos->groupBy('paciente_cedula')->map(function ($despachosDelPaciente, $cedula) {
+                $primerDespacho = $despachosDelPaciente->first();
+                
+                return [
+                    'paciente_cedula' => $cedula,
+                    'paciente_nombres' => $primerDespacho->paciente_nombres,
+                    'paciente_apellidos' => $primerDespacho->paciente_apellidos,
+                    'paciente_telefono' => $primerDespacho->paciente_telefono,
+                    'total_despachos' => $despachosDelPaciente->count(),
+                    'despachos' => $despachosDelPaciente->values(),
+                ];
+            })->values();
+
+            return response()->json([
+                'status' => true,
+                'mensaje' => 'Despachos a pacientes por hospital.',
+                'data' => [
+                    'hospital_id' => $hospitalId,
+                    'filtro' => [
+                        'fecha' => $fecha,
+                        'tipo' => $tipoFiltro,
+                    ],
+                    'total_despachos' => $despachos->count(),
+                    'total_pacientes' => $despachosPorPaciente->count(),
+                    'despachos_por_paciente' => $despachosPorPaciente,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Error al obtener despachos: ' . $e->getMessage(),
+                'data' => null,
+            ], 500);
+        }
+    }
+
+    /**
+     * Traza de insumo - Seguimiento desde almacén central hasta paciente
+     * GET /api/estadisticas/traza-insumo/hospital/{hospital_id}
+     */
+    public function trazaInsumoPorHospital(Request $request, int $hospitalId)
+    {
+        try {
+            $insumoId = $request->get('insumo_id');
+            $fecha = $request->get('fecha');
+            $tipoFiltro = $request->get('tipo_filtro', 'mes'); // dia, semana, mes
+
+            if (!$fecha) {
+                $fecha = now()->toDateString();
+            }
+
+            if (!$insumoId) {
+                return response()->json([
+                    'status' => false,
+                    'mensaje' => 'El parámetro insumo_id es requerido.',
+                    'data' => null,
+                ], 400);
+            }
+
+            $fechaCarbon = Carbon::parse($fecha);
+
+            // Obtener información del insumo
+            $insumo = DB::table('insumos')->where('id', $insumoId)->first();
+
+            if (!$insumo) {
+                return response()->json([
+                    'status' => false,
+                    'mensaje' => 'Insumo no encontrado.',
+                    'data' => null,
+                ], 404);
+            }
+
+            // Determinar rango de fechas
+            $fechaDesde = null;
+            $fechaHasta = null;
+
+            switch ($tipoFiltro) {
+                case 'dia':
+                    $fechaDesde = $fechaCarbon->copy()->startOfDay();
+                    $fechaHasta = $fechaCarbon->copy()->endOfDay();
+                    break;
+                case 'semana':
+                    $fechaDesde = $fechaCarbon->copy()->startOfWeek();
+                    $fechaHasta = $fechaCarbon->copy()->endOfWeek();
+                    break;
+                case 'mes':
+                    $fechaDesde = $fechaCarbon->copy()->startOfMonth();
+                    $fechaHasta = $fechaCarbon->copy()->endOfMonth();
+                    break;
+                default:
+                    $fechaDesde = $fechaCarbon->copy()->startOfMonth();
+                    $fechaHasta = $fechaCarbon->copy()->endOfMonth();
+            }
+
+            // 1. Movimientos de stock donde aparece el insumo
+            $movimientos = DB::table('movimientos_stock as ms')
+                ->join('lotes_grupos as lg', 'ms.codigo_grupo', '=', 'lg.codigo')
+                ->join('lotes as l', 'lg.lote_id', '=', 'l.id')
+                ->leftJoin('hospitales as ho', 'ms.origen_hospital_id', '=', 'ho.id')
+                ->leftJoin('sedes as so', 'ms.origen_sede_id', '=', 'so.id')
+                ->leftJoin('hospitales as hd', 'ms.destino_hospital_id', '=', 'hd.id')
+                ->leftJoin('sedes as sd', 'ms.destino_sede_id', '=', 'sd.id')
+                ->leftJoin('users as u', 'ms.user_id', '=', 'u.id')
+                ->leftJoin('users as ur', 'ms.user_id_receptor', '=', 'ur.id')
+                ->where('l.id_insumo', $insumoId)
+                ->where(function ($q) use ($hospitalId) {
+                    $q->where('ms.origen_hospital_id', $hospitalId)
+                      ->orWhere('ms.destino_hospital_id', $hospitalId);
+                })
+                ->whereBetween('ms.created_at', [$fechaDesde, $fechaHasta])
+                ->select(
+                    'ms.id as movimiento_id',
+                    'ms.tipo',
+                    'ms.tipo_movimiento',
+                    'ms.estado',
+                    'ms.origen_almacen_tipo',
+                    'ms.origen_almacen_id',
+                    'ms.destino_almacen_tipo',
+                    'ms.destino_almacen_id',
+                    'ms.fecha_despacho',
+                    'ms.fecha_recepcion',
+                    'ms.observaciones',
+                    'lg.cantidad_salida',
+                    'lg.cantidad_entrada',
+                    'l.numero_lote',
+                    'l.fecha_vencimiento',
+                    'ho.nombre as origen_hospital_nombre',
+                    'so.nombre as origen_sede_nombre',
+                    'hd.nombre as destino_hospital_nombre',
+                    'sd.nombre as destino_sede_nombre',
+                    'u.name as usuario_nombre',
+                    'ur.name as usuario_receptor_nombre',
+                    'ms.created_at'
+                )
+                ->orderBy('ms.created_at', 'asc')
+                ->get();
+
+            // 2. Despachos a pacientes donde aparece el insumo
+            $despachos = DB::table('despachos_pacientes as dp')
+                ->join('lotes_grupos as lg', 'dp.codigo_despacho', '=', 'lg.codigo')
+                ->join('lotes as l', 'lg.lote_id', '=', 'l.id')
+                ->leftJoin('hospitales as h', 'dp.hospital_id', '=', 'h.id')
+                ->leftJoin('sedes as s', 'dp.sede_id', '=', 's.id')
+                ->leftJoin('users as u', 'dp.user_id', '=', 'u.id')
+                ->leftJoin('users as ue', 'dp.user_id_entrega', '=', 'ue.id')
+                ->where('l.id_insumo', $insumoId)
+                ->where('dp.hospital_id', $hospitalId)
+                ->whereBetween('dp.fecha_despacho', [$fechaDesde, $fechaHasta])
+                ->select(
+                    'dp.id as despacho_id',
+                    'dp.codigo_despacho',
+                    'dp.fecha_despacho',
+                    'dp.fecha_entrega',
+                    'dp.estado',
+                    'dp.paciente_nombres',
+                    'dp.paciente_apellidos',
+                    'dp.paciente_cedula',
+                    'dp.medico_tratante',
+                    'dp.diagnostico',
+                    'lg.cantidad_salida',
+                    'l.numero_lote',
+                    'l.fecha_vencimiento',
+                    'h.nombre as hospital_nombre',
+                    's.nombre as sede_nombre',
+                    'u.name as usuario_nombre',
+                    'ue.name as usuario_entrega_nombre',
+                    'dp.created_at'
+                )
+                ->orderBy('dp.fecha_despacho', 'asc')
+                ->get();
+
+            // 3. Ingresos directos donde aparece el insumo
+            $ingresos = DB::table('ingresos_directos as id')
+                ->join('lotes_grupos as lg', 'id.codigo_lotes_grupo', '=', 'lg.codigo')
+                ->join('lotes as l', 'lg.lote_id', '=', 'l.id')
+                ->leftJoin('hospitales as h', 'id.hospital_id', '=', 'h.id')
+                ->leftJoin('sedes as s', 'id.sede_id', '=', 's.id')
+                ->leftJoin('users as u', 'id.user_id', '=', 'u.id')
+                ->where('l.id_insumo', $insumoId)
+                ->where('id.hospital_id', $hospitalId)
+                ->whereBetween('id.fecha_ingreso', [$fechaDesde, $fechaHasta])
+                ->select(
+                    'id.id as ingreso_id',
+                    'id.codigo_ingreso',
+                    'id.tipo_ingreso',
+                    'id.fecha_ingreso',
+                    'id.estado',
+                    'id.proveedor_nombre',
+                    'id.numero_factura',
+                    'lg.cantidad_entrada',
+                    'l.numero_lote',
+                    'l.fecha_vencimiento',
+                    'h.nombre as hospital_nombre',
+                    's.nombre as sede_nombre',
+                    'u.name as usuario_nombre',
+                    'id.created_at'
+                )
+                ->orderBy('id.fecha_ingreso', 'asc')
+                ->get();
+
+            // Agrupar por insumo (aunque solo hay uno)
+            $trazabilidad = [
+                'insumo' => [
+                    'id' => $insumo->id,
+                    'nombre' => $insumo->nombre,
+                    'codigo' => $insumo->codigo,
+                    'presentacion' => $insumo->presentacion,
+                ],
+                'movimientos_stock' => [
+                    'total' => $movimientos->count(),
+                    'cantidad_total_salida' => $movimientos->sum('cantidad_salida'),
+                    'cantidad_total_entrada' => $movimientos->sum('cantidad_entrada'),
+                    'detalle' => $movimientos,
+                ],
+                'despachos_pacientes' => [
+                    'total' => $despachos->count(),
+                    'cantidad_total' => $despachos->sum('cantidad_salida'),
+                    'total_pacientes' => $despachos->unique('paciente_cedula')->count(),
+                    'detalle' => $despachos,
+                ],
+                'ingresos_directos' => [
+                    'total' => $ingresos->count(),
+                    'cantidad_total' => $ingresos->sum('cantidad_entrada'),
+                    'detalle' => $ingresos,
+                ],
+                'resumen' => [
+                    'total_movimientos' => $movimientos->count() + $despachos->count() + $ingresos->count(),
+                    'cantidad_total_entrada' => $movimientos->sum('cantidad_entrada') + $ingresos->sum('cantidad_entrada'),
+                    'cantidad_total_salida' => $movimientos->sum('cantidad_salida') + $despachos->sum('cantidad_salida'),
+                ],
+            ];
+
+            return response()->json([
+                'status' => true,
+                'mensaje' => 'Trazabilidad de insumo obtenida exitosamente.',
+                'data' => [
+                    'hospital_id' => $hospitalId,
+                    'filtro' => [
+                        'fecha' => $fecha,
+                        'tipo' => $tipoFiltro,
+                        'fecha_desde' => $fechaDesde->toDateString(),
+                        'fecha_hasta' => $fechaHasta->toDateString(),
+                    ],
+                    'trazabilidad' => $trazabilidad,
+                ],
+            ]);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Error al obtener trazabilidad: ' . $e->getMessage(),
+                'data' => null,
+            ], 500);
+        }
+    }
 }

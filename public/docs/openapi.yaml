@@ -2910,10 +2910,13 @@ paths:
     get:
       summary: Obtener estadísticas de movimientos por hospital
       description: |
-        Devuelve todos los movimientos de stock relacionados con un hospital específico,
-        separando los movimientos donde el hospital es destino de aquellos donde es origen.
-        Los movimientos de origen se agrupan por sede de origen.
-        **NOTA:** Se excluyen los movimientos internos donde el hospital de origen es igual al hospital de destino.
+        Devuelve todos los movimientos de stock relacionados con un hospital específico, separados en dos grupos:
+        
+        **Movimientos Recibidos:** Movimientos que vienen de fuera del hospital (desde almacén central u otros hospitales).
+        Estos tienen origen_hospital_id diferente a destino_hospital_id.
+        
+        **Movimientos Despachados:** Movimientos internos dentro del mismo hospital entre diferentes sedes/almacenes.
+        Estos tienen origen_hospital_id igual a destino_hospital_id. Se agrupan por tipo de almacén destino.
       tags: [Estadísticas, Movimientos]
       security:
         - bearerAuth: []
@@ -2937,70 +2940,89 @@ paths:
                     type: object
                     properties:
                       hospital_id: { type: integer }
-                      movimientos_como_destino:
-                        type: array
-                        description: Movimientos donde el hospital es el destino
-                        items:
-                          type: object
-                      movimientos_como_origen_por_sede:
-                        type: array
-                        description: Movimientos donde el hospital es origen, agrupados por sede
-                        items:
-                          type: object
-                          properties:
-                            sede_id: { type: integer }
-                            sede: { type: object }
-                            movimientos: { type: array }
+                      movimientos_recibidos:
+                        type: object
+                        description: Movimientos que vienen de fuera del hospital
+                        properties:
+                          descripcion: { type: string }
+                          total: { type: integer }
+                          movimientos: { type: array }
+                      movimientos_despachados_por_almacen:
+                        type: object
+                        description: Movimientos internos agrupados por tipo de almacén
+                        properties:
+                          descripcion: { type: string }
+                          total: { type: integer }
+                          agrupados_por_tipo_almacen:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                tipo_almacen: { type: string }
+                                nombre_almacen: { type: string }
+                                total_movimientos: { type: integer }
+                                movimientos: { type: array }
               examples:
                 estadisticas-hospital:
                   value:
                     status: true
                     mensaje: Estadísticas de movimientos por hospital.
                     data:
-                      hospital_id: 1
-                      movimientos_como_destino:
-                        - id: 15
-                          tipo: transferencia
-                          destino_hospital_id: 1
-                          destino_sede_id: 2
-                          origen_hospital_id: 2
-                          origen_sede_id: 3
-                          estado: completado
-                          destino_hospital:
-                            id: 1
-                            nombre: Hospital Central
-                          destino_sede:
-                            id: 2
-                            nombre: Sede Principal
-                          origen_hospital:
-                            id: 2
-                            nombre: Hospital Regional
-                          origen_sede:
-                            id: 3
-                            nombre: Sede Norte
-                          lotes_grupos:
-                            - id: 20
-                              lote_id: 5
-                              cantidad: 100
-                              lote:
-                                id: 5
-                                numero_lote: LOTE-001
-                                insumo:
-                                  id: 10
-                                  nombre: Guantes quirúrgicos
-                      movimientos_como_origen_por_sede:
-                        - sede_id: 1
-                          sede:
-                            id: 1
-                            nombre: Sede Central
-                          movimientos:
-                            - id: 22
-                              tipo: transferencia
-                              origen_hospital_id: 1
-                              origen_sede_id: 1
-                              destino_hospital_id: 3
-                              destino_sede_id: 5
-                              estado: pendiente
+                      hospital_id: 111
+                      movimientos_recibidos:
+                        descripcion: Movimientos que vienen de fuera del hospital (desde almacén central u otros hospitales)
+                        total: 2
+                        movimientos:
+                          - id: 15
+                            tipo: transferencia
+                            destino_hospital_id: 111
+                            destino_sede_id: 2
+                            origen_hospital_id: 1
+                            origen_sede_id: 1
+                            destino_almacen_tipo: almacenPrin
+                            estado: recibido
+                            destino_hospital:
+                              id: 111
+                              nombre: Hospital Regional
+                            origen_hospital:
+                              id: 1
+                              nombre: Almacén Central
+                            lotes_grupos:
+                              - id: 20
+                                lote_id: 5
+                                cantidad_entrada: 100
+                                lote:
+                                  numero_lote: LOTE-001
+                                  insumo:
+                                    nombre: Guantes quirúrgicos
+                      movimientos_despachados_por_almacen:
+                        descripcion: Movimientos internos dentro del hospital entre diferentes sedes/almacenes
+                        total: 3
+                        agrupados_por_tipo_almacen:
+                          - tipo_almacen: almacenFarm
+                            nombre_almacen: Almacén Farmacia
+                            total_movimientos: 2
+                            movimientos:
+                              - id: 7
+                                tipo: transferencia
+                                origen_hospital_id: 111
+                                destino_hospital_id: 111
+                                origen_sede_id: 2
+                                destino_sede_id: 8
+                                origen_almacen_tipo: almacenPrin
+                                destino_almacen_tipo: almacenFarm
+                                estado: pendiente
+                          - tipo_almacen: almacenPrin
+                            nombre_almacen: Almacén Principal
+                            total_movimientos: 1
+                            movimientos:
+                              - id: 8
+                                tipo: transferencia
+                                origen_hospital_id: 111
+                                destino_hospital_id: 111
+                                origen_almacen_tipo: almacenFarm
+                                destino_almacen_tipo: almacenPrin
+                                estado: completado
         '500':
           description: Error al obtener estadísticas
           content:

@@ -220,8 +220,9 @@ class MovimientoStockController extends Controller
     public function estadisticasPorHospital(int $hospitalId, Request $request)
     {
         try {
-            // Movimientos donde el hospital es DESTINO (excluir movimientos internos)
-            $movimientosDestino = MovimientoStock::with([
+            // MOVIMIENTOS RECIBIDOS: Donde origen y destino tienen hospital_id diferente
+            // (Movimientos que vienen de fuera del hospital, ej: desde almacén central)
+            $movimientosRecibidos = MovimientoStock::with([
                 'destinoHospital', 
                 'destinoSede', 
                 'origenHospital', 
@@ -234,11 +235,12 @@ class MovimientoStockController extends Controller
                 ->orderByDesc('created_at')
                 ->get();
 
-            // Cargar lotes_grupos y relaciones para movimientos destino
-            $movimientosDestino = $this->cargarLotesYRelaciones($movimientosDestino);
+            // Cargar lotes_grupos y relaciones para movimientos recibidos
+            $movimientosRecibidos = $this->cargarLotesYRelaciones($movimientosRecibidos);
 
-            // Movimientos donde el hospital es ORIGEN (excluir movimientos internos, agrupados por sede de origen)
-            $movimientosOrigen = MovimientoStock::with([
+            // MOVIMIENTOS DESPACHADOS: Donde origen y destino tienen el mismo hospital_id
+            // (Movimientos internos dentro del hospital, entre sedes/almacenes)
+            $movimientosDespachados = MovimientoStock::with([
                 'destinoHospital', 
                 'destinoSede', 
                 'origenHospital', 
@@ -247,30 +249,40 @@ class MovimientoStockController extends Controller
                 'usuarioReceptor'
             ])
                 ->where('origen_hospital_id', $hospitalId)
-                ->whereColumn('origen_hospital_id', '!=', 'destino_hospital_id')
+                ->where('destino_hospital_id', $hospitalId)
+                ->whereColumn('origen_hospital_id', '=', 'destino_hospital_id')
                 ->orderByDesc('created_at')
                 ->get();
 
-            // Cargar lotes_grupos y relaciones para movimientos origen
-            $movimientosOrigen = $this->cargarLotesYRelaciones($movimientosOrigen);
+            // Cargar lotes_grupos y relaciones para movimientos despachados
+            $movimientosDespachados = $this->cargarLotesYRelaciones($movimientosDespachados);
 
-            // Agrupar movimientos de origen por sede
-            $movimientosOrigenPorSede = $movimientosOrigen->groupBy('origen_sede_id')->map(function ($movimientos, $sedeId) {
-                $sede = $movimientos->first()?->origenSede;
+            // Agrupar movimientos despachados por tipo de almacén destino
+            $movimientosDespachadosPorAlmacen = $movimientosDespachados->groupBy('destino_almacen_tipo')->map(function ($movimientos, $tipoAlmacen) {
+                $nombreAlmacen = $this->mapAlmacenNombre($tipoAlmacen);
                 return [
-                    'sede_id' => $sedeId,
-                    'sede' => $sede,
+                    'tipo_almacen' => $tipoAlmacen,
+                    'nombre_almacen' => $nombreAlmacen,
+                    'total_movimientos' => $movimientos->count(),
                     'movimientos' => $movimientos->values(),
                 ];
             })->values();
 
             return response()->json([
                 'status' => true,
-                'mensaje' => 'Estadísticas de movimientos por hospital (excluye movimientos internos).',
+                'mensaje' => 'Estadísticas de movimientos por hospital.',
                 'data' => [
                     'hospital_id' => $hospitalId,
-                    'movimientos_como_destino' => $movimientosDestino,
-                    'movimientos_como_origen_por_sede' => $movimientosOrigenPorSede,
+                    'movimientos_recibidos' => [
+                        'descripcion' => 'Movimientos que vienen de fuera del hospital (desde almacén central u otros hospitales)',
+                        'total' => $movimientosRecibidos->count(),
+                        'movimientos' => $movimientosRecibidos,
+                    ],
+                    'movimientos_despachados_por_almacen' => [
+                        'descripcion' => 'Movimientos internos dentro del hospital entre diferentes sedes/almacenes',
+                        'total' => $movimientosDespachados->count(),
+                        'agrupados_por_tipo_almacen' => $movimientosDespachadosPorAlmacen,
+                    ],
                 ],
             ]);
         } catch (\Throwable $e) {

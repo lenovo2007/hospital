@@ -220,7 +220,7 @@ class MovimientoStockController extends Controller
     public function estadisticasPorHospital(int $hospitalId, Request $request)
     {
         try {
-            // Movimientos donde el hospital es DESTINO
+            // Movimientos donde el hospital es DESTINO (excluir movimientos internos)
             $movimientosDestino = MovimientoStock::with([
                 'destinoHospital', 
                 'destinoSede', 
@@ -230,13 +230,14 @@ class MovimientoStockController extends Controller
                 'usuarioReceptor'
             ])
                 ->where('destino_hospital_id', $hospitalId)
+                ->whereColumn('origen_hospital_id', '!=', 'destino_hospital_id')
                 ->orderByDesc('created_at')
                 ->get();
 
             // Cargar lotes_grupos y relaciones para movimientos destino
             $movimientosDestino = $this->cargarLotesYRelaciones($movimientosDestino);
 
-            // Movimientos donde el hospital es ORIGEN (agrupados por sede de origen)
+            // Movimientos donde el hospital es ORIGEN (excluir movimientos internos, agrupados por sede de origen)
             $movimientosOrigen = MovimientoStock::with([
                 'destinoHospital', 
                 'destinoSede', 
@@ -246,6 +247,7 @@ class MovimientoStockController extends Controller
                 'usuarioReceptor'
             ])
                 ->where('origen_hospital_id', $hospitalId)
+                ->whereColumn('origen_hospital_id', '!=', 'destino_hospital_id')
                 ->orderByDesc('created_at')
                 ->get();
 
@@ -264,7 +266,7 @@ class MovimientoStockController extends Controller
 
             return response()->json([
                 'status' => true,
-                'mensaje' => 'Estadísticas de movimientos por hospital.',
+                'mensaje' => 'Estadísticas de movimientos por hospital (excluye movimientos internos).',
                 'data' => [
                     'hospital_id' => $hospitalId,
                     'movimientos_como_destino' => $movimientosDestino,

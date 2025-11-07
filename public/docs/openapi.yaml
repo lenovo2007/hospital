@@ -2913,6 +2913,7 @@ paths:
         Devuelve todos los movimientos de stock relacionados con un hospital específico,
         separando los movimientos donde el hospital es destino de aquellos donde es origen.
         Los movimientos de origen se agrupan por sede de origen.
+        **NOTA:** Se excluyen los movimientos internos donde el hospital de origen es igual al hospital de destino.
       tags: [Estadísticas, Movimientos]
       security:
         - bearerAuth: []

@@ -1484,6 +1484,7 @@ paths:
                 paciente_nombres: { type: string }
                 paciente_apellidos: { type: string }
                 paciente_cedula: { type: string }
+                genero: { type: string, enum: [M, F, O] }
                 paciente_telefono: { type: string }
                 paciente_direccion: { type: string }
                 medico_tratante: { type: string }
@@ -1551,6 +1552,7 @@ paths:
               type: object
               properties:
                 observaciones: { type: string }
+                genero: { type: string, enum: [M, F, O] }
                 paciente_telefono: { type: string }
                 paciente_direccion: { type: string }
                 medico_tratante: { type: string }
@@ -5099,6 +5101,7 @@ components:
         paciente_nombres: { type: string }
         paciente_apellidos: { type: string }
         paciente_cedula: { type: string }
+        genero: { type: string, enum: [M, F, O], nullable: true }
         paciente_telefono: { type: string, nullable: true }
         paciente_direccion: { type: string, nullable: true }
         medico_tratante: { type: string, nullable: true }

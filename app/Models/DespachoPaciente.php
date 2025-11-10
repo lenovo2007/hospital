@@ -26,6 +26,7 @@ class DespachoPaciente extends Model
         'paciente_nombres',
         'paciente_apellidos',
         'paciente_cedula',
+        'genero',
         'paciente_telefono',
         'paciente_direccion',
         'medico_tratante',
@@ -44,6 +45,7 @@ class DespachoPaciente extends Model
     protected $casts = [
         'fecha_despacho' => 'date',
         'fecha_entrega' => 'datetime',
+        'genero' => 'string',
         'valor_total' => 'decimal:2',
         'cantidad_total_items' => 'integer',
         'status' => 'boolean',

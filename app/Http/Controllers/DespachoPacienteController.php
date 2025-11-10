@@ -44,6 +44,7 @@ class DespachoPacienteController extends Controller
             'paciente_nombres' => ['required', 'string', 'max:100'],
             'paciente_apellidos' => ['required', 'string', 'max:100'],
             'paciente_cedula' => ['required', 'string', 'max:20'],
+            'genero' => ['nullable', 'in:M,F,O'],
             'paciente_telefono' => ['nullable', 'string', 'max:20'],
             'paciente_direccion' => ['nullable', 'string', 'max:500'],
             'medico_tratante' => ['nullable', 'string', 'max:150'],
@@ -102,6 +103,7 @@ class DespachoPacienteController extends Controller
                     'paciente_nombres' => $data['paciente_nombres'],
                     'paciente_apellidos' => $data['paciente_apellidos'],
                     'paciente_cedula' => $data['paciente_cedula'],
+                    'genero' => $data['genero'] ?? null,
                     'paciente_telefono' => $data['paciente_telefono'] ?? null,
                     'paciente_direccion' => $data['paciente_direccion'] ?? null,
                     'medico_tratante' => $data['medico_tratante'] ?? null,
@@ -239,6 +241,7 @@ class DespachoPacienteController extends Controller
 
         $data = $request->validate([
             'observaciones' => ['nullable', 'string', 'max:500'],
+            'genero' => ['nullable', 'in:M,F,O'],
             'paciente_telefono' => ['nullable', 'string', 'max:20'],
             'paciente_direccion' => ['nullable', 'string', 'max:500'],
             'medico_tratante' => ['nullable', 'string', 'max:150'],

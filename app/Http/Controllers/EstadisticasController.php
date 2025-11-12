@@ -1604,8 +1604,8 @@ class EstadisticasController extends Controller
                     'so.nombre as origen_sede_nombre',
                     'hd.nombre as destino_hospital_nombre',
                     'sd.nombre as destino_sede_nombre',
-                    'u.name as usuario_nombre',
-                    'ur.name as usuario_receptor_nombre',
+                    'u.nombre as usuario_nombre',
+                    'ur.nombre as usuario_receptor_nombre',
                     'ms.created_at'
                 )
                 ->orderBy('ms.created_at', 'asc')
@@ -1638,8 +1638,8 @@ class EstadisticasController extends Controller
                     'l.fecha_vencimiento',
                     'h.nombre as hospital_nombre',
                     's.nombre as sede_nombre',
-                    'u.name as usuario_nombre',
-                    'ue.name as usuario_entrega_nombre',
+                    'u.nombre as usuario_nombre',
+                    'ue.nombre as usuario_entrega_nombre',
                     'dp.created_at'
                 )
                 ->orderBy('dp.fecha_despacho', 'asc')
@@ -1668,7 +1668,7 @@ class EstadisticasController extends Controller
                     'l.fecha_vencimiento',
                     'h.nombre as hospital_nombre',
                     's.nombre as sede_nombre',
-                    'u.name as usuario_nombre',
+                    'u.nombre as usuario_nombre',
                     'id.created_at'
                 )
                 ->orderBy('id.fecha_ingreso', 'asc')

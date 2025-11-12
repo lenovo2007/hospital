@@ -1514,6 +1514,91 @@ paths:
                       paciente: { type: object }
                       total_items: { type: integer }
 
+  /api/despachos-pacientes/paciente/{cedula}:
+    get:
+      summary: Obtener todos los despachos de un paciente por cédula
+      description: |
+        Retorna todos los despachos realizados a un paciente específico identificado por su cédula.
+        Incluye información del paciente, estadísticas de despachos e insumos despachados en cada uno.
+      tags: [Despachos Pacientes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: cedula
+          in: path
+          required: true
+          schema: { type: string }
+          description: Cédula del paciente
+      responses:
+        '200':
+          description: Despachos del paciente obtenidos exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: boolean }
+                  mensaje: { type: string }
+                  data:
+                    type: object
+                    properties:
+                      paciente:
+                        type: object
+                        properties:
+                          cedula: { type: string }
+                          nombres: { type: string }
+                          apellidos: { type: string }
+                          genero: { type: string, enum: [M, F, O], nullable: true }
+                          telefono: { type: string, nullable: true }
+                          direccion: { type: string, nullable: true }
+                      estadisticas:
+                        type: object
+                        properties:
+                          total_despachos: { type: integer }
+                          por_estado:
+                            type: object
+                            description: Conteo de despachos por estado
+                          total_items_despachados: { type: integer }
+                          hospitales_involucrados: { type: integer }
+                          sedes_involucradas: { type: integer }
+                      despachos:
+                        type: array
+                        items:
+                          allOf:
+                            - $ref: '#/components/schemas/DespachoPaciente'
+                            - type: object
+                              properties:
+                                insumos_despachados:
+                                  type: array
+                                  items:
+                                    type: object
+                                    properties:
+                                      lote_grupo_id: { type: integer }
+                                      lote_id: { type: integer }
+                                      cantidad_salida: { type: integer }
+                                      numero_lote: { type: string }
+                                      fecha_vencimiento: { type: string, format: date }
+                                      insumo_id: { type: integer }
+                                      insumo_nombre: { type: string }
+                                      insumo_codigo: { type: string }
+                                      insumo_presentacion: { type: string }
+        '400':
+          description: Cédula requerida
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: boolean }
+                  mensaje: { type: string }
+                  data: { type: null }
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /api/despachos-pacientes/{id}:
     get:
       summary: Ver despacho específico

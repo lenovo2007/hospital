@@ -214,6 +214,99 @@ class DespachoPacienteController extends Controller
     }
 
     /**
+     * Obtener todos los despachos de un paciente por su cédula
+     * GET /api/despachos-pacientes/paciente/{cedula}
+     */
+    public function porCedula($cedula)
+    {
+        try {
+            // Validar que la cédula no esté vacía
+            if (empty($cedula)) {
+                return response()->json([
+                    'status' => false,
+                    'mensaje' => 'La cédula del paciente es requerida.',
+                    'data' => null,
+                ], 400);
+            }
+
+            // Buscar todos los despachos del paciente
+            $despachos = DespachoPaciente::with([
+                'hospital',
+                'sede',
+                'usuario',
+                'usuarioEntrega'
+            ])
+                ->where('paciente_cedula', $cedula)
+                ->where('status', true)
+                ->orderByDesc('fecha_despacho')
+                ->get();
+
+            // Si no hay despachos, retornar respuesta vacía pero exitosa
+            if ($despachos->isEmpty()) {
+                return response()->json([
+                    'status' => true,
+                    'mensaje' => 'No se encontraron despachos para esta cédula.',
+                    'data' => [
+                        'paciente_cedula' => $cedula,
+                        'total_despachos' => 0,
+                        'despachos' => [],
+                    ],
+                ]);
+            }
+
+            // Obtener información del paciente desde el primer despacho
+            $primerDespacho = $despachos->first();
+            $pacienteInfo = [
+                'cedula' => $cedula,
+                'nombres' => $primerDespacho->paciente_nombres,
+                'apellidos' => $primerDespacho->paciente_apellidos,
+                'genero' => $primerDespacho->genero,
+                'telefono' => $primerDespacho->paciente_telefono,
+                'direccion' => $primerDespacho->paciente_direccion,
+            ];
+
+            // Agregar insumos despachados para cada despacho
+            $despachos = $despachos->map(function ($despacho) {
+                $insumos = $this->obtenerInsumosDespacho($despacho->codigo_despacho);
+                $despacho->insumos_despachados = $insumos;
+                return $despacho;
+            });
+
+            // Calcular estadísticas
+            $estadisticas = [
+                'total_despachos' => $despachos->count(),
+                'por_estado' => $despachos->groupBy('estado')->map->count(),
+                'total_items_despachados' => $despachos->sum('cantidad_total_items'),
+                'hospitales_involucrados' => $despachos->pluck('hospital_id')->unique()->count(),
+                'sedes_involucradas' => $despachos->pluck('sede_id')->unique()->count(),
+            ];
+
+            return response()->json([
+                'status' => true,
+                'mensaje' => 'Despachos del paciente obtenidos exitosamente.',
+                'data' => [
+                    'paciente' => $pacienteInfo,
+                    'estadisticas' => $estadisticas,
+                    'despachos' => $despachos->values(),
+                ],
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Error en porCedula: ' . $e->getMessage(), [
+                'cedula' => $cedula,
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Error al obtener despachos del paciente.',
+                'error' => config('app.debug') ? $e->getMessage() : 'Error interno',
+                'data' => null,
+            ], 500);
+        }
+    }
+
+    /**
      * Mostrar un despacho específico
      */
     public function show($id)

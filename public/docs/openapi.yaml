@@ -3223,7 +3223,13 @@ paths:
       summary: Obtener trazabilidad de insumo por hospital
       description: |
         Devuelve el seguimiento completo de un insumo desde almacén central hasta paciente.
-        Incluye movimientos de stock, despachos a pacientes e ingresos directos.
+        Separa los movimientos en:
+        - Movimientos de entrada: desde almacén central al hospital
+        - Movimientos internos: transferencias entre sedes del mismo hospital
+        - Despachos a pacientes
+        - Ingresos directos
+        
+        El resumen incluye: cantidad que entró al hospital, cantidad despachada a pacientes y cantidad que queda rodando.
       tags: [Estadísticas, Trazabilidad]
       security:
         - bearerAuth: []
@@ -3272,11 +3278,47 @@ paths:
                       trazabilidad:
                         type: object
                         properties:
-                          insumo: { type: object }
-                          movimientos_stock: { type: object }
-                          despachos_pacientes: { type: object }
-                          ingresos_directos: { type: object }
-                          resumen: { type: object }
+                          insumo:
+                            type: object
+                            properties:
+                              id: { type: integer }
+                              nombre: { type: string }
+                              codigo: { type: string }
+                              presentacion: { type: string }
+                          movimientos_entrada:
+                            type: object
+                            description: Movimientos que entran al hospital desde almacén central
+                            properties:
+                              total: { type: integer }
+                              cantidad_total_entrada: { type: integer }
+                              detalle: { type: array, items: { type: object } }
+                          movimientos_internos:
+                            type: object
+                            description: Transferencias entre sedes del mismo hospital
+                            properties:
+                              total: { type: integer }
+                              cantidad_total_salida: { type: integer }
+                              cantidad_total_entrada: { type: integer }
+                              detalle: { type: array, items: { type: object } }
+                          despachos_pacientes:
+                            type: object
+                            properties:
+                              total: { type: integer }
+                              cantidad_total: { type: integer }
+                              total_pacientes: { type: integer }
+                              detalle: { type: array, items: { type: object } }
+                          ingresos_directos:
+                            type: object
+                            properties:
+                              total: { type: integer }
+                              cantidad_total: { type: integer }
+                              detalle: { type: array, items: { type: object } }
+                          resumen:
+                            type: object
+                            properties:
+                              cantidad_entrada_hospital: { type: integer, description: "Total de unidades que entraron al hospital" }
+                              cantidad_despachada_pacientes: { type: integer, description: "Total de unidades despachadas a pacientes" }
+                              cantidad_rodando_hospital: { type: integer, description: "Cantidad que queda en el hospital (entrada - despachada)" }
         '400':
           description: Parámetro insumo_id requerido
           content:

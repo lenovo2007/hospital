@@ -1606,10 +1606,21 @@ class EstadisticasController extends Controller
                     'sd.nombre as destino_sede_nombre',
                     'u.nombre as usuario_nombre',
                     'ur.nombre as usuario_receptor_nombre',
+                    'ms.origen_hospital_id',
+                    'ms.destino_hospital_id',
                     'ms.created_at'
                 )
                 ->orderBy('ms.created_at', 'asc')
                 ->get();
+
+            // Separar movimientos en entrada y movimientos internos
+            $movimientosEntrada = $movimientos->filter(function ($m) use ($hospitalId) {
+                return $m->origen_hospital_id !== $hospitalId && $m->destino_hospital_id === $hospitalId;
+            })->values();
+
+            $movimientosInternos = $movimientos->filter(function ($m) use ($hospitalId) {
+                return $m->origen_hospital_id === $hospitalId && $m->destino_hospital_id === $hospitalId;
+            })->values();
 
             // 2. Despachos a pacientes donde aparece el insumo
             $despachos = DB::table('despachos_pacientes as dp')
@@ -1674,6 +1685,11 @@ class EstadisticasController extends Controller
                 ->orderBy('id.fecha_ingreso', 'asc')
                 ->get();
 
+            // Calcular totales para el resumen
+            $cantidadEntradaAlHospital = $movimientosEntrada->sum('cantidad_entrada') + $ingresos->sum('cantidad_entrada');
+            $cantidadDespachada = $despachos->sum('cantidad_salida');
+            $cantidadRodandoEnHospital = $cantidadEntradaAlHospital - $cantidadDespachada;
+
             // Agrupar por insumo (aunque solo hay uno)
             $trazabilidad = [
                 'insumo' => [
@@ -1682,11 +1698,16 @@ class EstadisticasController extends Controller
                     'codigo' => $insumo->codigo,
                     'presentacion' => $insumo->presentacion,
                 ],
-                'movimientos_stock' => [
-                    'total' => $movimientos->count(),
-                    'cantidad_total_salida' => $movimientos->sum('cantidad_salida'),
-                    'cantidad_total_entrada' => $movimientos->sum('cantidad_entrada'),
-                    'detalle' => $movimientos,
+                'movimientos_entrada' => [
+                    'total' => $movimientosEntrada->count(),
+                    'cantidad_total_entrada' => $movimientosEntrada->sum('cantidad_entrada'),
+                    'detalle' => $movimientosEntrada,
+                ],
+                'movimientos_internos' => [
+                    'total' => $movimientosInternos->count(),
+                    'cantidad_total_salida' => $movimientosInternos->sum('cantidad_salida'),
+                    'cantidad_total_entrada' => $movimientosInternos->sum('cantidad_entrada'),
+                    'detalle' => $movimientosInternos,
                 ],
                 'despachos_pacientes' => [
                     'total' => $despachos->count(),
@@ -1700,9 +1721,9 @@ class EstadisticasController extends Controller
                     'detalle' => $ingresos,
                 ],
                 'resumen' => [
-                    'total_movimientos' => $movimientos->count() + $despachos->count() + $ingresos->count(),
-                    'cantidad_total_entrada' => $movimientos->sum('cantidad_entrada') + $ingresos->sum('cantidad_entrada'),
-                    'cantidad_total_salida' => $movimientos->sum('cantidad_salida') + $despachos->sum('cantidad_salida'),
+                    'cantidad_entrada_hospital' => $cantidadEntradaAlHospital,
+                    'cantidad_despachada_pacientes' => $cantidadDespachada,
+                    'cantidad_rodando_hospital' => $cantidadRodandoEnHospital,
                 ],
             ];
 

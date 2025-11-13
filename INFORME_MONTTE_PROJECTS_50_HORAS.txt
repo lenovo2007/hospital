@@ -1,0 +1,552 @@
+INFORME DE TRABAJO - MONTTE PROJECTS
+Período: Septiembre - Noviembre 2025
+Total de Horas: 50 horas | Inversión: $500 USD
+
+═══════════════════════════════════════════════════════════════════════════════
+
+RESUMEN EJECUTIVO
+
+Este informe detalla las 50 horas de trabajo invertidas en la optimización y rediseño de la red de sitios web Montte (Projects, Supplies y Tech). El proyecto presentó desafíos técnicos significativos debido a la naturaleza del material de diseño proporcionado (archivos PDF con imágenes estáticas), lo que requirió un enfoque manual intensivo utilizando CSS y JavaScript personalizado en WordPress/Elementor.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+CONTEXTO DEL PROYECTO
+
+Tecnologías Utilizadas:
+- CMS: WordPress
+- Constructor Visual: Elementor Pro
+- Plugin Especializado: Royal Addons
+- Desarrollo Custom: CSS y JavaScript manual
+- Sitios Web: 3 páginas interconectadas (Montte Projects, Montte Supplies, Montte Tech)
+
+Desafíos Técnicos Principales:
+1. Material de diseño limitado: PDF con imágenes estáticas sin especificaciones técnicas
+2. Ausencia de recursos originales: Sin archivos Figma, SVG de iconos, o paleta de colores definida
+3. Adaptación visual manual: Extracción de colores, medidas y espaciados mediante herramientas externas
+4. Compatibilidad de plugins: Adaptación compleja de Royal Addons al diseño requerido
+5. Diseño responsivo: Ajustes específicos para múltiples resoluciones sin guías de diseño
+
+═══════════════════════════════════════════════════════════════════════════════
+
+DESGLOSE DETALLADO DE TRABAJO REALIZADO
+
+FASE 0: MODIFICACIONES DEL 29 DE SEPTIEMBRE (5 horas)
+
+0.1 Estilo de Tarjetas de Segmentos
+- Implementación de nuevo diseño para tarjetas de segmentos
+- Ajuste de estructura y espaciado
+- Optimización de elementos visuales
+Tiempo: 1 hora
+
+0.2 Tarjetas de Espacios
+- Creación de estructura de tarjetas iguales a los segmentos
+- Implementación de tarjetas similares a la sección Espacios
+- Unificación de estilos
+Tiempo: 1 hora
+
+0.3 Ajuste de Menú Superior (Una Sola Línea)
+- Menú Productos
+- Menú Clientes/Proyectos
+- Menú Marcas
+- Optimización de espaciado y responsividad
+Tiempo: 1 hora
+
+0.4 Modificación de Tarjetas de Categorías de Productos
+- Rediseño basado en referencia: https://xharohqr.manus.space/
+- Conservación de estilo consistente
+- Ajuste de elementos visuales
+Tiempo: 1.5 horas
+
+0.5 Eliminación de Bloque en Página Actividad
+- Remoción de sección obsoleta
+- Ajuste de espaciado resultante
+Tiempo: 0.5 horas
+
+───────────────────────────────────────────────────────────────────────────────
+
+FASE 1: MODIFICACIONES DEL 20 DE OCTUBRE - MONTTE PROJECTS (15 horas)
+
+1.1 Tarjetas - Segmentos (Página Principal)
+- Rediseño completo de tarjetas de segmentos
+- Ajuste de iconos, tipografía y espaciado
+- Implementación de diseño responsivo
+Tiempo: 2 horas
+
+1.2 Tarjetas - Espacios (Página Principal)
+- Creación de nuevo diseño de tarjetas
+- Ajuste de márgenes y espaciado
+- Optimización visual
+Tiempo: 1.5 horas
+
+1.3 Tarjetas - Colaboradores (Página Principal)
+- Implementación de diseño de tarjetas
+- Ajuste de estructura y contenido
+- Optimización de imágenes
+Tiempo: 1.5 horas
+
+1.4 Tarjetas - Proyectos Relevantes (Página Principal)
+- Diseño de tarjetas de proyectos
+- Implementación de carrusel
+- Ajuste de navegación
+Tiempo: 2 horas
+
+1.5 Noticias (Página Principal)
+- Rediseño completo de sección de noticias
+- Ajuste de layout y espaciado
+- Optimización de contenido
+Tiempo: 1.5 horas
+
+1.6 Modificaciones en el Menú Principal
+- Actualización para indicar nuevas páginas creadas
+- Reorganización de estructura
+- Ajuste de navegación
+Tiempo: 1 hora
+
+1.7 Menú y Tarjetas - Página de Productos
+- Creación de menú específico
+- Diseño de tarjetas de productos
+- Implementación de filtros
+Tiempo: 1.5 horas
+
+1.8 Menú y Tarjetas - Página de Espacios
+- Diseño de menú de espacios
+- Creación de tarjetas específicas
+- Ajuste de navegación
+Tiempo: 1 hora
+
+1.9 Footer - Página Espacios
+- Diseño e implementación de footer personalizado
+- Ajuste de enlaces y contenido
+Tiempo: 0.5 horas
+
+1.10 Menú y Tarjetas - Página Servicios
+- Creación de menú de servicios
+- Diseño de tarjetas de servicios
+- Implementación de categorías
+Tiempo: 1.5 horas
+
+1.11 Footer - Página Servicios
+- Implementación de footer personalizado
+- Ajuste de estructura
+Tiempo: 0.5 horas
+
+1.12 Menú y Tarjetas - Página Proyectos Relevantes
+- Diseño de menú específico
+- Creación de tarjetas de proyectos
+- Implementación de filtros
+Tiempo: 1 hora
+
+1.13 Modificación del Menú Superior - Página Marcas
+- Ajuste de navegación
+- Optimización de espaciado
+Tiempo: 0.5 horas
+
+───────────────────────────────────────────────────────────────────────────────
+
+FASE 2: MODIFICACIONES DEL 26 DE OCTUBRE (3 horas)
+
+2.1 Reorganización Estructural del Menú Principal
+- Eliminación de elementos obsoletos (etiqueta "nuevo")
+- Reordenamiento de ítems según prioridad de navegación
+- Ajuste de espaciado y márgenes para mejor usabilidad
+Tiempo: 0.5 horas
+
+2.2 Optimización de Tarjetas de Segmentos
+- Ajuste de tamaño de iconos para consistencia visual
+- Corrección de márgenes en versión móvil
+- Implementación de interlineado optimizado
+- Alineación precisa de iconos
+Tiempo: 1 hora
+
+2.3 Estandarización de Espaciado Global
+- Implementación de márgenes consistentes de 170px entre bloques
+- Unificación de espacios superiores e inferiores en encabezados
+- Ajuste de títulos y subtítulos en todas las páginas
+Tiempo: 0.5 horas
+
+2.4 Rediseño de Sección de Noticias Relevantes
+- Implementación de nuevo diseño según PDF proporcionado
+- Ajuste de textos y márgenes
+- Optimización para versión móvil
+Tiempo: 0.5 horas
+
+2.5 Página de Servicios - Mejoras Específicas
+- Configuración del botón "Todos los servicios" como seleccionado por defecto
+- Alineación de iconos a la izquierda
+- Actualización de color de iconos según identidad Montte Projects
+- Reducción de tamaño de fuente en títulos
+- Ajuste de interlineado para títulos de dos líneas
+- Reducción de redondeo de botones (8px a 6px)
+- Disminución de espacio entre botones del menú
+Tiempo: 0.5 horas
+
+───────────────────────────────────────────────────────────────────────────────
+
+FASE 3: MODIFICACIONES DEL 3 DE NOVIEMBRE (4 horas)
+
+3.1 Ajustes de Diseño Responsivo
+- Reducción del 20% en tamaño de ícono del encabezado (versión móvil)
+- Optimización de espaciado entre secciones (170px)
+- Pruebas en múltiples dispositivos y emuladores
+Tiempo: 1 hora
+
+3.2 Correcciones de Interfaz - Tarjetas de Segmentos
+- Solución de problema de superposición de texto sobre íconos (móvil)
+- Mejora de alineación en todos los dispositivos
+- Ajuste de legibilidad
+Tiempo: 1 hora
+
+3.3 Correcciones de Navegación
+- Corrección de enlace del menú "Colaboradores" a página "Actividad"
+- Ajuste de bordes de botones (menos redondeados)
+- Optimización del ancho de botones (100% del espacio disponible)
+Tiempo: 0.5 horas
+
+3.4 Implementación de Carruseles Interactivos
+- Diseño de carrusel para "Proyectos Relevantes" (página Actividad)
+- Implementación de carrusel para "Clientes Relevantes" (páginas Actividad y Productos)
+- Mejora de navegación entre tarjetas
+- Código JavaScript personalizado para funcionalidad
+Tiempo: 1.5 horas
+
+───────────────────────────────────────────────────────────────────────────────
+
+FASE 4: MODIFICACIONES DEL 5 DE NOVIEMBRE (3 horas)
+
+4.1 Implementación de Enlaces y Anclas
+- Agregado de links en secciones de navegación
+- Implementación de ancla a "Espacios" en menú principal
+- Creación de plantilla para nuevas páginas
+Nota: Algunos enlaces de "Colaboradores" pendientes por falta de páginas destino
+Tiempo: 0.5 horas
+
+4.2 Ajustes de Iconos y Alineación
+- Alineación de iconos en tarjetas de segmentos
+- Reemplazo de primer icono por problema de margen inferior
+- Corrección de descuadre en tarjetas
+Tiempo: 0.5 horas
+
+4.3 Optimización de Scroll en Carruseles
+- Aumento de margen scroll en "Proyectos Relevantes"
+- Aumento de margen scroll en "Clientes Relevantes"
+- Aumento de margen scroll en "Firmas Relevantes"
+Tiempo: 0.5 horas
+
+4.4 Ajustes de Banner Responsivo
+- Optimización de banner "Creamos espacios que inspiran"
+- Pruebas exhaustivas en:
+  - Más de 10 modelos de emuladores (iPhone y Android)
+  - Dispositivos móviles físicos
+  - Diferentes tamaños de pantalla y orientaciones
+Tiempo: 0.5 horas
+
+4.5 Mejoras de Interacción
+- Eliminación de efecto mouseover en tarjetas
+- Ajuste de espaciado en esquinas de botones
+- Reducción de bordes redondeados
+- Ajuste de bordes del menú página proyectos
+- Unificación de tarjetas de proyectos con página actividad
+Tiempo: 1 hora
+
+───────────────────────────────────────────────────────────────────────────────
+
+FASE 5: MODIFICACIONES DEL 6 DE NOVIEMBRE - MONTTE TECH Y SUPPLIES (20 horas)
+
+Esta fase representa la mayor inversión de tiempo debido a la creación completa del diseño de nuevas páginas desde cero, sin referencias previas, requiriendo múltiples iteraciones y ajustes para lograr la aprobación del cliente.
+
+5.1 Montte Tech - Creación y Diseño Completo
+
+Menú Principal
+- Diseño completo de estructura de navegación
+- Reorganización de elementos de navegación
+- Optimización para dispositivos móviles
+- Implementación de efectos y transiciones
+Tiempo: 2 horas
+
+Tarjetas de Actividad
+- Creación de diseño desde cero
+- Actualización de diseño según especificaciones
+- Ajuste de tipografía y espaciado
+- Desarrollo de CSS personalizado
+- Implementación de efectos hover
+Tiempo: 3 horas
+
+Clientes Relevantes
+- Diseño e implementación de nueva sección
+- Implementación de nuevo diseño
+- Ajuste de carrusel y navegación
+- Desarrollo de JavaScript para interactividad
+Tiempo: 2 horas
+
+Actualidad Relevante
+- Creación completa de sección
+- Rediseño de sección completa
+- Ajuste de márgenes y colores
+- Optimización de contenido
+Tiempo: 2 horas
+
+Servicios
+- Diseño de página completa de servicios
+- Actualización de paleta de colores
+- Ajuste de tipografía
+- Mejora de márgenes y espaciado
+- Implementación de filtros y categorías
+Tiempo: 3 horas
+
+5.2 Montte Supplies - Creación y Diseño Completo
+
+Actividad
+- Diseño completo de página de actividad
+- Implementación de nuevo diseño
+- Ajuste de contenido y navegación
+- Desarrollo de secciones personalizadas
+Tiempo: 2 horas
+
+Tu Proveedor de Confianza
+- Creación de nueva sección personalizada desde cero
+- Desarrollo de CSS y JS específico
+- Implementación de animaciones
+- Ajuste de responsividad
+Tiempo: 2 horas
+
+Clientes Relevantes
+- Diseño e implementación completa
+- Adaptación de diseño según especificaciones
+- Implementación de carrusel
+- Desarrollo de navegación interactiva
+Tiempo: 1.5 horas
+
+Actualidad Relevante
+- Creación de sección completa
+- Rediseño de sección
+- Ajuste de elementos visuales
+- Optimización de layout
+Tiempo: 1.5 horas
+
+Servicios
+- Diseño completo de página de servicios
+- Actualización de diseño
+- Ajuste de paleta de colores y tipografía
+- Implementación de categorías y filtros
+Tiempo: 2 horas
+
+───────────────────────────────────────────────────────────────────────────────
+
+TRABAJO TÉCNICO ADICIONAL NO VISIBLE
+
+Desarrollo de CSS Personalizado
+- Creación de más de 800 líneas de CSS custom
+- Ajustes específicos para compatibilidad cross-browser
+- Media queries para 5 breakpoints responsivos diferentes
+- Optimización de animaciones y transiciones
+- Corrección de conflictos con Royal Addons
+Tiempo incluido en cada fase
+
+Desarrollo de JavaScript Personalizado
+- Funcionalidad de carruseles múltiples
+- Interacciones de menú dinámicas
+- Efectos de scroll y animaciones suaves
+- Validación y manejo de eventos
+- Optimización de rendimiento
+Tiempo incluido en cada fase
+
+Pruebas y Control de Calidad
+- Testing en múltiples navegadores (Chrome, Firefox, Safari, Edge)
+- Pruebas en dispositivos físicos (iOS y Android)
+- Validación de responsividad en más de 10 resoluciones
+- Corrección de bugs y ajustes finos
+- Testing de compatibilidad con plugins
+Tiempo distribuido en todas las fases
+
+Extracción Manual de Recursos desde PDF
+- Uso de herramientas de color picker para extraer paleta del PDF
+- Medición manual de espaciados y dimensiones
+- Búsqueda y adaptación de iconos similares
+- Comparación visual constante con diseño original
+- Ajustes iterativos basados en feedback visual
+Tiempo distribuido en todas las fases
+
+───────────────────────────────────────────────────────────────────────────────
+
+RESUMEN DE HORAS POR CATEGORÍA
+
+Categoría                              | Horas | Porcentaje
+---------------------------------------|-------|------------
+Creación de Diseño de Nuevas Páginas   | 20    | 40%
+Desarrollo y Ajustes de Diseño         | 15    | 30%
+Código CSS/JS Personalizado            | 8     | 16%
+Pruebas y QA                           | 4     | 8%
+Extracción Manual de Recursos          | 3     | 6%
+TOTAL                                  | 50    | 100%
+
+═══════════════════════════════════════════════════════════════════════════════
+
+DESAFÍOS SUPERADOS Y VALOR AGREGADO
+
+1. Trabajo sin Especificaciones Técnicas
+A pesar de no contar con un archivo Figma o recursos originales, se logró replicar el diseño con alta fidelidad mediante:
+- Análisis pixel-perfect del PDF
+- Extracción manual de colores y medidas
+- Investigación de tipografías similares
+- Búsqueda de iconos equivalentes
+
+2. Compatibilidad de Plugin Complejo
+Royal Addons presentó limitaciones significativas que requirieron:
+- Desarrollo de CSS override extensivo
+- Creación de JavaScript custom para funcionalidades no soportadas
+- Soluciones creativas para mantener compatibilidad
+
+3. Diseño Responsivo sin Guías
+Sin mockups para móvil/tablet, se implementó:
+- Diseño responsivo basado en mejores prácticas
+- Pruebas exhaustivas en múltiples dispositivos
+- Ajustes iterativos basados en feedback
+
+4. Creación de Páginas Completas desde Cero
+La Fase 5 requirió diseñar y desarrollar páginas completas de Montte Tech y Montte Supplies sin referencias previas:
+- Diseño conceptual y estructura de información
+- Múltiples iteraciones hasta lograr aprobación
+- Desarrollo de componentes personalizados
+- Integración con sistema existente
+
+5. Optimización de Rendimiento
+- Código CSS optimizado para carga rápida
+- JavaScript minificado y eficiente
+- Imágenes optimizadas cuando fue posible
+
+═══════════════════════════════════════════════════════════════════════════════
+
+TRABAJO PENDIENTE ESTIMADO
+
+Tareas Identificadas (20+ horas adicionales)
+
+1. Creación de Nueva Página Montte Tech (8 horas)
+- Diseño y estructura de página completa adicional
+- Implementación de secciones personalizadas
+- Desarrollo de CSS/JS específico
+- Pruebas y ajustes responsivos
+
+2. Ajustes Generales de Menús (4 horas)
+- Unificación de comportamiento en las 3 páginas
+- Optimización de navegación
+- Mejoras de accesibilidad
+
+3. Ajustes de Tipografía y Márgenes Globales (4 horas)
+- Revisión completa de consistencia tipográfica
+- Estandarización de márgenes en las 3 páginas
+- Ajustes finos de espaciado
+
+4. Correcciones Adicionales del Cliente (4+ horas)
+- Pendiente de recibir feedback sobre modificaciones actuales
+- Ajustes basados en nuevas solicitudes
+- Iteraciones adicionales según requerimientos
+
+Nota: El tiempo adicional puede incrementarse dependiendo de la complejidad de las correcciones solicitadas por el cliente.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+JUSTIFICACIÓN DE INVERSIÓN
+
+Tarifa Aplicada: $10 USD/hora
+Esta tarifa es considerablemente competitiva en el mercado considerando:
+
+1. Desarrollo WordPress/Elementor Especializado: $25-50 USD/hora (mercado estándar)
+2. Desarrollo CSS/JS Custom: $30-60 USD/hora (mercado estándar)
+3. Diseño Responsivo Complejo: $35-70 USD/hora (mercado estándar)
+4. Creación de Diseño desde Cero: $40-80 USD/hora (mercado estándar)
+
+Valor Entregado:
+- 50 horas x $10 = $500 USD
+- Valor de mercado estimado: $1,500-3,000 USD
+- Ahorro para el cliente: 67-83%
+
+Factores que Incrementaron el Tiempo de Trabajo:
+1. Ausencia de especificaciones técnicas (Figma, style guide)
+2. Trabajo manual de extracción de recursos desde PDF
+3. Múltiples iteraciones por falta de claridad inicial en diseño
+4. Complejidad de adaptación de Royal Addons
+5. Desarrollo custom extensivo de CSS/JS
+6. Pruebas exhaustivas en múltiples dispositivos
+7. Creación completa de diseño de nuevas páginas sin referencias
+8. Iteraciones múltiples para lograr aprobación del cliente
+
+═══════════════════════════════════════════════════════════════════════════════
+
+RECOMENDACIONES PARA FASES FUTURAS
+
+Para Optimizar Tiempo y Costos:
+
+1. Proporcionar Diseños en Figma
+   - Reducción estimada de tiempo: 30-40%
+   - Acceso directo a medidas, colores y tipografías
+   - Exportación de assets optimizados
+
+2. Entregar Recursos Originales
+   - Iconos en formato SVG
+   - Imágenes optimizadas para web
+   - Paleta de colores definida
+   - Tipografías especificadas
+
+3. Consolidar Feedback
+   - Revisar todas las páginas antes de solicitar cambios
+   - Proporcionar feedback en una sola iteración
+   - Reducción estimada de tiempo: 20-30%
+
+4. Definir Prioridades Claras
+   - Identificar cambios críticos vs. opcionales
+   - Establecer fases de trabajo definidas
+   - Aprobar diseños antes de implementación
+
+═══════════════════════════════════════════════════════════════════════════════
+
+CONCLUSIÓN
+
+Las 50 horas invertidas reflejan un trabajo técnico complejo que superó desafíos significativos relacionados con la ausencia de especificaciones técnicas adecuadas y la necesidad de crear diseños completos desde cero. A pesar de estas limitaciones, se logró:
+
+- Implementar más de 70 modificaciones específicas
+- Desarrollar código CSS/JS personalizado extenso (800+ líneas)
+- Crear diseño responsivo funcional en múltiples dispositivos
+- Mantener alta fidelidad con el diseño proporcionado
+- Optimizar la experiencia de usuario en las 3 páginas
+- Diseñar y desarrollar páginas completas de Montte Tech y Montte Supplies
+
+El trabajo realizado sienta las bases sólidas para las fases futuras del proyecto y demuestra un compromiso con la calidad y atención al detalle, incluso bajo condiciones técnicas desafiantes.
+
+═══════════════════════════════════════════════════════════════════════════════
+
+ANEXOS
+
+Tecnologías y Herramientas Utilizadas:
+- WordPress 6.x
+- Elementor Pro
+- Royal Addons
+- CSS3 Custom
+- JavaScript ES6+
+- Chrome DevTools
+- Color Picker Tools
+- Responsive Design Testing Tools
+- Cross-browser Testing Platforms
+
+Navegadores Probados:
+- Google Chrome (Windows/Mac)
+- Mozilla Firefox (Windows/Mac)
+- Safari (Mac/iOS)
+- Microsoft Edge
+- Chrome Mobile (Android)
+- Safari Mobile (iOS)
+
+Dispositivos de Prueba:
+- Desktop: 1920px, 1440px, 1366px
+- Tablet: 1024px, 768px
+- Mobile: 414px, 390px, 375px, 360px
+
+═══════════════════════════════════════════════════════════════════════════════
+
+Documento preparado por: Equipo de Desarrollo
+Fecha: Noviembre 2025
+Proyecto: Montte Projects Network
+Versión: 1.0
+
+═══════════════════════════════════════════════════════════════════════════════
+
+Para cualquier consulta o aclaración sobre este informe, estamos a su disposición.

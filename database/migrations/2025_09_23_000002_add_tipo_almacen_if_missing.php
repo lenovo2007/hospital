@@ -54,10 +54,15 @@ return new class extends Migration
                 });
             } catch (\Throwable $e) {}
 
-            // Crear el índice único deseado
-            Schema::table('lotes_almacenes', function (Blueprint $table) use ($tipoCol) {
-                $table->unique(['lote_id', $tipoCol, 'sede_id'], 'lote_almacenes_lote_tipo_sede_unique');
-            });
+            // Crear el índice único deseado (si no existe)
+            $indexName = 'lote_almacenes_lote_tipo_sede_unique';
+            $indexes = DB::select("SHOW INDEXES FROM lotes_almacenes WHERE Key_name = ?", [$indexName]);
+            
+            if (empty($indexes)) {
+                Schema::table('lotes_almacenes', function (Blueprint $table) use ($tipoCol) {
+                    $table->unique(['lote_id', $tipoCol, 'sede_id'], 'lote_almacenes_lote_tipo_sede_unique');
+                });
+            }
         }
     }
 

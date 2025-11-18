@@ -1563,6 +1563,10 @@ class EstadisticasController extends Controller
                     $fechaDesde = $fechaCarbon->copy()->startOfMonth();
                     $fechaHasta = $fechaCarbon->copy()->endOfMonth();
                     break;
+                case 'año':
+                    $fechaDesde = $fechaCarbon->copy()->startOfYear();
+                    $fechaHasta = $fechaCarbon->copy()->endOfYear();
+                    break;
                 default:
                     $fechaDesde = $fechaCarbon->copy()->startOfMonth();
                     $fechaHasta = $fechaCarbon->copy()->endOfMonth();

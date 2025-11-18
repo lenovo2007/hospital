@@ -62,12 +62,28 @@ class Sede extends Model
         
         // Ensure hospital is included in the array if loaded
         if ($this->relationLoaded('hospital') && $this->hospital) {
-            $array['hospital'] = [
-                'id' => $this->hospital->id,
-                'nombre' => $this->hospital->nombre,
-                'rif' => $this->hospital->rif,
-                'status' => $this->hospital->status
-            ];
+            $array['hospital'] = $this->hospital->only([
+                'id',
+                'nombre',
+                'nombre_completo',
+                'rif',
+                'cod_sicm',
+                'codigo_alt',
+                'email',
+                'email_contacto',
+                'telefono',
+                'nombre_contacto',
+                'ubicacion',
+                'direccion',
+                'dependencia',
+                'estado',
+                'municipio',
+                'parroquia',
+                'tipo',
+                'status',
+                'created_at',
+                'updated_at'
+            ]);
         }
         
         return $array;

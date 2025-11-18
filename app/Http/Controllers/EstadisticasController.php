@@ -1583,7 +1583,7 @@ class EstadisticasController extends Controller
                     $q->where('ms.origen_hospital_id', $hospitalId)
                       ->orWhere('ms.destino_hospital_id', $hospitalId);
                 })
-                ->whereBetween('ms.created_at', [$fechaDesde, $fechaHasta])
+                ->whereBetween('ms.fecha_despacho', [$fechaDesde, $fechaHasta])
                 ->select(
                     'ms.id as movimiento_id',
                     'ms.tipo',

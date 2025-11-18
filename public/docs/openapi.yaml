@@ -3273,8 +3273,8 @@ paths:
         - name: tipo_filtro
           in: query
           required: false
-          schema: { type: string, enum: [dia, semana, mes] }
-          description: Tipo de filtro de fecha (por defecto mes)
+          schema: { type: string, enum: [dia, semana, mes, año] }
+          description: Tipo de filtro de fecha (por defecto mes). Opciones: dia, semana, mes, año
       responses:
         '200':
           description: Trazabilidad obtenida exitosamente

@@ -13,7 +13,7 @@ class SedeController extends Controller
         $status = $request->query('status', 'activo');
         if ($status === 'todos') { $status = 'all'; }
         if (!in_array($status, ['activo', 'inactivo', 'all'], true)) { $status = 'activo'; }
-        $query = Sede::with('hospital');
+        $query = Sede::with(['hospital:id,nombre,nombre_completo,rif,cod_sicm,codigo_alt,email,telefono,tipo,status']);
         if ($status !== 'all') { $query->where('status', $status); }
         $items = $query->latest()->paginate(15);
         $mensaje = $items->total() > 0 ? 'Listado de sedes.' : 'sedes no encontrado';
@@ -31,7 +31,7 @@ class SedeController extends Controller
         if ($status === 'todos') { $status = 'all'; }
         if (!in_array($status, ['activo', 'inactivo', 'all'], true)) { $status = 'activo'; }
 
-        $query = Sede::with('hospital')->where('hospital_id', $id);
+        $query = Sede::with(['hospital:id,nombre,nombre_completo,rif,cod_sicm,codigo_alt,email,telefono,tipo,status'])->where('hospital_id', $id);
         if ($status !== 'all') { $query->where('status', $status); }
 
         $items = $query->latest()->paginate(15);
@@ -55,7 +55,7 @@ class SedeController extends Controller
         ]);
         if (!isset($data['status'])) { $data['status'] = 'activo'; }
         $item = Sede::create($data);
-        $item->load('hospital');
+        $item->load(['hospital:id,nombre,nombre_completo,rif,cod_sicm,codigo_alt,email,telefono,tipo,status']);
 
         return response()->json([
             'status' => true,
@@ -67,7 +67,7 @@ class SedeController extends Controller
     // GET /api/sedes/{id}
     public function show($id)
     {
-        $sede = Sede::with('hospital')->find($id);
+        $sede = Sede::with(['hospital:id,nombre,nombre_completo,rif,cod_sicm,codigo_alt,email,telefono,tipo,status'])->find($id);
         if (!$sede) {
             return response()->json([
                 'status' => true,
@@ -94,7 +94,7 @@ class SedeController extends Controller
 
         $sede->update($data);
         $sede->refresh();
-        $sede->load('hospital');
+        $sede->load(['hospital:id,nombre,nombre_completo,rif,cod_sicm,codigo_alt,email,telefono,tipo,status']);
 
         return response()->json([
             'status' => true,

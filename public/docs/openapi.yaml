@@ -515,9 +515,18 @@ paths:
   /api/sedes:
     get:
       summary: Listar sedes
+      description: |
+        Retorna un listado paginado de sedes con información del hospital asociado.
+        Incluye datos del hospital como: id, nombre, nombre_completo, rif, cod_sicm, codigo_alt, email, telefono, tipo, status.
       tags: [Sedes]
       security:
         - bearerAuth: []
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema: { type: string, enum: [activo, inactivo, todos] }
+          description: Filtrar por estado (por defecto activo)
       responses:
         '200':
           description: Listado de sedes
@@ -548,6 +557,9 @@ paths:
   /api/sedes/{id}:
     get:
       summary: Ver detalle de sede
+      description: |
+        Retorna los detalles de una sede específica incluyendo información completa del hospital asociado.
+        El hospital incluye: id, nombre, nombre_completo, rif, cod_sicm, codigo_alt, email, telefono, tipo, status.
       tags: [Sedes]
       security:
         - bearerAuth: []
@@ -609,6 +621,9 @@ paths:
   /api/sedes/hospital/{id}:
     get:
       summary: Listar sedes por hospital
+      description: |
+        Retorna un listado paginado de sedes para un hospital específico.
+        Incluye información completa del hospital: id, nombre, nombre_completo, rif, cod_sicm, codigo_alt, email, telefono, tipo, status.
       tags: [Sedes]
       security:
         - bearerAuth: []
@@ -617,6 +632,12 @@ paths:
           in: path
           required: true
           schema: { type: integer }
+          description: ID del hospital
+        - name: status
+          in: query
+          required: false
+          schema: { type: string, enum: [activo, inactivo, todos] }
+          description: Filtrar por estado (por defecto activo)
       responses:
         '200':
           description: Sedes del hospital

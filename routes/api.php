@@ -25,6 +25,7 @@ use App\Http\Controllers\MovimientoDiscrepanciaController;
 use App\Http\Controllers\SeguimientoController;
 use App\Http\Controllers\SeguimientoRepartidorController;
 use App\Http\Controllers\LoteGrupoController;
+use App\Http\Controllers\SolicitudController;
 
 // Autenticación con token
 // Test route to check if API is working
@@ -312,5 +313,14 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
 
     // Consulta de cédula venezolana
     Route::post('/cedula/consultar', [\App\Http\Controllers\CedulaConsultaController::class, 'consultar']);
+
+    // CRUD Solicitudes
+    Route::get('/solicitudes', [SolicitudController::class, 'index']);
+    Route::post('/solicitudes', [SolicitudController::class, 'store']);
+    Route::get('/solicitudes/{solicitud}', [SolicitudController::class, 'show']);
+    Route::put('/solicitudes/{solicitud}', [SolicitudController::class, 'update']);
+    Route::delete('/solicitudes/{solicitud}', [SolicitudController::class, 'destroy']);
+    Route::get('/solicitudes/sede/{sede_id}', [SolicitudController::class, 'bySede']);
+    Route::get('/solicitudes/hospital/{hospital_id}', [SolicitudController::class, 'byHospital']);
 
 });

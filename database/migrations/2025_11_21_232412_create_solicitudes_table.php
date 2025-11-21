@@ -11,22 +11,20 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('solicitudes', function (Blueprint $table) {
-            $table->id();
-            $table->string('codigo')->unique();
-            $table->foreignId('hospital_id')->constrained('hospitales')->onDelete('cascade');
-            $table->foreignId('sede_id')->constrained('sedes')->onDelete('cascade');
-            $table->foreignId('insumo_id')->constrained('insumos')->onDelete('cascade');
-            $table->integer('cantidad')->default(0);
-            $table->enum('estado', ['pendiente', 'aprobada', 'rechazada', 'entregada'])->default('pendiente');
-            $table->text('descripcion')->nullable();
-            $table->text('observaciones')->nullable();
-            $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
-            $table->timestamp('fecha_solicitud')->nullable();
-            $table->timestamp('fecha_aprobacion')->nullable();
-            $table->timestamp('fecha_entrega')->nullable();
-            $table->timestamps();
-        });
+        // Tabla ya existe en producción, solo se crea si no existe
+        if (!Schema::hasTable('solicitudes')) {
+            Schema::create('solicitudes', function (Blueprint $table) {
+                $table->id();
+                $table->enum('tipo_solicitud', ['insumo', 'servicio', 'mantenimiento', 'otro']);
+                $table->text('descripcion');
+                $table->enum('prioridad', ['baja', 'media', 'alta', 'urgente'])->default('media');
+                $table->date('fecha');
+                $table->foreignId('sede_id')->constrained('sedes')->onDelete('cascade');
+                $table->foreignId('hospital_id')->constrained('hospitales')->onDelete('cascade');
+                $table->enum('status', ['pendiente', 'en_proceso', 'completada', 'cancelada'])->default('pendiente');
+                $table->timestamps();
+            });
+        }
     }
 
     /**

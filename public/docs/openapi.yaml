@@ -647,6 +647,146 @@ paths:
                 $ref: '#/components/schemas/StandardResponse'
 
   # ========================================
+  # SOLICITUDES
+  # ========================================
+  /api/solicitudes:
+    get:
+      summary: Listar todas las solicitudes
+      tags: [Solicitudes]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Listado de solicitudes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+    post:
+      summary: Crear nueva solicitud
+      tags: [Solicitudes]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolicitudRequest'
+      responses:
+        '201':
+          description: Solicitud creada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/solicitudes/{solicitud}:
+    get:
+      summary: Obtener detalle de solicitud
+      tags: [Solicitudes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: solicitud
+          in: path
+          required: true
+          schema: { type: integer }
+          description: ID de la solicitud
+      responses:
+        '200':
+          description: Detalle de solicitud
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+    put:
+      summary: Actualizar solicitud
+      tags: [Solicitudes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: solicitud
+          in: path
+          required: true
+          schema: { type: integer }
+          description: ID de la solicitud
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SolicitudRequest'
+      responses:
+        '200':
+          description: Solicitud actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+    delete:
+      summary: Eliminar solicitud
+      tags: [Solicitudes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: solicitud
+          in: path
+          required: true
+          schema: { type: integer }
+          description: ID de la solicitud
+      responses:
+        '200':
+          description: Solicitud eliminada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/solicitudes/sede/{sede_id}:
+    get:
+      summary: Listar solicitudes por sede
+      tags: [Solicitudes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: sede_id
+          in: path
+          required: true
+          schema: { type: integer }
+          description: ID de la sede
+      responses:
+        '200':
+          description: Solicitudes de la sede
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/solicitudes/hospital/{hospital_id}:
+    get:
+      summary: Listar solicitudes por hospital
+      tags: [Solicitudes]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: hospital_id
+          in: path
+          required: true
+          schema: { type: integer }
+          description: ID del hospital
+      responses:
+        '200':
+          description: Solicitudes del hospital
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  # ========================================
   # ALMACENES PRINCIPALES
   # ========================================
   /api/almacenes_principales:
@@ -5306,6 +5446,23 @@ components:
         hospital_id: { type: integer }
         direccion: { type: string }
         telefono: { type: string }
+
+    SolicitudRequest:
+      type: object
+      required:
+        - tipo_solicitud
+        - descripcion
+        - fecha
+        - sede_id
+        - hospital_id
+      properties:
+        tipo_solicitud: { type: string, enum: [insumo, servicio, mantenimiento, otro], description: "Tipo de solicitud" }
+        descripcion: { type: string, description: "Descripción detallada de la solicitud" }
+        prioridad: { type: string, enum: [baja, media, alta, urgente], default: media, description: "Nivel de prioridad" }
+        fecha: { type: string, format: date, description: "Fecha de la solicitud" }
+        sede_id: { type: integer, description: "ID de la sede" }
+        hospital_id: { type: integer, description: "ID del hospital" }
+        status: { type: string, enum: [pendiente, en_proceso, completada, cancelada], default: pendiente, description: "Estado de la solicitud" }
 
     AlmacenPrincipalRequest:
       type: object

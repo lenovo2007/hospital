@@ -12,24 +12,17 @@ class Solicitud extends Model
     protected $table = 'solicitudes';
 
     protected $fillable = [
-        'codigo',
-        'hospital_id',
-        'sede_id',
-        'insumo_id',
-        'cantidad',
-        'estado',
+        'tipo_solicitud',
         'descripcion',
-        'observaciones',
-        'user_id',
-        'fecha_solicitud',
-        'fecha_aprobacion',
-        'fecha_entrega',
+        'prioridad',
+        'fecha',
+        'sede_id',
+        'hospital_id',
+        'status',
     ];
 
     protected $casts = [
-        'fecha_solicitud' => 'datetime',
-        'fecha_aprobacion' => 'datetime',
-        'fecha_entrega' => 'datetime',
+        'fecha' => 'date',
     ];
 
     /**
@@ -48,19 +41,4 @@ class Solicitud extends Model
         return $this->belongsTo(Sede::class, 'sede_id');
     }
 
-    /**
-     * Get the insumo that owns the solicitud.
-     */
-    public function insumo()
-    {
-        return $this->belongsTo(Insumo::class, 'insumo_id');
-    }
-
-    /**
-     * Get the user that owns the solicitud.
-     */
-    public function user()
-    {
-        return $this->belongsTo(User::class, 'user_id');
-    }
 }

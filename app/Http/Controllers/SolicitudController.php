@@ -12,7 +12,7 @@ class SolicitudController extends Controller
      */
     public function index()
     {
-        $solicitudes = Solicitud::with('hospital', 'sede', 'insumo', 'user')->latest()->paginate(15);
+        $solicitudes = Solicitud::with('hospital', 'sede')->latest()->paginate(15);
         return response()->json([
             'status' => true,
             'mensaje' => 'Listado de solicitudes.',
@@ -26,27 +26,24 @@ class SolicitudController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'codigo' => ['required', 'string', 'unique:solicitudes,codigo'],
-            'hospital_id' => ['required', 'integer', 'exists:hospitales,id'],
+            'tipo_solicitud' => ['required', 'in:insumo,servicio,mantenimiento,otro'],
+            'descripcion' => ['required', 'string'],
+            'prioridad' => ['nullable', 'in:baja,media,alta,urgente'],
+            'fecha' => ['required', 'date'],
             'sede_id' => ['required', 'integer', 'exists:sedes,id'],
-            'insumo_id' => ['required', 'integer', 'exists:insumos,id'],
-            'cantidad' => ['required', 'integer', 'min:1'],
-            'estado' => ['nullable', 'in:pendiente,aprobada,rechazada,entregada'],
-            'descripcion' => ['nullable', 'string'],
-            'observaciones' => ['nullable', 'string'],
-            'user_id' => ['required', 'integer', 'exists:users,id'],
-            'fecha_solicitud' => ['nullable', 'date'],
+            'hospital_id' => ['required', 'integer', 'exists:hospitales,id'],
+            'status' => ['nullable', 'in:pendiente,en_proceso,completada,cancelada'],
         ]);
 
-        if (!isset($data['estado'])) {
-            $data['estado'] = 'pendiente';
+        if (!isset($data['prioridad'])) {
+            $data['prioridad'] = 'media';
         }
-        if (!isset($data['fecha_solicitud'])) {
-            $data['fecha_solicitud'] = now();
+        if (!isset($data['status'])) {
+            $data['status'] = 'pendiente';
         }
 
         $solicitud = Solicitud::create($data);
-        $solicitud->load('hospital', 'sede', 'insumo', 'user');
+        $solicitud->load('hospital', 'sede');
 
         return response()->json([
             'status' => true,
@@ -60,7 +57,7 @@ class SolicitudController extends Controller
      */
     public function show(string $id)
     {
-        $solicitud = Solicitud::with('hospital', 'sede', 'insumo', 'user')->find($id);
+        $solicitud = Solicitud::with('hospital', 'sede')->find($id);
         if (!$solicitud) {
             return response()->json([
                 'status' => false,
@@ -90,21 +87,17 @@ class SolicitudController extends Controller
         }
 
         $data = $request->validate([
-            'codigo' => ['sometimes', 'required', 'string', 'unique:solicitudes,codigo,' . $id],
-            'hospital_id' => ['sometimes', 'required', 'integer', 'exists:hospitales,id'],
-            'sede_id' => ['sometimes', 'required', 'integer', 'exists:sedes,id'],
-            'insumo_id' => ['sometimes', 'required', 'integer', 'exists:insumos,id'],
-            'cantidad' => ['sometimes', 'required', 'integer', 'min:1'],
-            'estado' => ['sometimes', 'in:pendiente,aprobada,rechazada,entregada'],
-            'descripcion' => ['nullable', 'string'],
-            'observaciones' => ['nullable', 'string'],
-            'user_id' => ['sometimes', 'required', 'integer', 'exists:users,id'],
-            'fecha_aprobacion' => ['nullable', 'date'],
-            'fecha_entrega' => ['nullable', 'date'],
+            'tipo_solicitud' => ['sometimes', 'in:insumo,servicio,mantenimiento,otro'],
+            'descripcion' => ['sometimes', 'string'],
+            'prioridad' => ['sometimes', 'in:baja,media,alta,urgente'],
+            'fecha' => ['sometimes', 'date'],
+            'sede_id' => ['sometimes', 'integer', 'exists:sedes,id'],
+            'hospital_id' => ['sometimes', 'integer', 'exists:hospitales,id'],
+            'status' => ['sometimes', 'in:pendiente,en_proceso,completada,cancelada'],
         ]);
 
         $solicitud->update($data);
-        $solicitud->load('hospital', 'sede', 'insumo', 'user');
+        $solicitud->load('hospital', 'sede');
 
         return response()->json([
             'status' => true,
@@ -140,7 +133,7 @@ class SolicitudController extends Controller
      */
     public function bySede(string $sede_id)
     {
-        $solicitudes = Solicitud::with('hospital', 'sede', 'insumo', 'user')
+        $solicitudes = Solicitud::with('hospital', 'sede')
             ->where('sede_id', $sede_id)
             ->latest()
             ->paginate(15);
@@ -157,7 +150,7 @@ class SolicitudController extends Controller
      */
     public function byHospital(string $hospital_id)
     {
-        $solicitudes = Solicitud::with('hospital', 'sede', 'insumo', 'user')
+        $solicitudes = Solicitud::with('hospital', 'sede')
             ->where('hospital_id', $hospital_id)
             ->latest()
             ->paginate(15);

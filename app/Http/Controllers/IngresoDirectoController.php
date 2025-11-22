@@ -91,7 +91,7 @@ class IngresoDirectoController extends Controller
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'tipo_ingreso' => 'required|in:donacion,compra,ajuste_inventario,devolucion,otro',
+            'tipo_ingreso' => 'required|in:donacion,compra,ajuste_inventario,devolucion,almacenado,otro',
             'fecha_ingreso' => 'required|date',
             'sede_id' => 'required|exists:sedes,id',
             'items' => 'required|array|min:1',
@@ -110,9 +110,10 @@ class IngresoDirectoController extends Controller
         if ($validator->fails()) {
             return response()->json([
                 'status' => false,
-                'mensaje' => 'Datos de validación incorrectos',
-                'errores' => $validator->errors()
-            ], 422);
+                'mensaje' => 'Error de validación en los datos enviados',
+                'errores' => $validator->errors(),
+                'tipos_ingreso_validos' => ['donacion', 'compra', 'ajuste_inventario', 'devolucion', 'almacenado', 'otro']
+            ], 400);
         }
 
         $data = $validator->validated();

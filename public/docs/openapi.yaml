@@ -67,32 +67,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
 
-  /api/change-password:
-    post:
-      summary: Cambiar contraseña del usuario autenticado
-      tags: [Autenticación]
-      security:
-        - bearerAuth: []
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              type: object
-              required:
-                - password_actual
-                - password_nueva
-              properties:
-                password_actual: { type: string, format: password, description: "Contraseña actual del usuario" }
-                password_nueva: { type: string, format: password, description: "Nueva contraseña (mín 8 caracteres, mayúscula, minúscula, número, símbolo)" }
-      responses:
-        '200':
-          description: Respuesta de cambio de contraseña (éxito o error de validación)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StandardResponse'
-
   /api/users/password/forgot:
     post:
       summary: Solicitar restablecimiento de contraseña
@@ -227,6 +201,34 @@ paths:
       responses:
         '200':
           description: Usuario eliminado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/users/change-password:
+    post:
+      summary: Cambiar contraseña del usuario autenticado
+      tags: [Usuarios]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - password_actual
+                - password_nueva
+                - repetir_password
+              properties:
+                password_actual: { type: string, format: password, description: "Contraseña actual del usuario" }
+                password_nueva: { type: string, format: password, description: "Nueva contraseña (mín 8 caracteres, mayúscula, minúscula, número, símbolo)" }
+                repetir_password: { type: string, format: password, description: "Repetir la nueva contraseña (debe coincidir)" }
+      responses:
+        '200':
+          description: Respuesta de cambio de contraseña (éxito o error de validación)
           content:
             application/json:
               schema:

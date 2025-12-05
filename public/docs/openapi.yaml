@@ -87,13 +87,7 @@ paths:
                 password_nueva: { type: string, format: password, description: "Nueva contraseña (mín 8 caracteres, mayúscula, minúscula, número, símbolo)" }
       responses:
         '200':
-          description: Contraseña actualizada exitosamente
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/StandardResponse'
-        '400':
-          description: Error de validación
+          description: Respuesta de cambio de contraseña (éxito o error de validación)
           content:
             application/json:
               schema:

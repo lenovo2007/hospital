@@ -165,7 +165,7 @@ class AuthController extends Controller
                 'mensaje' => 'Error de validación.',
                 'errores' => $e->errors(),
                 'data' => null,
-            ], 400, [], JSON_UNESCAPED_UNICODE);
+            ], 200, [], JSON_UNESCAPED_UNICODE);
 
         } catch (\Exception $e) {
             \Log::error('Change password error: ' . $e->getMessage());

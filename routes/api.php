@@ -49,6 +49,8 @@ Route::post('/users/password/reset', [UserController::class, 'resetPassword']);
 Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::class])->group(function () {
     Route::post('/logout', [AuthController::class, 'logout']);
     Route::get('/me', [AuthController::class, 'me']);
+    Route::post('/change-password', [AuthController::class, 'changePassword'])
+        ->withoutMiddleware(\App\Http\Middleware\CheckCrudPermissions::class);
     // Rutas GET de usuarios accesibles para cualquier usuario autenticado (sin CheckCrudPermissions)
     Route::get('/users', [UserController::class, 'index'])
         ->withoutMiddleware(\App\Http\Middleware\CheckCrudPermissions::class);

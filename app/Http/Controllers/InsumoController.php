@@ -405,8 +405,21 @@ class InsumoController extends Controller
     public function importExcelHospitalInsumos(Request $request)
     {
         $request->validate([
-            'file' => ['required','file','mimes:xls,xlsx','max:10240']
+            'file' => ['required','file','max:10240']
         ]);
+
+        // Validación simplificada sin dependencia de fileinfo
+        $file = $request->file('file');
+        
+        // Validar extensión del archivo directamente
+        $extension = strtolower($file->getClientOriginalExtension());
+        if (!in_array($extension, ['xls', 'xlsx'])) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Tipo de archivo no permitido. Solo se aceptan archivos .xls y .xlsx',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
 
         // Prechecks: required PHP extensions for reading XLSX
         $missingExt = [];
@@ -450,20 +463,34 @@ class InsumoController extends Controller
             $path = $file->getRealPath();
 
             // Detectar tipo de archivo y crear lector apropiado (Xls o Xlsx)
-            $inputType = \PhpOffice\PhpSpreadsheet\IOFactory::identify($path);
-            $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader($inputType);
+            // Forzar detección basada en extensión debido a falta de fileinfo
+            $extension = strtolower($file->getClientOriginalExtension());
+            if ($extension === 'xlsx') {
+                $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xlsx();
+            } elseif ($extension === 'xls') {
+                $reader = new \PhpOffice\PhpSpreadsheet\Reader\Xls();
+            } else {
+                return response()->json([
+                    'status' => false,
+                    'mensaje' => 'Tipo de archivo no soportado. Use .xls o .xlsx',
+                    'data' => null,
+                ], 200, [], JSON_UNESCAPED_UNICODE);
+            }
+            
             $reader->setReadDataOnly(true);
             $spreadsheet = $reader->load($path);
             $sheet = $spreadsheet->getActiveSheet();
 
             // Columnas esperadas del archivo:
-            // A = id_insumo, B = lote, C = fecha_vencimiento, D = fecha_registro, E = tipo_ingreso, F = cantidad
+            // A = id_insumo, B = codigo (solo referencia), C = nombre (solo referencia), D = lote, E = fecha_vencimiento, F = fecha_registro, G = tipo_ingreso, H = cantidad
             $idInsumoCol = 'A';
-            $loteCol = 'B';
-            $fechaVencimientoCol = 'C';
-            $fechaRegistroCol = 'D';
-            $tipoIngresoCol = 'E';
-            $cantidadCol = 'F';
+            $codigoCol = 'B';    // Solo referencia, no se guarda
+            $nombreCol = 'C';    // Solo referencia, no se guarda
+            $loteCol = 'D';
+            $fechaVencimientoCol = 'E';
+            $fechaRegistroCol = 'F';
+            $tipoIngresoCol = 'G';
+            $cantidadCol = 'H';
 
             $created = 0; $skipped = []; $errors = [];
             $rowCount = (int) $sheet->getHighestRow();
@@ -571,17 +598,11 @@ class InsumoController extends Controller
                         // Crear registro en lotes_grupos para trazabilidad
                         \App\Models\LoteGrupo::create([
                             'codigo' => $codigoLotesGrupo,
-                            'id_insumo' => $idInsumo,
-                            'lote' => $lote,
-                            'fecha_vencimiento' => $fechaVencimiento,
-                            'cantidad' => $cantidad,
+                            'lote_id' => $loteRegistro->id,
                             'cantidad_salida' => 0,
                             'cantidad_entrada' => $cantidad,
-                            'sede_id' => $sedeId,
-                            'almacen_tipo' => 'principal',
-                            'hospital_id' => $hospitalId,
-                            'ingreso_directo_id' => $ingresoDirecto->id,
-                            'estado' => 'disponible',
+                            'discrepancia' => false,
+                            'status' => 'activo',
                         ]);
 
                         \DB::commit();

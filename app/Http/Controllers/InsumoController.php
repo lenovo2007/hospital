@@ -401,6 +401,235 @@ class InsumoController extends Controller
         }
     }
 
+    // POST /api/hospital/insumos/import
+    public function importExcelHospitalInsumos(Request $request)
+    {
+        $request->validate([
+            'file' => ['required','file','mimes:xls,xlsx','max:10240']
+        ]);
+
+        // Prechecks: required PHP extensions for reading XLSX
+        $missingExt = [];
+        if (!extension_loaded('zip')) { $missingExt[] = 'zip'; }
+        if (!extension_loaded('xml')) { $missingExt[] = 'xml'; }
+        if (!extension_loaded('mbstring')) { $missingExt[] = 'mbstring'; }
+        if ($missingExt) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Extensiones PHP requeridas no disponibles: ' . implode(', ', $missingExt) . '. Habilítalas en php.ini (por ejemplo, extension=zip).',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
+
+        if (!class_exists('PhpOffice\\PhpSpreadsheet\\IOFactory')) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Dependencia faltante: phpoffice/phpspreadsheet. Ejecute: composer require phpoffice/phpspreadsheet',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
+
+        try {
+            // Obtener hospital del usuario autenticado
+            $user = $request->user();
+            if (!$user || !$user->hospital_id) {
+                return response()->json([
+                    'status' => false,
+                    'mensaje' => 'Usuario no autenticado o sin hospital asignado.',
+                    'data' => null,
+                ], 200, [], JSON_UNESCAPED_UNICODE);
+            }
+
+            $hospitalId = $user->hospital_id;
+            $sedeId = $user->sede_id ?? null;
+
+            // Allow some headroom for XLSX parsing
+            @ini_set('memory_limit', '512M');
+            /** @var \Illuminate\Http\UploadedFile $file */
+            $file = $request->file('file');
+            $path = $file->getRealPath();
+
+            // Detectar tipo de archivo y crear lector apropiado (Xls o Xlsx)
+            $inputType = \PhpOffice\PhpSpreadsheet\IOFactory::identify($path);
+            $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReader($inputType);
+            $reader->setReadDataOnly(true);
+            $spreadsheet = $reader->load($path);
+            $sheet = $spreadsheet->getActiveSheet();
+
+            // Columnas esperadas del archivo:
+            // A = id_insumo, B = lote, C = fecha_vencimiento, D = fecha_registro, E = tipo_ingreso, F = cantidad
+            $idInsumoCol = 'A';
+            $loteCol = 'B';
+            $fechaVencimientoCol = 'C';
+            $fechaRegistroCol = 'D';
+            $tipoIngresoCol = 'E';
+            $cantidadCol = 'F';
+
+            $created = 0; $skipped = []; $errors = [];
+            $rowCount = (int) $sheet->getHighestRow();
+
+            // Validar tipos de ingreso permitidos
+            $tiposIngresoPermitidos = ['donacion', 'compra', 'ajuste_inventario', 'devolucion', 'otro'];
+
+            for ($i = 2; $i <= $rowCount; $i++) { // desde la fila 2
+                try {
+                    // Obtener y validar id_insumo
+                    $idInsumoRaw = $sheet->getCell($idInsumoCol . $i)->getValue();
+                    $idInsumo = is_numeric($idInsumoRaw) ? (int) $idInsumoRaw : null;
+                    
+                    if (!$idInsumo) {
+                        $skipped[] = ['fila' => $i, 'motivo' => 'ID de insumo inválido o vacío'];
+                        continue;
+                    }
+
+                    // Verificar que el insumo existe
+                    $insumo = \App\Models\Insumo::find($idInsumo);
+                    if (!$insumo) {
+                        $skipped[] = ['fila' => $i, 'motivo' => "Insumo con ID {$idInsumo} no encontrado"];
+                        continue;
+                    }
+
+                    // Obtener lote
+                    $lote = trim($sheet->getCell($loteCol . $i)->getValue() ?? '');
+                    if (empty($lote)) {
+                        $skipped[] = ['fila' => $i, 'motivo' => 'Lote vacío'];
+                        continue;
+                    }
+
+                    // Obtener fecha_vencimiento
+                    $fechaVencimientoRaw = $sheet->getCell($fechaVencimientoCol . $i)->getValue();
+                    $fechaVencimiento = null;
+                    if ($fechaVencimientoRaw) {
+                        if (is_numeric($fechaVencimientoRaw)) {
+                            $fechaVencimiento = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($fechaVencimientoRaw)->format('Y-m-d');
+                        } else {
+                            $fechaVencimiento = date('Y-m-d', strtotime($fechaVencimientoRaw));
+                        }
+                    }
+
+                    // Obtener fecha_registro
+                    $fechaRegistroRaw = $sheet->getCell($fechaRegistroCol . $i)->getValue();
+                    $fechaRegistro = null;
+                    if ($fechaRegistroRaw) {
+                        if (is_numeric($fechaRegistroRaw)) {
+                            $fechaRegistro = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($fechaRegistroRaw)->format('Y-m-d');
+                        } else {
+                            $fechaRegistro = date('Y-m-d', strtotime($fechaRegistroRaw));
+                        }
+                    } else {
+                        $fechaRegistro = now()->format('Y-m-d');
+                    }
+
+                    // Obtener tipo_ingreso
+                    $tipoIngreso = strtolower(trim($sheet->getCell($tipoIngresoCol . $i)->getValue() ?? ''));
+                    if (empty($tipoIngreso) || !in_array($tipoIngreso, $tiposIngresoPermitidos)) {
+                        $skipped[] = ['fila' => $i, 'motivo' => "Tipo de ingreso inválido. Permitidos: " . implode(', ', $tiposIngresoPermitidos)];
+                        continue;
+                    }
+
+                    // Obtener cantidad
+                    $cantidadRaw = $sheet->getCell($cantidadCol . $i)->getValue();
+                    $cantidad = is_numeric($cantidadRaw) ? (float) $cantidadRaw : null;
+                    if (!$cantidad || $cantidad <= 0) {
+                        $skipped[] = ['fila' => $i, 'motivo' => 'Cantidad inválida o menor a cero'];
+                        continue;
+                    }
+
+                    // Usar transacción para asegurar integridad
+                    \DB::beginTransaction();
+
+                    try {
+                        // Crear registro en la tabla lotes
+                        $loteRegistro = \App\Models\Lote::create([
+                            'id_insumo' => $idInsumo,
+                            'numero_lote' => $lote,
+                            'fecha_vencimiento' => $fechaVencimiento,
+                            'fecha_ingreso' => $fechaRegistro,
+                            'hospital_id' => $hospitalId,
+                        ]);
+
+                        // Crear registro de ingreso directo
+                        $codigoIngreso = \App\Models\IngresoDirecto::generarCodigoIngreso();
+                        $codigoLotesGrupo = 'LOT-' . date('YmdHis') . '-' . $i;
+                        
+                        $ingresoDirecto = \App\Models\IngresoDirecto::create([
+                            'codigo_ingreso' => $codigoIngreso,
+                            'tipo_ingreso' => $tipoIngreso,
+                            'fecha_ingreso' => $fechaRegistro,
+                            'hospital_id' => $hospitalId,
+                            'sede_id' => $sedeId,
+                            'almacen_tipo' => 'principal',
+                            'cantidad_total_items' => 1,
+                            'codigo_lotes_grupo' => $codigoLotesGrupo,
+                            'user_id' => $user->id,
+                            'estado' => 'procesado',
+                            'fecha_procesado' => now(),
+                            'user_id_procesado' => $user->id,
+                            'status' => true,
+                        ]);
+
+                        // Crear registro en lotes_grupos para trazabilidad
+                        \App\Models\LoteGrupo::create([
+                            'codigo' => $codigoLotesGrupo,
+                            'id_insumo' => $idInsumo,
+                            'lote' => $lote,
+                            'fecha_vencimiento' => $fechaVencimiento,
+                            'cantidad' => $cantidad,
+                            'cantidad_salida' => 0,
+                            'cantidad_entrada' => $cantidad,
+                            'sede_id' => $sedeId,
+                            'almacen_tipo' => 'principal',
+                            'hospital_id' => $hospitalId,
+                            'ingreso_directo_id' => $ingresoDirecto->id,
+                            'estado' => 'disponible',
+                        ]);
+
+                        \DB::commit();
+                        $created++;
+
+                    } catch (\Exception $e) {
+                        \DB::rollback();
+                        throw $e;
+                    }
+
+                } catch (\Throwable $e) {
+                    $skipped[] = ['fila' => $i, 'motivo' => 'Error al procesar: ' . $e->getMessage()];
+                    $errors[] = ['row' => $i, 'error' => $e->getMessage()];
+                    Log::warning('Import hospital insumos error', ['row' => $i, 'e' => $e->getMessage()]);
+                }
+            }
+
+            // Liberar memoria del spreadsheet
+            if (isset($spreadsheet)) {
+                $spreadsheet->disconnectWorksheets();
+                unset($spreadsheet);
+                $reader = null;
+            }
+
+            return response()->json([
+                'status' => true,
+                'mensaje' => 'Importación de insumos de hospital procesada.',
+                'data' => [
+                    'creados' => $created,
+                    'omitidos' => count($skipped),
+                    'errores' => count($errors),
+                    'detalles_omitidos' => array_slice($skipped, 0, 10), // Primeros 10 omitidos
+                    'detalles_errores' => array_slice($errors, 0, 10), // Primeros 10 errores
+                    'hospital_id' => $hospitalId,
+                    'usuario' => $user->name ?? $user->email,
+                ]
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+
+        } catch (\Throwable $e) {
+            Log::error('Import hospital insumos exception', ['error' => $e->getMessage()]);
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Error en importación: ' . $e->getMessage(),
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
+    }
+
     /**
      * Parsear DESCRIPCION a atributos de Insumo con reglas de presentación y tipo.
      */

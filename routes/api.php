@@ -212,6 +212,11 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
     // Requiere auth pero NO pasa por CheckCrudPermissions para evitar bloqueos en importación
     Route::post('/insumos/import', [InsumoController::class, 'importExcel'])
         ->withoutMiddleware(\App\Http\Middleware\CheckCrudPermissions::class);
+    
+    // Importación de insumos desde Excel para hospitales
+    // Requiere auth pero NO pasa por CheckCrudPermissions para evitar bloqueos en importación
+    Route::post('/hospital/insumos/import', [InsumoController::class, 'importExcelHospitalInsumos'])
+        ->withoutMiddleware(\App\Http\Middleware\CheckCrudPermissions::class);
     Route::get('/insumos', [InsumoController::class, 'index']);
     Route::post('/insumos', [InsumoController::class, 'store']);
     Route::get('/insumos/{insumo}', [InsumoController::class, 'show']);

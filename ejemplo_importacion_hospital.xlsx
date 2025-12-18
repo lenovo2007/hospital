@@ -1,0 +1,6 @@
+id_insumo,lote,fecha_vencimiento,fecha_registro,tipo_ingreso,cantidad
+1,LOT-001,2025-12-31,2025-12-18,donacion,100
+2,LOT-002,2026-01-15,2025-12-18,compra,50
+3,LOT-003,2025-11-30,2025-12-18,ajuste_inventario,25
+4,LOT-004,2026-02-28,2025-12-18,devolucion,75
+5,LOT-005,2025-10-31,2025-12-18,otro,30

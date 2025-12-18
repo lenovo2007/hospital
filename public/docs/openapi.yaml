@@ -5366,6 +5366,53 @@ paths:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
 
+  /api/hospital/insumos/import:
+    post:
+      summary: Importar insumos de hospital desde Excel
+      description: |
+        Importa insumos específicos de un hospital desde un archivo Excel (.xls o .xlsx).
+        Crea registros en lotes, ingresos_directos y lotes_grupos para trazabilidad completa.
+      tags: [Importación Excel]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Archivo Excel (.xls o .xlsx)
+              required:
+                - file
+      responses:
+        '200':
+          description: Importación procesada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+              examples:
+                success:
+                  value:
+                    status: true
+                    mensaje: "Importación de insumos de hospital procesada."
+                    data:
+                      creados: 10
+                      omitidos: 0
+                      errores: 0
+                      hospital_id: 1
+                      usuario: "usuario@hospital.com"
+        '400':
+          description: Archivo inválido o datos incorrectos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
 # ========================================
 # COMPONENTS
 # ========================================

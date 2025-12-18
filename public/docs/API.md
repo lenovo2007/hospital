@@ -473,6 +473,60 @@ curl -X PUT "https://almacen.alwaysdata.net/api/insumos/codigo/INS-001" \
 - Headers: `Authorization: Bearer <TOKEN>`
 - Respuesta 200: insumo eliminado.
 
+- Nota: Crea registros en `lotes`, `ingresos_directos` y `lotes_grupos` para trazabilidad completa.
+
+## Importación Excel
+
+### Importar hospitales
+- Método: POST
+- URL: `/api/hospitales/import`
+- Headers: `Authorization: Bearer <TOKEN>`
+- Body: `multipart/form-data` con campo `file` (archivo .xls o .xlsx)
+
+### Importar insumos (catálogo)
+- Método: POST
+- URL: `/api/insumos/import`
+- Headers: `Authorization: Bearer <TOKEN>`
+- Body: `multipart/form-data` con campo `file` (archivo .xls o .xlsx)
+- Columnas Excel: A=CÓDIGO, B=DESCRIPCIÓN
+
+### Importar inventario
+- Método: POST
+- URL: `/api/inventario/import`
+- Headers: `Authorization: Bearer <TOKEN>`
+- Body: `multipart/form-data` con campo `file` (archivo .xls o .xlsx)
+
+### Importar y distribuir insumos
+- Método: POST
+- URL: `/api/distribucion/import`
+- Headers: `Authorization: Bearer <TOKEN>`
+- Body: `multipart/form-data` con campo `file` (archivo .xls o .xlsx)
+
+### Importar insumos de hospital (inventario)
+- Método: POST
+- URL: `/api/hospital/insumos/import`
+- Headers: `Authorization: Bearer <TOKEN>`
+- Body: `multipart/form-data` con campo `file` (archivo .xls o .xlsx)
+- Columnas Excel: 
+  - A=id_insumo, B=código (ref), C=nombre (ref), D=lote
+  - E=fecha_vencimiento, F=fecha_registro, G=tipo_ingreso, H=cantidad
+- Tipos de ingreso válidos: `donacion`, `compra`, `ajuste_inventario`, `devolucion`, `otro`
+- Respuesta 200:
+```json
+{
+  "status": true,
+  "mensaje": "Importación de insumos de hospital procesada.",
+  "data": {
+    "creados": 10,
+    "omitidos": 0,
+    "errores": 0,
+    "hospital_id": 1,
+    "usuario": "usuario@hospital.com"
+  }
+}
+```
+- Nota: Crea registros en `lotes`, `ingresos_directos` y `lotes_grupos` para trazabilidad completa.
+
 ## Errores (siempre HTTP 200)
 - No autenticado: `{ "status": false, "mensaje": "No autenticado. Token inválido o ausente.", "data": null }`
 - No autorizado: `{ "status": false, "mensaje": "No autorizado para realizar esta acción.", "data": null }`

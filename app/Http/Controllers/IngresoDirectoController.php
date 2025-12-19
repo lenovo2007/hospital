@@ -144,6 +144,7 @@ class IngresoDirectoController extends Controller
                         'id_insumo' => $item['insumo_id'],
                         'numero_lote' => $item['numero_lote'],
                         'fecha_vencimiento' => $item['fecha_vencimiento'],
+                        'hospital_id' => $sede->hospital_id,
                     ]);
 
                     // Crear registro en lotes_grupos

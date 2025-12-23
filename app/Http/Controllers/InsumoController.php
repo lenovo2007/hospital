@@ -489,8 +489,8 @@ class InsumoController extends Controller
             $loteCol = 'D';
             $fechaVencimientoCol = 'E';
             $fechaRegistroCol = 'F';
-            $tipoIngresoCol = 'G';
-            $cantidadCol = 'H';
+            $tipoIngresoCol = 'E';  // Corregido: tipo_ingreso está en columna E, no G
+            $cantidadCol = 'F';
 
             $created = 0; $skipped = []; $errors = [];
             $rowCount = (int) $sheet->getHighestRow();

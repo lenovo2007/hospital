@@ -496,7 +496,7 @@ class InsumoController extends Controller
             $rowCount = (int) $sheet->getHighestRow();
 
             // Validar tipos de ingreso permitidos
-            $tiposIngresoPermitidos = ['donacion', 'compra', 'ajuste_inventario', 'devolucion', 'otro'];
+            $tiposIngresoPermitidos = ['ministerio', 'donacion', 'almacenado', 'adquirido', 'devolucion', 'otro'];
 
             for ($i = 2; $i <= $rowCount; $i++) { // desde la fila 2
                 try {

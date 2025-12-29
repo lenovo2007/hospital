@@ -482,14 +482,14 @@ class InsumoController extends Controller
             $sheet = $spreadsheet->getActiveSheet();
 
             // Columnas esperadas del archivo:
-            // A = id_insumo, B = codigo (solo referencia), C = nombre (solo referencia), D = lote, E = fecha_vencimiento, F = fecha_registro, G = tipo_ingreso, H = cantidad
+            // A = id_insumo, B = lote, C = fecha_vencimiento, D = fecha_registro, E = tipo_ingreso, F = cantidad
             $idInsumoCol = 'A';
             $codigoCol = 'B';    // Solo referencia, no se guarda
             $nombreCol = 'C';    // Solo referencia, no se guarda
-            $loteCol = 'D';
-            $fechaVencimientoCol = 'E';
-            $fechaRegistroCol = 'F';
-            $tipoIngresoCol = 'E';  // Corregido: tipo_ingreso está en columna E, no G
+            $loteCol = 'B';
+            $fechaVencimientoCol = 'C';
+            $fechaRegistroCol = 'D';
+            $tipoIngresoCol = 'E';
             $cantidadCol = 'F';
 
             $created = 0; $skipped = []; $errors = [];
@@ -530,7 +530,12 @@ class InsumoController extends Controller
                         if (is_numeric($fechaVencimientoRaw)) {
                             $fechaVencimiento = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($fechaVencimientoRaw)->format('Y-m-d');
                         } else {
-                            $fechaVencimiento = date('Y-m-d', strtotime($fechaVencimientoRaw));
+                            $fechaVencimientoParsed = \DateTime::createFromFormat('d/m/Y', trim((string) $fechaVencimientoRaw));
+                            if ($fechaVencimientoParsed !== false) {
+                                $fechaVencimiento = $fechaVencimientoParsed->format('Y-m-d');
+                            } else {
+                                $fechaVencimiento = date('Y-m-d', strtotime($fechaVencimientoRaw));
+                            }
                         }
                     }
 
@@ -541,7 +546,12 @@ class InsumoController extends Controller
                         if (is_numeric($fechaRegistroRaw)) {
                             $fechaRegistro = \PhpOffice\PhpSpreadsheet\Shared\Date::excelToDateTimeObject($fechaRegistroRaw)->format('Y-m-d');
                         } else {
-                            $fechaRegistro = date('Y-m-d', strtotime($fechaRegistroRaw));
+                            $fechaRegistroParsed = \DateTime::createFromFormat('d/m/Y', trim((string) $fechaRegistroRaw));
+                            if ($fechaRegistroParsed !== false) {
+                                $fechaRegistro = $fechaRegistroParsed->format('Y-m-d');
+                            } else {
+                                $fechaRegistro = date('Y-m-d', strtotime($fechaRegistroRaw));
+                            }
                         }
                     } else {
                         $fechaRegistro = now()->format('Y-m-d');
@@ -586,7 +596,7 @@ class InsumoController extends Controller
                             'hospital_id' => $hospitalId,
                             'sede_id' => $sedeId,
                             'almacen_tipo' => 'principal',
-                            'cantidad_total_items' => 1,
+                            'cantidad_total_items' => (int) $cantidad,
                             'codigo_lotes_grupo' => $codigoLotesGrupo,
                             'user_id' => $user->id,
                             'estado' => 'procesado',

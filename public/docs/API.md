@@ -236,43 +236,85 @@ Respuestas 200:
 - Headers: `Authorization: Bearer <TOKEN>`
 - Respuesta 200: hospital eliminado.
 
-### Actualizar hospital por RIF
-- Método: PUT
-- URL: `/api/hospitales/rif/{rif}`
+## Inventario
+
+### Listar inventario
+- Método: GET
+- URL: `/api/inventario`
 - Headers: `Authorization: Bearer <TOKEN>`
-- Body (JSON): mismos campos que update, opcionales según necesidad. Ejemplo:
+- Respuesta 200:
+```json
+{ "status": true, "mensaje": "Listado de inventario.", "data": { /* paginación */ } }
+```
+
+### Inventario por sede con metadatos de ingreso directo
+- Método: GET
+- URL: `/api/inventario/sede/{sede_id}`
+- Headers: `Authorization: Bearer <TOKEN>`
+- Descripción: Devuelve los insumos agrupados por `insumo_id` para la sede indicada, incluyendo los lotes registrados en el almacén correspondiente (central, principal, farmacia, etc.) y los metadatos del ingreso directo asociado cuando el lote proviene de `ingresos_directos`.
+- Ejemplo cURL:
+```bash
+curl "https://almacen.alwaysdata.net/api/inventario/sede/1" \
+  -H "Accept: application/json" \
+  -H "Authorization: Bearer <TOKEN>"
+```
+- Respuesta 200:
 ```json
 {
-  "nombre": "Hospital Central Actualizado",
-  "email": "nuevo@hospital.test",
-  "telefono": "04140000000",
-  "ubicacion": { "lat": 10.49, "lng": -66.90 },
-  "direccion": "Nueva dirección",
-  "tipo": "privado",
-  "status": "activo"
+  "status": true,
+  "mensaje": "Inventario obtenido correctamente.",
+  "data": [
+    {
+      "insumo_id": 125,
+      "insumo": {
+        "id": 125,
+        "codigo": "INS-00125",
+        "nombre": "Guantes de Nitrilo",
+        "tipo": "medico_quirurgico",
+        "unidad_medida": "caja",
+        "presentacion": "100 und",
+        "status": "activo"
+      },
+      "cantidad_total": 240,
+      "lotes": [
+        {
+          "lote_id": 456,
+          "numero_lote": "LOT-20251229-001",
+          "fecha_vencimiento": "2026-12-31",
+          "cantidad": 120,
+          "ingreso_directo": {
+            "id": 8,
+            "codigo_ingreso": "ING-20251229-004",
+            "tipo_ingreso": "ministerio",
+            "fecha_ingreso": "2025-12-23"
+          }
+        },
+        {
+          "lote_id": 457,
+          "numero_lote": "LOT-20251229-002",
+          "fecha_vencimiento": "2026-10-15",
+          "cantidad": 120,
+          "ingreso_directo": null
+        }
+      ]
+    }
+  ]
 }
 ```
 
-Ejemplo cURL:
-```bash
-curl -X PUT "https://almacen.alwaysdata.net/api/hospitales/rif/J-12345678-9" \
-  -H "Accept: application/json" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer <TOKEN>" \
-  -d '{
-    "nombre":"Hospital Central Actualizado"
-  }'
-```
-
-Respuestas 200:
-- Actualizado
+### Ajustar inventario a cero
+- Método: PUT
+- URL: `/api/inventario/ajustar-cero`
+- Headers: `Authorization: Bearer <TOKEN>`
+- Body (JSON):
 ```json
-{ "status": true, "mensaje": "Hospital actualizado por RIF.", "data": { /* Hospital */ } }
+{
+  "insumo_id": 125,
+  "cantidad": 0,
+  "motivo": "Ajuste de inventario"
+}
 ```
-- No encontrado
-```json
-{ "status": false, "mensaje": "Hospital no encontrado por ese RIF.", "data": null }
-```
+- Respuesta 200: inventario ajustado.
 
 ## Sedes (protegido)
 Campos: `id`, `nombre`, `tipo`, `hospital_id` (FK hospitales.id, opcional), `status` (`activo`|`inactivo`).
@@ -324,8 +366,6 @@ Nota: cuando no hay resultados o la sede no existe, se responde con HTTP 200, `s
 
 ## Farmacias (protegido)
 Campos: `id`, `nombre`, `status` (`activo`|`inactivo`).
-
-Nota: `status` por defecto es `activo`. Puede enviarse en creación/actualización.
 
 Nota: `status` por defecto es `activo`. Puede enviarse en creación/actualización.
 

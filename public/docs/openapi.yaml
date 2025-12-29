@@ -4454,7 +4454,11 @@ paths:
   /api/inventario/sede/{sede_id}:
     get:
       summary: Obtener inventario por sede
-      description: Devuelve los insumos agrupados por insumo_id desde la tabla almacenCentral, filtrando por sede_id y status=true
+      description: |
+        Devuelve los insumos agrupados por `insumo_id` para la sede indicada.
+
+        Cada lote incluye información del ingreso directo asociado cuando proviene de `ingresos_directos`.
+        La fuente de stock depende del tipo de almacén configurado en la sede (almacenCent, almacenPrin, etc.).
       tags: [Inventario]
       security:
         - bearerAuth: []
@@ -4467,11 +4471,54 @@ paths:
           description: ID de la sede
       responses:
         '200':
-          description: Listado de inventario
+          description: Listado de inventario agrupado por insumo y lotes con metadatos de ingreso directo.
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    example: true
+                  mensaje:
+                    type: string
+                    nullable: true
+                    example: Inventario obtenido correctamente.
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/InventarioSedeItem'
+              examples:
+                ejemplo:
+                  value:
+                    status: true
+                    mensaje: Inventario obtenido correctamente.
+                    data:
+                      - insumo_id: 125
+                        insumo:
+                          id: 125
+                          codigo: "INS-00125"
+                          nombre: "Guantes de Nitrilo"
+                          tipo: "medico_quirurgico"
+                          unidad_medida: "caja"
+                          presentacion: "100 und"
+                          status: "activo"
+                        cantidad_total: 240
+                        lotes:
+                          - lote_id: 456
+                            numero_lote: "LOT-20251229-001"
+                            fecha_vencimiento: "2026-12-31"
+                            cantidad: 120
+                            ingreso_directo:
+                              id: 8
+                              codigo_ingreso: "ING-20251229-004"
+                              tipo_ingreso: "ministerio"
+                              fecha_ingreso: "2025-12-23"
+                          - lote_id: 457
+                            numero_lote: "LOT-20251229-002"
+                            fecha_vencimiento: "2026-10-15"
+                            cantidad: 120
+                            ingreso_directo: null
 
   /api/inventario/hospital/{hospital_id}/por-vencer:
     get:

@@ -374,6 +374,14 @@ class InventarioController extends Controller
 
             $lotesPorInsumo = DB::table($tabla)
                 ->join('lotes', "$tabla.lote_id", '=', 'lotes.id')
+                ->leftJoin('lotes_grupos', function ($join) {
+                    $join->on('lotes_grupos.lote_id', '=', 'lotes.id')
+                        ->where('lotes_grupos.status', 'activo');
+                })
+                ->leftJoin('ingresos_directos', function ($join) {
+                    $join->on('ingresos_directos.codigo_lotes_grupo', '=', 'lotes_grupos.codigo')
+                        ->where('ingresos_directos.status', true);
+                })
                 ->where("$tabla.sede_id", $sedeId)
                 ->where("$tabla.status", true)
                 ->whereIn('lotes.id_insumo', $insumoIds)
@@ -382,7 +390,11 @@ class InventarioController extends Controller
                     'lotes.id as lote_id',
                     'lotes.numero_lote',
                     'lotes.fecha_vencimiento',
-                    DB::raw("$tabla.cantidad as cantidad")
+                    DB::raw("$tabla.cantidad as cantidad"),
+                    'ingresos_directos.id as ingreso_directo_id',
+                    'ingresos_directos.codigo_ingreso',
+                    'ingresos_directos.tipo_ingreso',
+                    'ingresos_directos.fecha_ingreso'
                 )
                 ->get()
                 ->groupBy('insumo_id');
@@ -392,11 +404,22 @@ class InventarioController extends Controller
                 $detalleInsumo = $insumos->get($row->insumo_id);
                 $lotes = optional($lotesPorInsumo->get($row->insumo_id))
                     ? $lotesPorInsumo->get($row->insumo_id)->map(function ($lote) {
+                        $ingresoDirecto = null;
+                        if ($lote->ingreso_directo_id) {
+                            $ingresoDirecto = [
+                                'id' => $lote->ingreso_directo_id,
+                                'codigo_ingreso' => $lote->codigo_ingreso,
+                                'tipo_ingreso' => $lote->tipo_ingreso,
+                                'fecha_ingreso' => $lote->fecha_ingreso,
+                            ];
+                        }
+
                         return [
                             'lote_id' => $lote->lote_id,
                             'numero_lote' => $lote->numero_lote,
                             'fecha_vencimiento' => $lote->fecha_vencimiento,
                             'cantidad' => (int) $lote->cantidad,
+                            'ingreso_directo' => $ingresoDirecto,
                         ];
                     })->values()->all()
                     : [];

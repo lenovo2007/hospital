@@ -548,9 +548,10 @@ curl -X PUT "https://almacen.alwaysdata.net/api/insumos/codigo/INS-001" \
 - Headers: `Authorization: Bearer <TOKEN>`
 - Body: `multipart/form-data` con campo `file` (archivo .xls o .xlsx)
 - Columnas Excel: 
-  - A=id_insumo, B=código (ref), C=nombre (ref), D=lote
-  - E=fecha_vencimiento, F=fecha_registro, G=tipo_ingreso, H=cantidad
-- Tipos de ingreso válidos: `donacion`, `compra`, `ajuste_inventario`, `devolucion`, `otro`
+  - A=id_sede, B=id_insumo, C=lote
+  - D=fecha_vencimiento, E=fecha_registro, F=tipo_ingreso, G=cantidad
+  - Cada fila se asigna al almacén de la sede indicada en la columna `id_sede`.
+- Tipos de ingreso válidos: `ministerio`, `donacion`, `almacenado`, `adquirido`, `devolucion`, `otro`
 - Respuesta 200:
 ```json
 {

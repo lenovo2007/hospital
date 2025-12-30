@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Insumo;
+use App\Models\Sede;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class InsumoController extends Controller
 {
@@ -454,7 +456,6 @@ class InsumoController extends Controller
             }
 
             $hospitalId = $user->hospital_id;
-            $sedeId = $user->sede_id ?? null;
 
             // Allow some headroom for XLSX parsing
             @ini_set('memory_limit', '512M');
@@ -482,15 +483,14 @@ class InsumoController extends Controller
             $sheet = $spreadsheet->getActiveSheet();
 
             // Columnas esperadas del archivo:
-            // A = id_insumo, B = lote, C = fecha_vencimiento, D = fecha_registro, E = tipo_ingreso, F = cantidad
-            $idInsumoCol = 'A';
-            $codigoCol = 'B';    // Solo referencia, no se guarda
-            $nombreCol = 'C';    // Solo referencia, no se guarda
-            $loteCol = 'B';
-            $fechaVencimientoCol = 'C';
-            $fechaRegistroCol = 'D';
-            $tipoIngresoCol = 'E';
-            $cantidadCol = 'F';
+            // A = id_sede, B = id_insumo, C = lote, D = fecha_vencimiento, E = fecha_registro, F = tipo_ingreso, G = cantidad
+            $sedeIdCol = 'A';
+            $idInsumoCol = 'B';
+            $loteCol = 'C';
+            $fechaVencimientoCol = 'D';
+            $fechaRegistroCol = 'E';
+            $tipoIngresoCol = 'F';
+            $cantidadCol = 'G';
 
             $created = 0; $skipped = []; $errors = [];
             $rowCount = (int) $sheet->getHighestRow();
@@ -498,8 +498,58 @@ class InsumoController extends Controller
             // Validar tipos de ingreso permitidos
             $tiposIngresoPermitidos = ['ministerio', 'donacion', 'almacenado', 'adquirido', 'devolucion', 'otro'];
 
+            $sedeCache = [];
+            $tablaExistenceCache = [];
+
             for ($i = 2; $i <= $rowCount; $i++) { // desde la fila 2
                 try {
+                    // Obtener y validar sede
+                    $sedeIdRaw = $sheet->getCell($sedeIdCol . $i)->getValue();
+                    $sedeIdValue = is_numeric($sedeIdRaw) ? (int) $sedeIdRaw : (is_string($sedeIdRaw) ? (int) trim($sedeIdRaw) : null);
+                    if (!$sedeIdValue) {
+                        $skipped[] = ['fila' => $i, 'motivo' => 'ID de sede inválido o vacío'];
+                        continue;
+                    }
+
+                    if (!array_key_exists($sedeIdValue, $sedeCache)) {
+                        $sedeCache[$sedeIdValue] = Sede::find($sedeIdValue);
+                    }
+
+                    $sedeDestino = $sedeCache[$sedeIdValue];
+                    if (!$sedeDestino) {
+                        $skipped[] = ['fila' => $i, 'motivo' => "Sede con ID {$sedeIdValue} no encontrada"];
+                        continue;
+                    }
+
+                    if ((int) $sedeDestino->hospital_id !== (int) $hospitalId) {
+                        $skipped[] = ['fila' => $i, 'motivo' => "La sede {$sedeIdValue} no pertenece al hospital del usuario"];
+                        continue;
+                    }
+
+                    $tablaAlmacen = match ($sedeDestino->tipo_almacen) {
+                        'almacenCent' => 'almacenes_centrales',
+                        'almacenPrin' => 'almacenes_principales',
+                        'almacenFarm' => 'almacenes_farmacia',
+                        'almacenPar' => 'almacenes_paralelo',
+                        'almacenServApoyo' => 'almacenes_servicios_apoyo',
+                        'almacenServAtenciones' => 'almacenes_servicios_atenciones',
+                        default => null,
+                    };
+
+                    if (!$tablaAlmacen) {
+                        $skipped[] = ['fila' => $i, 'motivo' => 'La sede no tiene un tipo de almacén soportado'];
+                        continue;
+                    }
+
+                    if (!array_key_exists($tablaAlmacen, $tablaExistenceCache)) {
+                        $tablaExistenceCache[$tablaAlmacen] = Schema::hasTable($tablaAlmacen);
+                    }
+
+                    if (!$tablaExistenceCache[$tablaAlmacen]) {
+                        $skipped[] = ['fila' => $i, 'motivo' => "No existe la tabla de almacén {$tablaAlmacen}"];
+                        continue;
+                    }
+
                     // Obtener y validar id_insumo
                     $idInsumoRaw = $sheet->getCell($idInsumoCol . $i)->getValue();
                     $idInsumo = is_numeric($idInsumoRaw) ? (int) $idInsumoRaw : null;
@@ -582,7 +632,7 @@ class InsumoController extends Controller
                             'numero_lote' => $lote,
                             'fecha_vencimiento' => $fechaVencimiento,
                             'fecha_ingreso' => $fechaRegistro,
-                            'hospital_id' => $hospitalId,
+                            'hospital_id' => $sedeDestino->hospital_id,
                         ]);
 
                         // Crear registro de ingreso directo
@@ -593,10 +643,10 @@ class InsumoController extends Controller
                             'codigo_ingreso' => $codigoIngreso,
                             'tipo_ingreso' => $tipoIngreso,
                             'fecha_ingreso' => $fechaRegistro,
-                            'hospital_id' => $hospitalId,
-                            'sede_id' => $sedeId,
-                            'almacen_tipo' => 'principal',
-                            'cantidad_total_items' => (int) $cantidad,
+                            'hospital_id' => $sedeDestino->hospital_id,
+                            'sede_id' => $sedeDestino->id,
+                            'almacen_tipo' => $sedeDestino->tipo_almacen,
+                            'cantidad_total_items' => (int) round($cantidad),
                             'codigo_lotes_grupo' => $codigoLotesGrupo,
                             'user_id' => $user->id,
                             'estado' => 'procesado',
@@ -614,6 +664,34 @@ class InsumoController extends Controller
                             'discrepancia' => false,
                             'status' => 'activo',
                         ]);
+
+                        // Actualizar inventario en el almacén correspondiente
+                        $registroExistente = \DB::table($tablaAlmacen)
+                            ->where('hospital_id', $sedeDestino->hospital_id)
+                            ->where('sede_id', $sedeDestino->id)
+                            ->where('lote_id', $loteRegistro->id)
+                            ->lockForUpdate()
+                            ->first();
+
+                        if ($registroExistente) {
+                            \DB::table($tablaAlmacen)
+                                ->where('id', $registroExistente->id)
+                                ->update([
+                                    'cantidad' => (int) $registroExistente->cantidad + (int) $cantidad,
+                                    'status' => true,
+                                    'updated_at' => now(),
+                                ]);
+                        } else {
+                            \DB::table($tablaAlmacen)->insert([
+                                'cantidad' => (int) round($cantidad),
+                                'hospital_id' => $sedeDestino->hospital_id,
+                                'sede_id' => $sedeDestino->id,
+                                'lote_id' => $loteRegistro->id,
+                                'status' => true,
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ]);
+                        }
 
                         \DB::commit();
                         $created++;

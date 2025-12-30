@@ -5418,6 +5418,8 @@ paths:
       summary: Importar insumos de hospital desde Excel
       description: |
         Importa insumos específicos de un hospital desde un archivo Excel (.xls o .xlsx).
+        Cada fila debe indicar la sede en la columna `id_sede`, lo que permite registrar el
+        stock en el almacén que corresponda al tipo configurado para esa sede.
         Crea registros en lotes, ingresos_directos y lotes_grupos para trazabilidad completa.
       tags: [Importación Excel]
       security:

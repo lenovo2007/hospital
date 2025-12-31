@@ -29,7 +29,7 @@ use App\Http\Controllers\SolicitudController;
 
 // Autenticación con token
 // Test route to check if API is working
-Route::get('/test', function() {
+Route::get('/ping', function() {
     return response()->json([
         'status' => true,
         'message' => 'API is working!',
@@ -39,6 +39,9 @@ Route::get('/test', function() {
         ]
     ]);
 });
+
+Route::get('/public-fichas/hospital/{hospital_id}', [FichaInsumoController::class, 'indexByHospital']);
+Route::get('/ficha-insumos/hospital/{hospital_id}', [FichaInsumoController::class, 'indexByHospital']);
 
 Route::post('/login', [AuthController::class, 'login']);
 // Recuperación de contraseña (público)
@@ -113,11 +116,11 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
     Route::delete('/almacenes_farmacia/{almacenes_farmacium}', [AlmacenFarmaciaController::class, 'destroy']);
 
     // Almacenes Paralelo CRUD
-    Route::get('/almacenes_paralelo', [AlmacenParaleloController::class, 'index']);
-    Route::post('/almacenes_paralelo', [AlmacenParaleloController::class, 'store']);
-    Route::get('/almacenes_paralelo/{almacenes_paralelo}', [AlmacenParaleloController::class, 'show']);
-    Route::put('/almacenes_paralelo/{almacenes_paralelo}', [AlmacenParaleloController::class, 'update']);
-    Route::delete('/almacenes_paralelo/{almacenes_paralelo}', [AlmacenParaleloController::class, 'destroy']);
+    //     Route::get('/almacenes_paralelo', [AlmacenParaleloController::class, 'index']);
+    //     Route::post('/almacenes_paralelo', [AlmacenParaleloController::class, 'store']);
+    //     Route::get('/almacenes_paralelo/{almacenes_paralelo}', [AlmacenParaleloController::class, 'show']);
+    //     Route::put('/almacenes_paralelo/{almacenes_paralelo}', [AlmacenParaleloController::class, 'update']);
+    //     Route::delete('/almacenes_paralelo/{almacenes_paralelo}', [AlmacenParaleloController::class, 'destroy']);
 
     // Almacenes Servicios de Atenciones CRUD
     Route::get('/almacenes_servicios_atenciones', [AlmacenServiciosAtencionesController::class, 'index']);
@@ -303,11 +306,11 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
         Route::get('/movimientos-entregados/{sede_id}', [SeguimientoRepartidorController::class, 'movimientosEntregados']);
     });
 
-    // Distribución interna desde principal hacia farmacia/paralelo/servicios
-    Route::post('/distribucion/principal', [DistribucionInternaController::class, 'distribuir']);
+    //     // Distribución interna desde principal hacia farmacia/paralelo/servicios
+    //     Route::post('/distribucion/principal', [DistribucionInternaController::class, 'distribuir']);
 
-    // Distribución automática desde central por porcentaje (varios hospitales y lotes)
-    Route::post('/distribucion/automatica/central', [DistribucionAutomaticaController::class, 'distribuirPorPorcentaje']);
+    //     // Distribución automática desde central por porcentaje (varios hospitales y lotes)
+    //     Route::post('/distribucion/automatica/central', [DistribucionAutomaticaController::class, 'distribuirPorPorcentaje']);
 
     // Rutas de grupos de lote
     Route::get('/lote-grupo', [LoteGrupoController::class, 'index']);

@@ -236,6 +236,37 @@ Respuestas 200:
 - Headers: `Authorization: Bearer <TOKEN>`
 - Respuesta 200: hospital eliminado.
 
+## Fichas de Insumos
+
+### Listar fichas por hospital (público)
+- Método: GET
+- URL: `/api/ficha-insumos/hospital/{hospital_id}`
+- Descripción: Devuelve un listado paginado de fichas de insumos que pertenecen al hospital indicado. No requiere autenticación y admite filtros opcionales.
+- Parámetros:
+  - `hospital_id` (path, requerido): ID numérico del hospital.
+  - `insumo_id` (query, opcional): filtra por un insumo específico.
+  - `status` (query, opcional): `true` o `false` para limitar por estado de la ficha.
+  - `per_page` (query, opcional): número de resultados por página (por defecto 50, máximo 100).
+- Respuesta 200:
+```json
+{
+  "status": true,
+  "mensaje": "Listado de fichas de insumos para el hospital.",
+  "data": {
+    "current_page": 1,
+    "data": [ /* fichas con relaciones de hospital e insumo */ ],
+    "per_page": 50,
+    "total": 412
+  },
+  "hospital": {
+    "id": 1,
+    "nombre": "Almacén robotizado miranda (Jipana)",
+    "cod_sicm": "23792"
+  },
+  "autenticacion": 1
+}
+```
+
 ## Inventario
 
 ### Listar inventario

@@ -4749,6 +4749,46 @@ paths:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
 
+  /api/ficha-insumos/hospital/{hospital_id}:
+    get:
+      summary: Listar fichas de insumos por hospital
+      description: |
+        Devuelve un listado paginado de fichas de insumos pertenecientes a un hospital
+        específico. Esta ruta es pública y no requiere token.
+      tags: [Fichas de Insumos]
+      security: []
+      parameters:
+        - name: hospital_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Identificador del hospital
+        - name: insumo_id
+          in: query
+          schema:
+            type: integer
+          description: Filtrar por un insumo específico
+        - name: status
+          in: query
+          schema:
+            type: boolean
+          description: Filtrar por estado activo/inactivo de la ficha
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+          description: Cantidad de registros por página
+      responses:
+        '200':
+          description: Listado de fichas del hospital
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
   /api/ficha-insumos/{id}:
     get:
       summary: Obtener detalle de una ficha

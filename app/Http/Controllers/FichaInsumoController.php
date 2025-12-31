@@ -27,9 +27,49 @@ class FichaInsumoController extends Controller
             'status' => true,
             'mensaje' => 'Listado de fichas de insumos.',
             'data' => $fichas,
-        ]);
+        ], 200);
     }
 
+    /**
+     * Listar fichas de insumos filtradas por hospital
+     * GET /api/ficha-insumos/hospital/{hospital_id}
+     */
+    public function indexByHospital(Request $request, $hospital_id)
+    {
+        try {
+            $perPage = (int) $request->query('per_page', 50);
+            $perPage = $perPage > 0 ? min($perPage, 100) : 50;
+
+            $query = FichaInsumo::query()
+                ->where('hospital_id', $hospital_id)
+                ->when($request->filled('insumo_id'), fn ($q) => $q->where('insumo_id', $request->insumo_id))
+                ->when($request->filled('status'), fn ($q) => $q->where('status', filter_var($request->status, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)))
+                ->with(['hospital', 'insumo']);
+
+            $fichas = $query->orderByDesc('updated_at')->paginate($perPage);
+
+            $hospital = Hospital::find($hospital_id);
+
+            return response()->json([
+                'status' => true,
+                'mensaje' => 'Listado de fichas de insumos para el hospital.',
+                'data' => $fichas,
+                'hospital' => $hospital ? [
+                    'id' => $hospital->id,
+                    'nombre' => $hospital->nombre,
+                    'cod_sicm' => $hospital->cod_sicm,
+                ] : null,
+            ], 200);
+        } catch (Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Error al obtener fichas de insumos por hospital.',
+                'data' => null,
+            ], 500);
+        }
+    }
     public function show(FichaInsumo $ficha_insumo)
     {
         return response()->json([

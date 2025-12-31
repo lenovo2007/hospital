@@ -40,7 +40,7 @@ Route::get('/ping', function() {
     ]);
 });
 
-Route::get('/public-fichas/hospital/{hospital_id}', [FichaInsumoController::class, 'indexByHospital']);
+Route::get('/ficha-insumos', [FichaInsumoController::class, 'index']);
 Route::get('/ficha-insumos/hospital/{hospital_id}', [FichaInsumoController::class, 'indexByHospital']);
 
 Route::post('/login', [AuthController::class, 'login']);
@@ -177,7 +177,6 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
     Route::delete('/movimientos-stock/discrepancias/{movimientos_discrepancia}', [MovimientoDiscrepanciaController::class, 'destroy']);
 
     // Ficha de insumos CRUD
-    Route::get('/ficha-insumos', [FichaInsumoController::class, 'index']);
     Route::post('/ficha-insumos', [FichaInsumoController::class, 'store']);
     Route::get('/ficha-insumos/{ficha_insumo}', [FichaInsumoController::class, 'show']);
     Route::put('/ficha-insumos/{ficha_insumo}', [FichaInsumoController::class, 'update']);

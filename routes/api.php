@@ -138,6 +138,10 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
         ->where('hospitalId', '[0-9]+')
         ->withoutMiddleware(\App\Http\Middleware\CheckCrudPermissions::class);
 
+    // Importación de movimientos por estado desde Excel
+    Route::post('/movimiento/estados/import', [\App\Http\Controllers\MovimientoEstadosImportController::class, 'import'])
+        ->withoutMiddleware(\App\Http\Middleware\CheckCrudPermissions::class);
+
     // Movimientos de stock CRUD
     Route::get('/movimientos-stock', [MovimientoStockController::class, 'index']);
     Route::post('/movimientos-stock', [MovimientoStockController::class, 'store']);

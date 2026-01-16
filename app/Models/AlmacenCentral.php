@@ -12,12 +12,22 @@ class AlmacenCentral extends Model
     protected $table = 'almacenes_centrales';
 
     protected $fillable = [
-        'insumos',
-        'codigo',
-        'numero_lote',
-        'fecha_vencimiento',
-        'fecha_ingreso',
+        'insumo_id',
         'cantidad',
+        'sede_id',
+        'lote_id',
+        'hospital_id',
+        'estado',
         'status',
+    ];
+
+    protected $casts = [
+        'insumo_id' => 'integer',
+        'cantidad' => 'integer',
+        'sede_id' => 'integer',
+        'lote_id' => 'integer',
+        'hospital_id' => 'integer',
+        'estado' => 'string',
+        'status' => 'boolean',
     ];
 }

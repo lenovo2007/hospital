@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\AlmacenCentral;
+use App\Models\Hospital;
 use App\Models\Insumo;
 use App\Models\Lote;
 use App\Models\LoteGrupo;
 use App\Models\MovimientoStock;
+use App\Models\Sede;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -229,6 +231,8 @@ class MovimientoEstadosImportController extends Controller
                         continue;
                     }
 
+                    [$destinoHospitalId, $destinoSedeId] = $this->resolverDestinoEstado($estado);
+
                     $itemsLotes = [];
                     $detalleInsumos = [];
                     foreach ($insumos as $insumoId => $cantidad) {
@@ -267,8 +271,8 @@ class MovimientoEstadosImportController extends Controller
                         'tipo_movimiento' => 'despacho_estados',
                         'origen_hospital_id' => self::CENTRAL_HOSPITAL_ID,
                         'origen_sede_id' => self::CENTRAL_SEDE_ID,
-                        'destino_hospital_id' => null,
-                        'destino_sede_id' => null,
+                        'destino_hospital_id' => $destinoHospitalId,
+                        'destino_sede_id' => $destinoSedeId,
                         'origen_almacen_tipo' => 'almacenCent',
                         'origen_almacen_id' => null,
                         'destino_almacen_tipo' => 'almacenAus',
@@ -416,5 +420,36 @@ class MovimientoEstadosImportController extends Controller
                 'fecha_ingreso' => $fecha->copy()->startOfDay()->toDateString(),
             ]
         );
+    }
+
+    private function resolverDestinoEstado(string $estado): array
+    {
+        $estadoNormalized = Str::lower(Str::ascii(trim($estado)));
+        if ($estadoNormalized === '') {
+            throw new \RuntimeException('Estado de destino vacío.');
+        }
+
+        $hospitales = Hospital::query()
+            ->whereNotNull('estado')
+            ->get(['id', 'estado']);
+
+        $hospital = $hospitales->first(function (Hospital $h) use ($estadoNormalized) {
+            return Str::lower(Str::ascii((string) $h->estado)) === $estadoNormalized;
+        });
+
+        if (!$hospital) {
+            throw new \RuntimeException('No existe un hospital configurado para el estado: ' . $estado);
+        }
+
+        $sede = Sede::query()
+            ->where('hospital_id', $hospital->id)
+            ->orderBy('id')
+            ->first();
+
+        if (!$sede) {
+            throw new \RuntimeException('El hospital ' . $hospital->id . ' no tiene sedes configuradas para el estado: ' . $estado);
+        }
+
+        return [(int) $hospital->id, (int) $sede->id];
     }
 }

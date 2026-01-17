@@ -26,8 +26,19 @@ class MovimientoEstadosImportController extends Controller
     public function import(Request $request)
     {
         $validated = $request->validate([
-            'file' => ['required', 'file', 'mimes:xls,xlsx', 'max:10240'],
+            'file' => ['required', 'file', 'max:10240'],
         ]);
+
+        /** @var \Illuminate\Http\UploadedFile $file */
+        $file = $validated['file'];
+        $extension = strtolower($file->getClientOriginalExtension());
+        if (!in_array($extension, ['xls', 'xlsx'], true)) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Tipo de archivo no permitido. Solo se aceptan archivos .xls y .xlsx',
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
 
         if (!class_exists(IOFactory::class)) {
             return response()->json([
@@ -39,8 +50,6 @@ class MovimientoEstadosImportController extends Controller
 
         try {
             @ini_set('memory_limit', '512M');
-            /** @var \Illuminate\Http\UploadedFile $file */
-            $file = $validated['file'];
             $reader = IOFactory::createReader(IOFactory::identify($file->getRealPath()));
             $reader->setReadDataOnly(true);
             $spreadsheet = $reader->load($file->getRealPath());

@@ -217,7 +217,7 @@ class MovimientoEstadosImportController extends Controller
                     'discrepancia_total' => false,
                     'fecha_despacho' => $fecha,
                     'observaciones' => 'Ingreso de totales de insumos por estados desde importación Excel',
-                    'estado' => 'completado',
+                    'estado' => 'recibido',
                     'codigo_grupo' => $codigoMovimiento,
                     'user_id' => $userId,
                     'user_id_receptor' => null,

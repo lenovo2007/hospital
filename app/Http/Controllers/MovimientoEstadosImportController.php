@@ -294,12 +294,15 @@ class MovimientoEstadosImportController extends Controller
                         'codigo' => $codigoGrupo,
                         'cantidad_total' => $totalEstado,
                         'detalle_insumos' => $detalleInsumos,
-                        'items_lotes' => $grupoItems->map(function (LoteGrupo $grupo) {
+                        'items_lotes' => array_map(function ($grupo) {
+                            $loteId = is_array($grupo) ? ($grupo['lote_id'] ?? null) : ($grupo->lote_id ?? null);
+                            $cantidadSalida = is_array($grupo) ? ($grupo['cantidad_salida'] ?? null) : ($grupo->cantidad_salida ?? null);
+
                             return [
-                                'lote_id' => $grupo->lote_id,
-                                'cantidad_salida' => $grupo->cantidad_salida,
+                                'lote_id' => $loteId,
+                                'cantidad_salida' => $cantidadSalida,
                             ];
-                        })->toArray(),
+                        }, is_array($grupoItems) ? $grupoItems : $grupoItems->all()),
                     ];
                 }
             });

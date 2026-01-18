@@ -554,6 +554,10 @@ class RecepcionPrincipalController extends Controller
             return $resumen;
         }
 
+        // Modo B: acumular todos los items por hospital y crear un solo movimiento por hospital
+        // $acumuladoPorHospital[hospital_id] = ['sede_id' => int, 'items' => [lote_id => cantidad]]
+        $acumuladoPorHospital = [];
+
         foreach ($cantidadPorInsumo as $insumoId => $cantidadTotal) {
             $resumen['insumos_procesados']++;
             $hospitalesElegibles = $hospitalesEstado->filter(function ($h) use ($fichaMap, $insumoId) {
@@ -630,37 +634,77 @@ class RecepcionPrincipalController extends Controller
                     continue;
                 }
 
-                [$codigoGrupo, $grupoItems] = LoteGrupo::crearGrupo($itemsDespacho);
-
-                $totalCantidad = 0;
-                foreach ($itemsDespacho as $it) {
-                    $totalCantidad += (int) $it['cantidad'];
+                $hid = (int) $hospitalId;
+                if (!isset($acumuladoPorHospital[$hid])) {
+                    $acumuladoPorHospital[$hid] = [
+                        'sede_id' => (int) $sedeDestino->id,
+                        'items' => [],
+                    ];
                 }
 
-                MovimientoStock::create([
-                    'tipo' => 'transferencia',
-                    'tipo_movimiento' => 'despacho',
-                    'origen_hospital_id' => (int) $movimiento->destino_hospital_id,
-                    'origen_sede_id' => (int) $movimiento->destino_sede_id,
-                    'destino_hospital_id' => (int) $hospitalId,
-                    'destino_sede_id' => (int) $sedeDestino->id,
-                    'origen_almacen_tipo' => 'almacenAus',
-                    'origen_almacen_id' => null,
-                    'destino_almacen_tipo' => 'almacenPrin',
-                    'destino_almacen_id' => null,
-                    'cantidad_salida_total' => $totalCantidad,
-                    'cantidad_entrada_total' => 0,
-                    'discrepancia_total' => false,
-                    'fecha_despacho' => $fechaDespacho,
-                    'observaciones' => 'Distribución automática desde AUS (' . $estado . ')',
-                    'estado' => 'pendiente',
-                    'codigo_grupo' => $codigoGrupo,
-                    'user_id' => $userId,
-                    'user_id_receptor' => null,
-                ]);
-
-                $resumen['movimientos_creados']++;
+                foreach ($itemsDespacho as $it) {
+                    $loteId = (int) ($it['lote_id'] ?? 0);
+                    $cant = (int) ($it['cantidad'] ?? 0);
+                    if ($loteId <= 0 || $cant <= 0) {
+                        continue;
+                    }
+                    $acumuladoPorHospital[$hid]['items'][$loteId] = ($acumuladoPorHospital[$hid]['items'][$loteId] ?? 0) + $cant;
+                }
             }
+        }
+
+        foreach ($acumuladoPorHospital as $hospitalId => $dataHospital) {
+            $sedeId = (int) ($dataHospital['sede_id'] ?? 0);
+            $itemsMap = $dataHospital['items'] ?? [];
+
+            if ($sedeId <= 0 || empty($itemsMap)) {
+                continue;
+            }
+
+            $itemsDespachoConsolidados = [];
+            $totalCantidad = 0;
+            foreach ($itemsMap as $loteId => $cantidad) {
+                $cantidad = (int) $cantidad;
+                $loteId = (int) $loteId;
+                if ($loteId <= 0 || $cantidad <= 0) {
+                    continue;
+                }
+                $itemsDespachoConsolidados[] = [
+                    'lote_id' => $loteId,
+                    'cantidad' => $cantidad,
+                ];
+                $totalCantidad += $cantidad;
+            }
+
+            if (empty($itemsDespachoConsolidados) || $totalCantidad <= 0) {
+                continue;
+            }
+
+            [$codigoGrupo, $grupoItems] = LoteGrupo::crearGrupo($itemsDespachoConsolidados);
+
+            MovimientoStock::create([
+                'tipo' => 'transferencia',
+                'tipo_movimiento' => 'despacho',
+                'origen_hospital_id' => (int) $movimiento->destino_hospital_id,
+                'origen_sede_id' => (int) $movimiento->destino_sede_id,
+                'destino_hospital_id' => (int) $hospitalId,
+                'destino_sede_id' => (int) $sedeId,
+                'origen_almacen_tipo' => 'almacenAus',
+                'origen_almacen_id' => null,
+                'destino_almacen_tipo' => 'almacenPrin',
+                'destino_almacen_id' => null,
+                'cantidad_salida_total' => $totalCantidad,
+                'cantidad_entrada_total' => 0,
+                'discrepancia_total' => false,
+                'fecha_despacho' => $fechaDespacho,
+                'observaciones' => 'Distribución automática desde AUS (' . $estado . ')',
+                'estado' => 'pendiente',
+                'codigo_grupo' => $codigoGrupo,
+                'user_id' => $userId,
+                'user_id_receptor' => null,
+            ]);
+
+            $resumen['movimientos_creados']++;
         }
 
         if ($resumen['motivo'] === null) {

@@ -32,10 +32,13 @@ class RecepcionPrincipalController extends Controller
         $resultado = [
             'estado' => null,
             'discrepancias' => [],
+            'distribucion' => null,
         ];
 
         try {
-            DB::transaction(function () use ($data, $userId, &$resultado) {
+            $payloadDistribucion = null;
+
+            DB::transaction(function () use ($data, $userId, &$resultado, &$payloadDistribucion) {
                 // Buscar el movimiento por ID
                 $movimiento = MovimientoStock::where('id', $data['movimiento_stock_id'])
                     ->lockForUpdate()
@@ -240,17 +243,35 @@ class RecepcionPrincipalController extends Controller
                     'user_id_receptor' => $data['user_id_receptor'],
                 ]);
 
-                $this->distribuirAutomaticoDesdeAusSiAplica(
-                    $movimiento,
-                    $itemsRecibidos,
-                    $userId,
-                    (string) $data['fecha_recepcion']
-                );
+                $payloadDistribucion = [
+                    'movimiento' => $movimiento,
+                    'items' => $itemsRecibidos,
+                    'user_id' => $userId,
+                    'fecha' => (string) $data['fecha_recepcion'],
+                ];
 
 
                 $resultado['estado'] = $estadoFinal;
                 $resultado['discrepancias'] = $discrepancias;
             });
+
+            if ($payloadDistribucion) {
+                try {
+                    $resultado['distribucion'] = $this->distribuirAutomaticoDesdeAusSiAplica(
+                        $payloadDistribucion['movimiento'],
+                        $payloadDistribucion['items'],
+                        (int) $payloadDistribucion['user_id'],
+                        (string) $payloadDistribucion['fecha']
+                    );
+                } catch (Throwable $e) {
+                    $resultado['distribucion'] = [
+                        'aplico' => false,
+                        'motivo' => 'Error inesperado en distribución automática',
+                        'movimientos_creados' => 0,
+                        'errores' => [$e->getMessage()],
+                    ];
+                }
+            }
 
             return response()->json([
                 'status' => true,
@@ -315,25 +336,46 @@ class RecepcionPrincipalController extends Controller
         };
     }
 
-    private function distribuirAutomaticoDesdeAusSiAplica(MovimientoStock $movimiento, array $itemsRecibidos, int $userId, string $fechaDespacho): void
+    private function distribuirAutomaticoDesdeAusSiAplica(MovimientoStock $movimiento, array $itemsRecibidos, int $userId, string $fechaDespacho): array
     {
+        $resumen = [
+            'aplico' => false,
+            'motivo' => null,
+            'movimientos_creados' => 0,
+            'insumos_procesados' => 0,
+            'hospitales_estado_total' => 0,
+            'hospitales_elegibles_por_insumo' => [],
+            'omitidos' => [],
+            'errores' => [],
+        ];
+
         if ($movimiento->destino_almacen_tipo !== 'almacenAus') {
-            return;
+            $resumen['motivo'] = 'No aplica: destino_almacen_tipo != almacenAus';
+            return $resumen;
         }
+
+        $resumen['aplico'] = true;
 
         $ausHospital = Hospital::query()->where('id', $movimiento->destino_hospital_id)->first();
         if (!$ausHospital) {
-            throw new InvalidArgumentException('No se encontró el hospital AUS destino para la distribución automática.');
+            $resumen['aplico'] = false;
+            $resumen['motivo'] = 'No se encontró el hospital AUS destino para la distribución automática';
+            $resumen['errores'][] = 'destino_hospital_id=' . (string) $movimiento->destino_hospital_id;
+            return $resumen;
         }
 
         $estado = (string) ($ausHospital->estado ?? '');
         if (trim($estado) === '') {
-            throw new InvalidArgumentException('El hospital AUS destino no tiene estado configurado.');
+            $resumen['aplico'] = false;
+            $resumen['motivo'] = 'El hospital AUS destino no tiene estado configurado';
+            return $resumen;
         }
 
         $porcentajes = TipoHospitalDistribucion::query()->first();
         if (!$porcentajes) {
-            throw new InvalidArgumentException('No se encontró configuración de porcentajes (tipos_hospital_distribuciones).');
+            $resumen['aplico'] = false;
+            $resumen['motivo'] = 'No se encontró configuración de porcentajes (tipos_hospital_distribuciones)';
+            return $resumen;
         }
 
         $hospitalesEstado = Hospital::query()
@@ -342,13 +384,17 @@ class RecepcionPrincipalController extends Controller
             ->where('id', '!=', (int) $ausHospital->id)
             ->get(['id', 'nombre', 'tipo']);
 
+        $resumen['hospitales_estado_total'] = (int) $hospitalesEstado->count();
+
         if ($hospitalesEstado->isEmpty()) {
-            return;
+            $resumen['motivo'] = 'No hay hospitales activos en el estado para distribuir (excluyendo AUS)';
+            return $resumen;
         }
 
         $loteIds = array_values(array_unique(array_map(fn ($i) => (int) $i['lote_id'], $itemsRecibidos)));
         if (empty($loteIds)) {
-            return;
+            $resumen['motivo'] = 'No hay lote_id en items recibidos';
+            return $resumen;
         }
 
         $lotes = DB::table('lotes')
@@ -357,7 +403,8 @@ class RecepcionPrincipalController extends Controller
 
         $insumoIds = $lotes->pluck('id_insumo')->unique()->values()->all();
         if (empty($insumoIds)) {
-            return;
+            $resumen['motivo'] = 'No se pudieron obtener insumos desde lotes';
+            return $resumen;
         }
 
         $fichas = FichaInsumo::query()
@@ -386,21 +433,33 @@ class RecepcionPrincipalController extends Controller
         }
 
         if (empty($cantidadPorInsumo)) {
-            return;
+            $resumen['motivo'] = 'Cantidades por insumo quedaron en cero';
+            return $resumen;
         }
 
         foreach ($cantidadPorInsumo as $insumoId => $cantidadTotal) {
+            $resumen['insumos_procesados']++;
             $hospitalesElegibles = $hospitalesEstado->filter(function ($h) use ($fichaMap, $insumoId) {
                 $hid = (int) $h->id;
                 return ($fichaMap[$hid][$insumoId] ?? false) === true;
             });
 
+            $resumen['hospitales_elegibles_por_insumo'][(int) $insumoId] = (int) $hospitalesElegibles->count();
+
             if ($hospitalesElegibles->isEmpty()) {
+                $resumen['omitidos'][] = [
+                    'insumo_id' => (int) $insumoId,
+                    'motivo' => 'Sin hospitales elegibles por ficha_insumos',
+                ];
                 continue;
             }
 
             $plan = $this->calcularPlanDistribucionPorHospital($cantidadTotal, $porcentajes, $hospitalesElegibles);
             if (empty($plan)) {
+                $resumen['omitidos'][] = [
+                    'insumo_id' => (int) $insumoId,
+                    'motivo' => 'Plan de distribución vacío (porcentajes/tipos no coinciden)',
+                ];
                 continue;
             }
 
@@ -416,15 +475,27 @@ class RecepcionPrincipalController extends Controller
                     ->first();
 
                 if (!$sedeDestino) {
+                    $resumen['omitidos'][] = [
+                        'hospital_id' => (int) $hospitalId,
+                        'insumo_id' => (int) $insumoId,
+                        'motivo' => 'Hospital sin sede almacenPrin',
+                    ];
                     continue;
                 }
 
-                $itemsDespacho = $this->tomarStockAusPorInsumoFIFO(
-                    (int) $movimiento->destino_hospital_id,
-                    (int) $movimiento->destino_sede_id,
-                    (int) $insumoId,
-                    (int) $cantidadHospital
-                );
+                try {
+                    $itemsDespacho = DB::transaction(function () use ($movimiento, $insumoId, $cantidadHospital) {
+                        return $this->tomarStockAusPorInsumoFIFO(
+                            (int) $movimiento->destino_hospital_id,
+                            (int) $movimiento->destino_sede_id,
+                            (int) $insumoId,
+                            (int) $cantidadHospital
+                        );
+                    });
+                } catch (Throwable $e) {
+                    $resumen['errores'][] = 'Error stock AUS insumo ' . (int) $insumoId . ' hospital ' . (int) $hospitalId . ': ' . $e->getMessage();
+                    continue;
+                }
 
                 if (empty($itemsDespacho)) {
                     continue;
@@ -458,8 +529,16 @@ class RecepcionPrincipalController extends Controller
                     'user_id' => $userId,
                     'user_id_receptor' => null,
                 ]);
+
+                $resumen['movimientos_creados']++;
             }
         }
+
+        if ($resumen['motivo'] === null) {
+            $resumen['motivo'] = 'OK';
+        }
+
+        return $resumen;
     }
 
     private function calcularPlanDistribucionPorHospital(int $cantidadTotal, TipoHospitalDistribucion $porcentajes, $hospitalesElegibles): array

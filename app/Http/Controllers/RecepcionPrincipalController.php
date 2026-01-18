@@ -279,6 +279,7 @@ class RecepcionPrincipalController extends Controller
             'almacenCent' => 'almacenes_centrales',
             'almacenPrin' => 'almacenes_principales',
             'almacenFarm' => 'almacenes_farmacia',
+            'almacenAus' => 'almacenes_aus',
             'almacenPar' => 'almacenes_paralelo',
             'almacenServApoyo' => 'almacenes_servicios_apoyo',
             'almacenServAtenciones' => 'almacenes_servicios_atenciones',

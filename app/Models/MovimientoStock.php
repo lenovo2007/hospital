@@ -12,6 +12,7 @@ class MovimientoStock extends Model
     // Estados válidos: pendiente, despachado, entregado, recibido, cancelado
 
     protected $fillable = [
+        'id_ingreso',
         'tipo',
         'tipo_movimiento',
         'origen_hospital_id',

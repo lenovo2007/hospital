@@ -203,7 +203,7 @@ class MovimientoEstadosImportController extends Controller
                     }
                 }
 
-                MovimientoStock::create([
+                $movIngreso = MovimientoStock::create([
                     'tipo' => 'entrada',
                     'tipo_movimiento' => 'ingreso_estados',
                     'origen_hospital_id' => null,
@@ -297,6 +297,7 @@ class MovimientoEstadosImportController extends Controller
                     $codigoDespacho = 'DESP-EST-' . Str::upper(Str::random(8));
 
                     $movimiento = MovimientoStock::create([
+                        'id_ingreso' => (int) $movIngreso->id,
                         'tipo' => 'transferencia',
                         'tipo_movimiento' => 'despacho_estados',
                         'origen_hospital_id' => self::CENTRAL_HOSPITAL_ID,

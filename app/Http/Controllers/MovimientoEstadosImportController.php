@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\AlmacenCentral;
+use App\Models\Hospital;
 use App\Models\Insumo;
 use App\Models\Lote;
 use App\Models\LoteGrupo;
 use App\Models\MovimientoStock;
+use App\Models\Sede;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -19,9 +21,6 @@ class MovimientoEstadosImportController extends Controller
 {
     private const CENTRAL_HOSPITAL_ID = 1;
     private const CENTRAL_SEDE_ID = 1;
-    private const AUS_HOSPITAL_ID = 1;
-    private const AUS_SEDE_ID = 12;
-    private const AUS_ALMACEN_ID = 1;
 
     /**
      * POST /api/movimiento/estados/import
@@ -232,6 +231,8 @@ class MovimientoEstadosImportController extends Controller
                         continue;
                     }
 
+                    [$destinoHospitalId, $destinoSedeId] = $this->resolverDestinoAusPorEstado($estado);
+
                     $itemsLotes = [];
                     $detalleInsumos = [];
                     foreach ($insumos as $insumoId => $cantidad) {
@@ -270,12 +271,12 @@ class MovimientoEstadosImportController extends Controller
                         'tipo_movimiento' => 'despacho_estados',
                         'origen_hospital_id' => self::CENTRAL_HOSPITAL_ID,
                         'origen_sede_id' => self::CENTRAL_SEDE_ID,
-                        'destino_hospital_id' => self::AUS_HOSPITAL_ID,
-                        'destino_sede_id' => self::AUS_SEDE_ID,
+                        'destino_hospital_id' => $destinoHospitalId,
+                        'destino_sede_id' => $destinoSedeId,
                         'origen_almacen_tipo' => 'almacenCent',
                         'origen_almacen_id' => null,
                         'destino_almacen_tipo' => 'almacenAus',
-                        'destino_almacen_id' => self::AUS_ALMACEN_ID,
+                        'destino_almacen_id' => null,
                         'cantidad_salida_total' => $totalEstado,
                         'cantidad_entrada_total' => 0,
                         'discrepancia_total' => false,
@@ -422,5 +423,58 @@ class MovimientoEstadosImportController extends Controller
                 'fecha_ingreso' => $fecha->copy()->startOfDay()->toDateString(),
             ]
         );
+    }
+
+    private function resolverDestinoAusPorEstado(string $estado): array
+    {
+        $estadoKey = $this->normalizarClave($estado);
+        if ($estadoKey === '') {
+            throw new \RuntimeException('Estado de destino vacío.');
+        }
+
+        $hospitalesAus = Hospital::query()
+            ->whereNotNull('tipo')
+            ->whereNotNull('estado')
+            ->get(['id', 'tipo', 'estado']);
+
+        $hospitalDestino = $hospitalesAus->first(function (Hospital $h) use ($estadoKey) {
+            $tipoKey = $this->normalizarClave((string) $h->tipo);
+            $esAus = in_array($tipoKey, ['almacenaus', 'almacen_aus', 'aus', 'almacenaus1'], true)
+                || Str::contains($tipoKey, 'aus');
+
+            if (!$esAus) {
+                return false;
+            }
+
+            return $this->normalizarClave((string) $h->estado) === $estadoKey;
+        });
+
+        if (!$hospitalDestino) {
+            throw new \RuntimeException('No existe un hospital/autoridad AUS configurado para el estado: ' . $estado);
+        }
+
+        $sedes = Sede::query()
+            ->where('hospital_id', $hospitalDestino->id)
+            ->orderBy('id')
+            ->get(['id', 'tipo_almacen', 'hospital_id']);
+
+        $sedeDestino = $sedes->first(function (Sede $s) {
+            $tipoKey = $this->normalizarClave((string) ($s->tipo_almacen ?? ''));
+            return $tipoKey === 'almacenaus' || Str::contains($tipoKey, 'aus');
+        }) ?? $sedes->first();
+
+        if (!$sedeDestino) {
+            throw new \RuntimeException('El hospital AUS ' . $hospitalDestino->id . ' no tiene sedes configuradas para el estado: ' . $estado);
+        }
+
+        return [(int) $hospitalDestino->id, (int) $sedeDestino->id];
+    }
+
+    private function normalizarClave(string $valor): string
+    {
+        $v = Str::lower(Str::ascii(trim($valor)));
+        $v = str_replace([' ', '-', '__'], ['', '', ''], $v);
+        $v = str_replace('_', '', $v);
+        return $v;
     }
 }

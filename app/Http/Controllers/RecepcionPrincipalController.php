@@ -761,6 +761,11 @@ class RecepcionPrincipalController extends Controller
             return 'tipo' . $m[1];
         }
 
+        // Soportar formatos como "hospital_tipo1", "hospitaltipo1"
+        if (preg_match('/^hospitaltipo([1-4])$/', $t, $m)) {
+            return 'tipo' . $m[1];
+        }
+
         return $t;
     }
 

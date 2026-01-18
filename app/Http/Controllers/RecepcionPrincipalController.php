@@ -446,6 +446,7 @@ class RecepcionPrincipalController extends Controller
             'movimientos_creados' => 0,
             'insumos_procesados' => 0,
             'hospitales_estado_total' => 0,
+            'tipos_hospital_detectados' => [],
             'hospitales_elegibles_por_insumo' => [],
             'omitidos' => [],
             'errores' => [],
@@ -495,6 +496,12 @@ class RecepcionPrincipalController extends Controller
             ->get(['id', 'nombre', 'tipo']);
 
         $resumen['hospitales_estado_total'] = (int) $hospitalesEstado->count();
+        $resumen['tipos_hospital_detectados'] = $hospitalesEstado
+            ->pluck('tipo')
+            ->map(fn ($t) => is_null($t) ? null : (string) $t)
+            ->unique()
+            ->values()
+            ->all();
 
         if ($hospitalesEstado->isEmpty()) {
             $resumen['motivo'] = 'No hay hospitales activos en el estado para distribuir (excluyendo AUS)';
@@ -569,6 +576,18 @@ class RecepcionPrincipalController extends Controller
                 $resumen['omitidos'][] = [
                     'insumo_id' => (int) $insumoId,
                     'motivo' => 'Plan de distribución vacío (porcentajes/tipos no coinciden)',
+                    'tipos_detectados' => $hospitalesElegibles
+                        ->pluck('tipo')
+                        ->map(fn ($t) => is_null($t) ? null : (string) $t)
+                        ->unique()
+                        ->values()
+                        ->all(),
+                    'porcentajes' => [
+                        'tipo1' => (float) $porcentajes->tipo1,
+                        'tipo2' => (float) $porcentajes->tipo2,
+                        'tipo3' => (float) $porcentajes->tipo3,
+                        'tipo4' => (float) $porcentajes->tipo4,
+                    ],
                 ];
                 continue;
             }
@@ -645,7 +664,9 @@ class RecepcionPrincipalController extends Controller
         }
 
         if ($resumen['motivo'] === null) {
-            $resumen['motivo'] = 'OK';
+            $resumen['motivo'] = $resumen['movimientos_creados'] > 0
+                ? 'OK'
+                : 'No se generaron movimientos (revisar tipos de hospital, porcentajes, sedes almacenPrin y stock AUS)';
         }
 
         Log::info('DistribucionAutomaticaAUS: end', [
@@ -659,7 +680,7 @@ class RecepcionPrincipalController extends Controller
     private function calcularPlanDistribucionPorHospital(int $cantidadTotal, TipoHospitalDistribucion $porcentajes, $hospitalesElegibles): array
     {
         $hospitalesPorTipo = $hospitalesElegibles->groupBy(function ($h) {
-            return (string) ($h->tipo ?? '');
+            return $this->mapearTipoHospitalAClavePorcentaje((string) ($h->tipo ?? ''));
         });
 
         $mapaPorcentaje = [
@@ -672,9 +693,8 @@ class RecepcionPrincipalController extends Controller
         $asignacion = [];
         $ordenHospitales = [];
 
-        foreach ($hospitalesPorTipo as $tipo => $hospitales) {
-            $tipoKey = $this->normalizarClave((string) $tipo);
-            if (!array_key_exists($tipoKey, $mapaPorcentaje)) {
+        foreach ($hospitalesPorTipo as $tipoKey => $hospitales) {
+            if ($tipoKey === '' || !array_key_exists($tipoKey, $mapaPorcentaje)) {
                 continue;
             }
 
@@ -725,6 +745,23 @@ class RecepcionPrincipalController extends Controller
         }
 
         return $asignacion;
+    }
+
+    private function mapearTipoHospitalAClavePorcentaje(string $tipo): string
+    {
+        $t = $this->normalizarClave($tipo);
+
+        // Soportar formatos numéricos en BD (1,2,3,4)
+        if (in_array($t, ['1', '2', '3', '4'], true)) {
+            return 'tipo' . $t;
+        }
+
+        // Soportar formatos como "tipo 1", "Tipo 1", "tipo1"
+        if (preg_match('/^tipo([1-4])$/', $t, $m)) {
+            return 'tipo' . $m[1];
+        }
+
+        return $t;
     }
 
     private function tomarStockAusPorInsumoFIFO(int $ausHospitalId, int $ausSedeId, int $insumoId, int $cantidadNecesaria): array

@@ -179,6 +179,8 @@ class RecepcionPrincipalController extends Controller
                     $mapaRecibido[(int) $item['lote_id']] = (int) $item['cantidad'];
                 }
 
+                $totalCantidadEntradaAplicada = 0;
+
                 $aceptados = [];
                 $discrepancias = [];
 
@@ -219,7 +221,10 @@ class RecepcionPrincipalController extends Controller
                     }
                     
                     $cantidadEsperada = (int) $loteGrupo->cantidad_salida;
+                    $cantidadAplicada = min($cantidadRecibida, $cantidadEsperada);
                     $tieneDiscrepancia = $cantidadRecibida !== $cantidadEsperada;
+
+                    $totalCantidadEntradaAplicada += $cantidadAplicada;
 
                     // Determinar tabla de destino según el tipo de almacén
                     $tablaDestino = $this->obtenerTablaAlmacen($movimiento->destino_almacen_tipo);
@@ -235,7 +240,7 @@ class RecepcionPrincipalController extends Controller
                         ->first();
 
                     if ($registroDestino) {
-                        $nuevaCantidad = (int) $registroDestino->cantidad + $cantidadRecibida;
+                        $nuevaCantidad = (int) $registroDestino->cantidad + $cantidadAplicada;
                         DB::table($tablaDestino)
                             ->where('id', $registroDestino->id)
                             ->update([
@@ -248,8 +253,8 @@ class RecepcionPrincipalController extends Controller
                             'hospital_id' => $movimiento->destino_hospital_id,
                             'sede_id' => $movimiento->destino_sede_id,
                             'lote_id' => $loteId,
-                            'cantidad' => $cantidadRecibida,
-                            'status' => $cantidadRecibida > 0 ? 1 : 0,
+                            'cantidad' => $cantidadAplicada,
+                            'status' => $cantidadAplicada > 0 ? 1 : 0,
                             'created_at' => now(),
                             'updated_at' => now(),
                         ]);
@@ -257,7 +262,7 @@ class RecepcionPrincipalController extends Controller
 
                     // Actualizar lote grupo con cantidad_entrada y discrepancia
                     $loteGrupo->update([
-                        'cantidad_entrada' => $cantidadRecibida,
+                        'cantidad_entrada' => $cantidadAplicada,
                         'discrepancia' => $tieneDiscrepancia,
                     ]);
 
@@ -274,7 +279,7 @@ class RecepcionPrincipalController extends Controller
                             'codigo_lote_grupo' => $loteGrupo->codigo,
                             'cantidad_esperada' => $cantidadEsperada,
                             'cantidad_recibida' => $cantidadRecibida,
-                            'observaciones' => "Discrepancia automática: esperado {$cantidadEsperada}, recibido {$cantidadRecibida}"
+                            'observaciones' => "Discrepancia automática: esperado {$cantidadEsperada}, recibido {$cantidadRecibida}, aplicado {$cantidadAplicada}"
                         ]);
                     }
                 }
@@ -311,10 +316,7 @@ class RecepcionPrincipalController extends Controller
                     }
                 }
 
-                $totalCantidadEntrada = 0;
-                foreach ($itemsRecibidos as $item) {
-                    $totalCantidadEntrada += (int) $item['cantidad'];
-                }
+                $totalCantidadEntrada = (int) $totalCantidadEntradaAplicada;
 
                 // Verificar si hay discrepancia total
                 $totalCantidadSalida = (int) $movimiento->cantidad_salida_total;

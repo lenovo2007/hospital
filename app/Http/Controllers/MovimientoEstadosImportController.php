@@ -262,6 +262,36 @@ class MovimientoEstadosImportController extends Controller
                         continue;
                     }
 
+                    // Descontar del almacén central lo que se va a despachar hacia AUS
+                    foreach ($itemsLotes as $it) {
+                        $loteId = (int) ($it['lote_id'] ?? 0);
+                        $cantidadDespachar = (int) ($it['cantidad'] ?? 0);
+                        if ($loteId <= 0 || $cantidadDespachar <= 0) {
+                            continue;
+                        }
+
+                        $registroCentral = AlmacenCentral::query()
+                            ->lockForUpdate()
+                            ->where('hospital_id', self::CENTRAL_HOSPITAL_ID)
+                            ->where('sede_id', self::CENTRAL_SEDE_ID)
+                            ->where('lote_id', $loteId)
+                            ->where('status', true)
+                            ->first();
+
+                        if (!$registroCentral) {
+                            throw new \InvalidArgumentException('No existe stock en almacén central para lote_id=' . $loteId);
+                        }
+
+                        if ((int) $registroCentral->cantidad < $cantidadDespachar) {
+                            throw new \InvalidArgumentException('Stock insuficiente en almacén central para lote_id=' . $loteId . '. Disponible=' . (int) $registroCentral->cantidad . ', solicitado=' . $cantidadDespachar);
+                        }
+
+                        $nuevaCantidad = (int) $registroCentral->cantidad - $cantidadDespachar;
+                        $registroCentral->cantidad = $nuevaCantidad;
+                        $registroCentral->status = $nuevaCantidad > 0;
+                        $registroCentral->save();
+                    }
+
                     [$codigoGrupo, $grupoItems] = LoteGrupo::crearGrupo($itemsLotes);
 
                     $codigoDespacho = 'DESP-EST-' . Str::upper(Str::random(8));

@@ -251,6 +251,10 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
     // Recepción en almacén principal de una distribución central
     Route::post('/movimiento/almacen/entrada', [RecepcionPrincipalController::class, 'recibir']);
 
+    // Reintentar distribución automática desde AUS a hospitales por estado (a partir de un movimiento)
+    Route::post('/movimiento/almacen/entrada/redistribuir', [RecepcionPrincipalController::class, 'redistribuir'])
+        ->withoutMiddleware(\App\Http\Middleware\CheckCrudPermissions::class);
+
     // Despachos a pacientes - CRUD simplificado
     Route::prefix('despachos-pacientes')->group(function () {
         Route::get('/', [DespachoPacienteController::class, 'index']);

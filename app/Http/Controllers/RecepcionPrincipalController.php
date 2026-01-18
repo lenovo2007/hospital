@@ -17,6 +17,89 @@ use Throwable;
 
 class RecepcionPrincipalController extends Controller
 {
+    public function redistribuir(Request $request)
+    {
+        $data = $request->validate([
+            'movimiento_stock_id' => ['required', 'integer', 'min:1'],
+            'fecha_despacho' => ['nullable', 'date'],
+        ]);
+
+        $userId = (int) $request->user()->id;
+        $movimientoId = (int) $data['movimiento_stock_id'];
+        $fecha = isset($data['fecha_despacho']) ? (string) $data['fecha_despacho'] : (string) now()->toDateString();
+
+        try {
+            Log::info('RecepcionPrincipalController@redistribuir: request', [
+                'movimiento_stock_id' => $movimientoId,
+                'user_id' => $userId,
+                'fecha_despacho' => $fecha,
+            ]);
+
+            $movimiento = MovimientoStock::query()->where('id', $movimientoId)->first();
+            if (!$movimiento) {
+                throw new InvalidArgumentException('No existe un movimiento con el ID indicado.');
+            }
+
+            if (!$movimiento->codigo_grupo) {
+                throw new InvalidArgumentException('El movimiento no tiene codigo_grupo para reconstruir items.');
+            }
+
+            $itemsGrupo = LoteGrupo::query()
+                ->where('codigo', (string) $movimiento->codigo_grupo)
+                ->where('status', 'activo')
+                ->get(['lote_id', 'cantidad_salida', 'cantidad_entrada']);
+
+            if ($itemsGrupo->isEmpty()) {
+                throw new InvalidArgumentException('No se encontraron items asociados al codigo_grupo del movimiento.');
+            }
+
+            $items = [];
+            foreach ($itemsGrupo as $it) {
+                $cantidad = (int) ($it->cantidad_entrada > 0 ? $it->cantidad_entrada : $it->cantidad_salida);
+                if ($cantidad <= 0) {
+                    continue;
+                }
+                $items[] = [
+                    'lote_id' => (int) $it->lote_id,
+                    'cantidad' => $cantidad,
+                ];
+            }
+
+            if (empty($items)) {
+                throw new InvalidArgumentException('Los items del grupo no tienen cantidades válidas para redistribuir.');
+            }
+
+            $resumen = $this->distribuirAutomaticoDesdeAusSiAplica($movimiento, $items, $userId, $fecha);
+
+            return response()->json([
+                'status' => true,
+                'mensaje' => 'Redistribución procesada.',
+                'data' => [
+                    'movimiento_stock_id' => $movimientoId,
+                    'codigo_grupo' => (string) $movimiento->codigo_grupo,
+                    'distribucion' => $resumen,
+                ],
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        } catch (InvalidArgumentException $e) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => $e->getMessage(),
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        } catch (Throwable $e) {
+            Log::error('RecepcionPrincipalController@redistribuir: error', [
+                'movimiento_stock_id' => $movimientoId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Error inesperado al redistribuir: ' . $e->getMessage(),
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        }
+    }
+
     public function recibir(Request $request)
     {
         $data = $request->validate([

@@ -36,6 +36,12 @@ class RecepcionPrincipalController extends Controller
         ];
 
         try {
+            Log::info('RecepcionPrincipalController@recibir: request', [
+                'movimiento_stock_id' => (int) $data['movimiento_stock_id'],
+                'items_count' => is_array($data['items']) ? count($data['items']) : null,
+                'user_id' => $userId,
+            ]);
+
             $payloadDistribucion = null;
 
             DB::transaction(function () use ($data, $userId, &$resultado, &$payloadDistribucion) {
@@ -263,6 +269,14 @@ class RecepcionPrincipalController extends Controller
                         (int) $payloadDistribucion['user_id'],
                         (string) $payloadDistribucion['fecha']
                     );
+
+                    Log::info('RecepcionPrincipalController@recibir: distribucion_resumen', [
+                        'movimiento_stock_id' => (int) $payloadDistribucion['movimiento']->id,
+                        'destino_almacen_tipo' => (string) $payloadDistribucion['movimiento']->destino_almacen_tipo,
+                        'destino_hospital_id' => (int) $payloadDistribucion['movimiento']->destino_hospital_id,
+                        'destino_sede_id' => (int) $payloadDistribucion['movimiento']->destino_sede_id,
+                        'resumen' => $resultado['distribucion'],
+                    ]);
                 } catch (Throwable $e) {
                     $resultado['distribucion'] = [
                         'aplico' => false,
@@ -270,6 +284,11 @@ class RecepcionPrincipalController extends Controller
                         'movimientos_creados' => 0,
                         'errores' => [$e->getMessage()],
                     ];
+
+                    Log::error('RecepcionPrincipalController@recibir: distribucion_error', [
+                        'movimiento_stock_id' => (int) $payloadDistribucion['movimiento']->id,
+                        'error' => $e->getMessage(),
+                    ]);
                 }
             }
 
@@ -348,6 +367,14 @@ class RecepcionPrincipalController extends Controller
             'omitidos' => [],
             'errores' => [],
         ];
+
+        Log::info('DistribucionAutomaticaAUS: start', [
+            'movimiento_stock_id' => (int) $movimiento->id,
+            'destino_almacen_tipo' => (string) $movimiento->destino_almacen_tipo,
+            'destino_hospital_id' => (int) $movimiento->destino_hospital_id,
+            'destino_sede_id' => (int) $movimiento->destino_sede_id,
+            'items_count' => is_array($itemsRecibidos) ? count($itemsRecibidos) : null,
+        ]);
 
         if ($movimiento->destino_almacen_tipo !== 'almacenAus') {
             $resumen['motivo'] = 'No aplica: destino_almacen_tipo != almacenAus';
@@ -537,6 +564,11 @@ class RecepcionPrincipalController extends Controller
         if ($resumen['motivo'] === null) {
             $resumen['motivo'] = 'OK';
         }
+
+        Log::info('DistribucionAutomaticaAUS: end', [
+            'movimiento_stock_id' => (int) $movimiento->id,
+            'resumen' => $resumen,
+        ]);
 
         return $resumen;
     }

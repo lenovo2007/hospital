@@ -448,6 +448,8 @@ class RecepcionPrincipalController extends Controller
             'hospitales_estado_total' => 0,
             'tipos_hospital_detectados' => [],
             'hospitales_elegibles_por_insumo' => [],
+            'sobrante_por_insumo' => [],
+            'sobrante_total' => 0,
             'omitidos' => [],
             'errores' => [],
         ];
@@ -560,6 +562,8 @@ class RecepcionPrincipalController extends Controller
 
         foreach ($cantidadPorInsumo as $insumoId => $cantidadTotal) {
             $resumen['insumos_procesados']++;
+            $distribuidoEsteInsumo = 0;
+
             $hospitalesElegibles = $hospitalesEstado->filter(function ($h) use ($fichaMap, $insumoId) {
                 $hid = (int) $h->id;
                 return ($fichaMap[$hid][$insumoId] ?? false) === true;
@@ -577,6 +581,8 @@ class RecepcionPrincipalController extends Controller
 
             $plan = $this->calcularPlanDistribucionPorHospital($cantidadTotal, $porcentajes, $hospitalesElegibles);
             if (empty($plan)) {
+                $resumen['sobrante_por_insumo'][(int) $insumoId] = (int) $cantidadTotal;
+                $resumen['sobrante_total'] += (int) $cantidadTotal;
                 $resumen['omitidos'][] = [
                     'insumo_id' => (int) $insumoId,
                     'motivo' => 'Plan de distribución vacío (porcentajes/tipos no coinciden)',
@@ -634,6 +640,8 @@ class RecepcionPrincipalController extends Controller
                     continue;
                 }
 
+                $distribuidoEsteInsumo += (int) $cantidadHospital;
+
                 $hid = (int) $hospitalId;
                 if (!isset($acumuladoPorHospital[$hid])) {
                     $acumuladoPorHospital[$hid] = [
@@ -650,6 +658,14 @@ class RecepcionPrincipalController extends Controller
                     }
                     $acumuladoPorHospital[$hid]['items'][$loteId] = ($acumuladoPorHospital[$hid]['items'][$loteId] ?? 0) + $cant;
                 }
+            }
+
+            $sobrante = (int) $cantidadTotal - (int) $distribuidoEsteInsumo;
+            if ($sobrante > 0) {
+                $resumen['sobrante_por_insumo'][(int) $insumoId] = $sobrante;
+                $resumen['sobrante_total'] += $sobrante;
+            } else {
+                $resumen['sobrante_por_insumo'][(int) $insumoId] = 0;
             }
         }
 
@@ -766,19 +782,6 @@ class RecepcionPrincipalController extends Controller
                 $asignacion[$hid] = ($asignacion[$hid] ?? 0) + $base + ($idx < $resto ? 1 : 0);
                 $ordenHospitales[] = $hid;
                 $idx++;
-            }
-        }
-
-        $sum = array_sum($asignacion);
-        $faltante = $cantidadTotal - $sum;
-        if ($faltante > 0 && !empty($ordenHospitales)) {
-            $i = 0;
-            $n = count($ordenHospitales);
-            while ($faltante > 0 && $n > 0) {
-                $hid = $ordenHospitales[$i % $n];
-                $asignacion[$hid] = ($asignacion[$hid] ?? 0) + 1;
-                $faltante--;
-                $i++;
             }
         }
 

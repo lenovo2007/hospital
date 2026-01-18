@@ -2,12 +2,16 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\FichaInsumo;
+use App\Models\Hospital;
 use App\Models\LoteGrupo;
 use App\Models\MovimientoStock;
 use App\Models\MovimientoDiscrepancia;
+use App\Models\TipoHospitalDistribucion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 use Throwable;
 
@@ -236,6 +240,13 @@ class RecepcionPrincipalController extends Controller
                     'user_id_receptor' => $data['user_id_receptor'],
                 ]);
 
+                $this->distribuirAutomaticoDesdeAusSiAplica(
+                    $movimiento,
+                    $itemsRecibidos,
+                    $userId,
+                    (string) $data['fecha_recepcion']
+                );
+
 
                 $resultado['estado'] = $estadoFinal;
                 $resultado['discrepancias'] = $discrepancias;
@@ -302,5 +313,283 @@ class RecepcionPrincipalController extends Controller
             // Otros tipos por si acaso (mantener lógica de repartidor)
             default => ['entregado'],
         };
+    }
+
+    private function distribuirAutomaticoDesdeAusSiAplica(MovimientoStock $movimiento, array $itemsRecibidos, int $userId, string $fechaDespacho): void
+    {
+        if ($movimiento->destino_almacen_tipo !== 'almacenAus') {
+            return;
+        }
+
+        $ausHospital = Hospital::query()->where('id', $movimiento->destino_hospital_id)->first();
+        if (!$ausHospital) {
+            throw new InvalidArgumentException('No se encontró el hospital AUS destino para la distribución automática.');
+        }
+
+        $estado = (string) ($ausHospital->estado ?? '');
+        if (trim($estado) === '') {
+            throw new InvalidArgumentException('El hospital AUS destino no tiene estado configurado.');
+        }
+
+        $porcentajes = TipoHospitalDistribucion::query()->first();
+        if (!$porcentajes) {
+            throw new InvalidArgumentException('No se encontró configuración de porcentajes (tipos_hospital_distribuciones).');
+        }
+
+        $hospitalesEstado = Hospital::query()
+            ->where('status', true)
+            ->where('estado', $estado)
+            ->where('id', '!=', (int) $ausHospital->id)
+            ->get(['id', 'nombre', 'tipo']);
+
+        if ($hospitalesEstado->isEmpty()) {
+            return;
+        }
+
+        $loteIds = array_values(array_unique(array_map(fn ($i) => (int) $i['lote_id'], $itemsRecibidos)));
+        if (empty($loteIds)) {
+            return;
+        }
+
+        $lotes = DB::table('lotes')
+            ->whereIn('id', $loteIds)
+            ->get(['id', 'id_insumo', 'fecha_vencimiento']);
+
+        $insumoIds = $lotes->pluck('id_insumo')->unique()->values()->all();
+        if (empty($insumoIds)) {
+            return;
+        }
+
+        $fichas = FichaInsumo::query()
+            ->whereIn('hospital_id', $hospitalesEstado->pluck('id')->all())
+            ->whereIn('insumo_id', $insumoIds)
+            ->get(['hospital_id', 'insumo_id', 'status']);
+
+        $fichaMap = [];
+        foreach ($fichas as $f) {
+            $fichaMap[(int) $f->hospital_id][(int) $f->insumo_id] = (bool) $f->status;
+        }
+
+        $cantidadPorInsumo = [];
+        foreach ($itemsRecibidos as $item) {
+            $loteId = (int) $item['lote_id'];
+            $cantidad = (int) $item['cantidad'];
+            if ($cantidad <= 0) {
+                continue;
+            }
+            $lote = $lotes->firstWhere('id', $loteId);
+            if (!$lote) {
+                continue;
+            }
+            $insumoId = (int) $lote->id_insumo;
+            $cantidadPorInsumo[$insumoId] = ($cantidadPorInsumo[$insumoId] ?? 0) + $cantidad;
+        }
+
+        if (empty($cantidadPorInsumo)) {
+            return;
+        }
+
+        foreach ($cantidadPorInsumo as $insumoId => $cantidadTotal) {
+            $hospitalesElegibles = $hospitalesEstado->filter(function ($h) use ($fichaMap, $insumoId) {
+                $hid = (int) $h->id;
+                return ($fichaMap[$hid][$insumoId] ?? false) === true;
+            });
+
+            if ($hospitalesElegibles->isEmpty()) {
+                continue;
+            }
+
+            $plan = $this->calcularPlanDistribucionPorHospital($cantidadTotal, $porcentajes, $hospitalesElegibles);
+            if (empty($plan)) {
+                continue;
+            }
+
+            foreach ($plan as $hospitalId => $cantidadHospital) {
+                $cantidadHospital = (int) $cantidadHospital;
+                if ($cantidadHospital <= 0) {
+                    continue;
+                }
+
+                $sedeDestino = DB::table('sedes')
+                    ->where('hospital_id', (int) $hospitalId)
+                    ->where('tipo_almacen', 'almacenPrin')
+                    ->first();
+
+                if (!$sedeDestino) {
+                    continue;
+                }
+
+                $itemsDespacho = $this->tomarStockAusPorInsumoFIFO(
+                    (int) $movimiento->destino_hospital_id,
+                    (int) $movimiento->destino_sede_id,
+                    (int) $insumoId,
+                    (int) $cantidadHospital
+                );
+
+                if (empty($itemsDespacho)) {
+                    continue;
+                }
+
+                [$codigoGrupo, $grupoItems] = LoteGrupo::crearGrupo($itemsDespacho);
+
+                $totalCantidad = 0;
+                foreach ($itemsDespacho as $it) {
+                    $totalCantidad += (int) $it['cantidad'];
+                }
+
+                MovimientoStock::create([
+                    'tipo' => 'transferencia',
+                    'tipo_movimiento' => 'despacho',
+                    'origen_hospital_id' => (int) $movimiento->destino_hospital_id,
+                    'origen_sede_id' => (int) $movimiento->destino_sede_id,
+                    'destino_hospital_id' => (int) $hospitalId,
+                    'destino_sede_id' => (int) $sedeDestino->id,
+                    'origen_almacen_tipo' => 'almacenAus',
+                    'origen_almacen_id' => null,
+                    'destino_almacen_tipo' => 'almacenPrin',
+                    'destino_almacen_id' => null,
+                    'cantidad_salida_total' => $totalCantidad,
+                    'cantidad_entrada_total' => 0,
+                    'discrepancia_total' => false,
+                    'fecha_despacho' => $fechaDespacho,
+                    'observaciones' => 'Distribución automática desde AUS (' . $estado . ')',
+                    'estado' => 'pendiente',
+                    'codigo_grupo' => $codigoGrupo,
+                    'user_id' => $userId,
+                    'user_id_receptor' => null,
+                ]);
+            }
+        }
+    }
+
+    private function calcularPlanDistribucionPorHospital(int $cantidadTotal, TipoHospitalDistribucion $porcentajes, $hospitalesElegibles): array
+    {
+        $hospitalesPorTipo = $hospitalesElegibles->groupBy(function ($h) {
+            return (string) ($h->tipo ?? '');
+        });
+
+        $mapaPorcentaje = [
+            'tipo1' => (float) $porcentajes->tipo1,
+            'tipo2' => (float) $porcentajes->tipo2,
+            'tipo3' => (float) $porcentajes->tipo3,
+            'tipo4' => (float) $porcentajes->tipo4,
+        ];
+
+        $asignacion = [];
+        $ordenHospitales = [];
+
+        foreach ($hospitalesPorTipo as $tipo => $hospitales) {
+            $tipoKey = $this->normalizarClave((string) $tipo);
+            if (!array_key_exists($tipoKey, $mapaPorcentaje)) {
+                continue;
+            }
+
+            $count = (int) $hospitales->count();
+            if ($count <= 0) {
+                continue;
+            }
+
+            $porcTipo = (float) $mapaPorcentaje[$tipoKey];
+            if ($porcTipo <= 0) {
+                continue;
+            }
+
+            $cantidadTipo = (int) floor($cantidadTotal * ($porcTipo / 100.0));
+            if ($cantidadTipo <= 0) {
+                continue;
+            }
+
+            $base = intdiv($cantidadTipo, $count);
+            $resto = $cantidadTipo - ($base * $count);
+
+            $idx = 0;
+            foreach ($hospitales as $h) {
+                $hid = (int) $h->id;
+                $asignacion[$hid] = ($asignacion[$hid] ?? 0) + $base + ($idx < $resto ? 1 : 0);
+                $ordenHospitales[] = $hid;
+                $idx++;
+            }
+        }
+
+        $sum = array_sum($asignacion);
+        $faltante = $cantidadTotal - $sum;
+        if ($faltante > 0 && !empty($ordenHospitales)) {
+            $i = 0;
+            $n = count($ordenHospitales);
+            while ($faltante > 0 && $n > 0) {
+                $hid = $ordenHospitales[$i % $n];
+                $asignacion[$hid] = ($asignacion[$hid] ?? 0) + 1;
+                $faltante--;
+                $i++;
+            }
+        }
+
+        foreach ($asignacion as $hid => $cant) {
+            if ((int) $cant <= 0) {
+                unset($asignacion[$hid]);
+            }
+        }
+
+        return $asignacion;
+    }
+
+    private function tomarStockAusPorInsumoFIFO(int $ausHospitalId, int $ausSedeId, int $insumoId, int $cantidadNecesaria): array
+    {
+        $items = [];
+        $restante = $cantidadNecesaria;
+
+        $lotesDisponibles = DB::table('almacenes_aus')
+            ->join('lotes', 'almacenes_aus.lote_id', '=', 'lotes.id')
+            ->where('almacenes_aus.hospital_id', $ausHospitalId)
+            ->where('almacenes_aus.sede_id', $ausSedeId)
+            ->where('lotes.id_insumo', $insumoId)
+            ->where('almacenes_aus.status', true)
+            ->where('almacenes_aus.cantidad', '>', 0)
+            ->select('almacenes_aus.id as almacen_id', 'almacenes_aus.lote_id', 'almacenes_aus.cantidad', 'lotes.fecha_vencimiento')
+            ->orderBy('lotes.fecha_vencimiento', 'asc')
+            ->lockForUpdate()
+            ->get();
+
+        foreach ($lotesDisponibles as $row) {
+            if ($restante <= 0) {
+                break;
+            }
+
+            $disp = (int) $row->cantidad;
+            if ($disp <= 0) {
+                continue;
+            }
+
+            $tomar = min($restante, $disp);
+            $items[] = [
+                'lote_id' => (int) $row->lote_id,
+                'cantidad' => (int) $tomar,
+            ];
+
+            $nuevaCantidad = $disp - $tomar;
+            DB::table('almacenes_aus')
+                ->where('id', (int) $row->almacen_id)
+                ->update([
+                    'cantidad' => $nuevaCantidad,
+                    'status' => $nuevaCantidad > 0 ? 1 : 0,
+                    'updated_at' => now(),
+                ]);
+
+            $restante -= $tomar;
+        }
+
+        if ($restante > 0) {
+            throw new InvalidArgumentException('Stock insuficiente en almacén AUS para distribuir el insumo ID ' . $insumoId . '. Faltante: ' . $restante);
+        }
+
+        return $items;
+    }
+
+    private function normalizarClave(string $valor): string
+    {
+        $v = Str::lower(Str::ascii(trim($valor)));
+        $v = str_replace([' ', '-', '__'], ['', '', ''], $v);
+        $v = str_replace('_', '', $v);
+        return $v;
     }
 }

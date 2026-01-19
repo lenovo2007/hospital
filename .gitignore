@@ -30,3 +30,6 @@ install.sh
 key
 key.pub
 php_test.php
+
+# Server configuration files
+public/.user.ini

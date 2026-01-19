@@ -23,3 +23,10 @@
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteRule ^ index.php [L]
 </IfModule>
+
+# For alwaysdata compatibility
+<IfModule mod_php8.c>
+    php_flag display_errors Off
+    php_value memory_limit 256M
+    php_value max_execution_time 300
+</IfModule>

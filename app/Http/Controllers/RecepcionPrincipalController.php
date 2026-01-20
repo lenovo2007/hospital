@@ -741,10 +741,6 @@ class RecepcionPrincipalController extends Controller
 
     private function calcularPlanDistribucionPorHospital(int $cantidadTotal, TipoHospitalDistribucion $porcentajes, $hospitalesElegibles): array
     {
-        $hospitalesPorTipo = $hospitalesElegibles->groupBy(function ($h) {
-            return $this->mapearTipoHospitalAClavePorcentaje((string) ($h->tipo ?? ''));
-        });
-
         $mapaPorcentaje = [
             'tipo1' => (float) $porcentajes->tipo1,
             'tipo2' => (float) $porcentajes->tipo2,
@@ -753,44 +749,58 @@ class RecepcionPrincipalController extends Controller
         ];
 
         $asignacion = [];
-        $ordenHospitales = [];
+        $hospitalIds = [];
+        $sumaAsignada = 0;
 
-        foreach ($hospitalesPorTipo as $tipoKey => $hospitales) {
-            if ($tipoKey === '' || !array_key_exists($tipoKey, $mapaPorcentaje)) {
+        foreach ($hospitalesElegibles as $h) {
+            $hid = (int) $h->id;
+            $tipoKey = $this->mapearTipoHospitalAClavePorcentaje((string) ($h->tipo ?? ''));
+            $pct = (float) ($mapaPorcentaje[$tipoKey] ?? 0);
+            if ($hid <= 0 || $pct <= 0) {
                 continue;
             }
 
-            $count = (int) $hospitales->count();
-            if ($count <= 0) {
+            $cantidadHospital = (int) floor($cantidadTotal * ($pct / 100.0));
+            if ($cantidadHospital <= 0) {
                 continue;
             }
 
-            $porcTipo = (float) $mapaPorcentaje[$tipoKey];
-            if ($porcTipo <= 0) {
-                continue;
-            }
-
-            $cantidadTipo = (int) floor($cantidadTotal * ($porcTipo / 100.0));
-            if ($cantidadTipo <= 0) {
-                continue;
-            }
-
-            $base = intdiv($cantidadTipo, $count);
-            $resto = $cantidadTipo - ($base * $count);
-
-            $idx = 0;
-            foreach ($hospitales as $h) {
-                $hid = (int) $h->id;
-                $asignacion[$hid] = ($asignacion[$hid] ?? 0) + $base + ($idx < $resto ? 1 : 0);
-                $ordenHospitales[] = $hid;
-                $idx++;
-            }
+            $asignacion[$hid] = $cantidadHospital;
+            $hospitalIds[] = $hid;
+            $sumaAsignada += $cantidadHospital;
         }
 
-        foreach ($asignacion as $hid => $cant) {
-            if ((int) $cant <= 0) {
-                unset($asignacion[$hid]);
+        if (empty($asignacion) || $sumaAsignada <= 0) {
+            return [];
+        }
+
+        // Evitar asignar más que el total por redondeos o configuración.
+        if ($sumaAsignada > $cantidadTotal) {
+            $factor = $cantidadTotal / (float) $sumaAsignada;
+            $nuevo = [];
+            $nuevoSuma = 0;
+
+            sort($hospitalIds);
+            foreach ($hospitalIds as $hid) {
+                $cant = (int) floor(((int) $asignacion[$hid]) * $factor);
+                if ($cant > 0) {
+                    $nuevo[$hid] = $cant;
+                    $nuevoSuma += $cant;
+                }
             }
+
+            $resto = $cantidadTotal - $nuevoSuma;
+            $i = 0;
+            $keys = array_keys($nuevo);
+            $count = count($keys);
+            while ($resto > 0 && $count > 0) {
+                $hid = $keys[$i % $count];
+                $nuevo[$hid] = ((int) $nuevo[$hid]) + 1;
+                $resto--;
+                $i++;
+            }
+
+            $asignacion = $nuevo;
         }
 
         return $asignacion;

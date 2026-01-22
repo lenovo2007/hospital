@@ -4792,16 +4792,898 @@ paths:
       description: Crea una nueva ficha de insumo para un hospital
       tags: [Fichas de Insumos]
       security:
-        '400':
-          description: Error en la solicitud
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - hospital_id
+                - insumo_id
+              properties:
+                hospital_id:
+                  type: integer
+                  example: 5
+                insumo_id:
+                  type: integer
+                  example: 123
+                cantidad:
+                  type: integer
+                  default: 0
+                  example: 0
+                status:
+                  type: boolean
+                  default: true
+                  example: true
+      responses:
+        '201':
+          description: Ficha creada exitosamente
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
 
- # ========================================
- # COMPONENTS
- # ========================================
+  /api/ficha-insumos/hospital/{hospital_id}:
+    get:
+      summary: Listar fichas de insumos por hospital
+      description: |
+        Devuelve un listado paginado de fichas de insumos pertenecientes a un hospital
+        específico. Esta ruta es pública y no requiere token.
+      tags: [Fichas de Insumos]
+      security: []
+      parameters:
+        - name: hospital_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: Identificador del hospital
+        - name: insumo_id
+          in: query
+          schema:
+            type: integer
+          description: Filtrar por un insumo específico
+        - name: status
+          in: query
+          schema:
+            type: boolean
+          description: Filtrar por estado activo/inactivo de la ficha
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 50
+            maximum: 100
+          description: Cantidad de registros por página
+      responses:
+        '200':
+          description: Listado de fichas del hospital
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/ficha-insumos/{id}:
+    get:
+      summary: Obtener detalle de una ficha
+      tags: [Fichas de Insumos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Detalle de la ficha
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+    put:
+      summary: Actualizar una ficha de insumo
+      tags: [Fichas de Insumos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                cantidad:
+                  type: integer
+                  example: 50
+                status:
+                  type: boolean
+                  example: true
+      responses:
+        '200':
+          description: Ficha actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+    delete:
+      summary: Eliminar una ficha de insumo
+      tags: [Fichas de Insumos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Ficha eliminada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/ficha-insumos/generar/{hospital_id}:
+    post:
+      summary: Generar fichas de insumos para un hospital específico
+      description: |
+        Genera automáticamente fichas de todos los insumos activos para un hospital específico.
+        Cada ficha se crea con cantidad = 0.
+        
+        **Casos de uso:**
+        - Nuevo hospital registrado
+        - Hospital sin fichas de insumos
+        - Actualización masiva de fichas
+      tags: [Fichas de Insumos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: hospital_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID del hospital
+      responses:
+        '200':
+          description: Fichas generadas exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    example: true
+                  mensaje:
+                    type: string
+                    example: "Fichas de insumos generadas para el hospital."
+                  data:
+                    type: object
+                    properties:
+                      hospital_id:
+                        type: integer
+                        example: 5
+                      hospital_nombre:
+                        type: string
+                        example: "Hospital Central"
+                      total_insumos:
+                        type: integer
+                        example: 412
+                      fichas_creadas:
+                        type: integer
+                        example: 412
+                      fichas_existentes:
+                        type: integer
+                        example: 0
+        '404':
+          description: Hospital no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/ficha-insumos/generar-todos:
+    post:
+      summary: Generar fichas de insumos para TODOS los hospitales
+      description: |
+        Genera automáticamente fichas de todos los insumos activos para todos los hospitales activos.
+        
+        **Proceso:**
+        1. Obtiene todos los hospitales con status = 'activo'
+        2. Obtiene todos los insumos con status = true
+        3. Crea fichas para cada combinación hospital-insumo que no exista
+        
+        **Advertencia:** Esta operación puede tardar varios minutos si hay muchos hospitales e insumos.
+      tags: [Fichas de Insumos]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Fichas generadas exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    example: true
+                  mensaje:
+                    type: string
+                    example: "Fichas de insumos generadas para todos los hospitales."
+                  data:
+                    type: object
+                    properties:
+                      hospitales_procesados:
+                        type: integer
+                        example: 289
+                      total_insumos:
+                        type: integer
+                        example: 412
+                      fichas_creadas:
+                        type: integer
+                        example: 119068
+                      fichas_existentes:
+                        type: integer
+                        example: 0
+        '404':
+          description: No hay hospitales o insumos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/ficha-insumos/sincronizar-insumo/{insumo_id}:
+    post:
+      summary: Sincronizar un nuevo insumo en todos los hospitales
+      description: |
+        Cuando se registra un nuevo insumo, esta ruta crea automáticamente fichas
+        para ese insumo en todos los hospitales activos.
+        
+        **Casos de uso:**
+        - Nuevo insumo registrado
+        - Insumo reactivado
+        - Sincronización manual
+      tags: [Fichas de Insumos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: insumo_id
+          in: path
+          required: true
+          schema:
+            type: integer
+          description: ID del insumo
+      responses:
+        '200':
+          description: Insumo sincronizado exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    example: true
+                  mensaje:
+                    type: string
+                    example: "Insumo sincronizado en todos los hospitales."
+                  data:
+                    type: object
+                    properties:
+                      insumo_id:
+                        type: integer
+                        example: 413
+                      insumo_nombre:
+                        type: string
+                        example: "Paracetamol 500mg"
+                      hospitales_procesados:
+                        type: integer
+                        example: 289
+                      fichas_creadas:
+                        type: integer
+                        example: 289
+                      fichas_existentes:
+                        type: integer
+                        example: 0
+        '404':
+          description: Insumo no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  # ========================================
+  # IMPORTACION EXCEL
+  # ========================================
+  /api/hospitales/import:
+    post:
+      summary: Importar hospitales desde Excel
+      description: |
+        Importa hospitales desde un archivo Excel (.xls o .xlsx).
+        
+        **Formato del archivo:**
+        - Columna A: RIF (puede ser NULL o '?')
+        - Columna B: COD_SICM (puede ser NULL o '?')
+        - Columna C: Nombre (requerido)
+        - Columna D: Tipo
+        - Columna E: Dependencia
+        - Columna F: Estado
+        - Columna G: Municipio
+        - Columna H: Parroquia
+        - Columna I: Email
+        - Columna J: Nombre Contacto
+        - Columna K: Email Contacto
+        - Columna L: Teléfono (máx 50 caracteres)
+        - Columna M: Dirección
+        - Columna N: Latitud
+        - Columna O: Longitud
+        
+        **Procesamiento de datos:**
+        - **Campos de texto convertidos a minúsculas:** dependencia, estado, municipio, parroquia
+        - **Conversión UTF-8:** Se manejan correctamente acentos y caracteres especiales (girÓn → girón, alcalÁ → alcalá, josÉ → josé)
+        - **Tipo de hospital:** Se normaliza automáticamente (I → hospital_tipo1, II → hospital_tipo2, etc.)
+        - **Campos ignorados si son '?':** Todos los campos opcionales
+        - **Duplicados:** Se detectan por COD_SICM o por nombre+estado+municipio (comparación insensible a mayúsculas)
+      tags: [Importación Excel]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required:
+                - file
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Archivo Excel (.xls o .xlsx) con los datos de hospitales
+      responses:
+        '200':
+          description: Importación completada
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    example: true
+                  mensaje:
+                    type: string
+                    example: "Importación completada."
+                  data:
+                    type: object
+                    properties:
+                      creados:
+                        type: integer
+                        example: 214
+                      actualizados:
+                        type: integer
+                        example: 75
+                      omitidos:
+                        type: integer
+                        example: 2
+                      errores:
+                        type: integer
+                        example: 0
+                      detalles_omitidos:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            fila:
+                              type: integer
+                            motivo:
+                              type: string
+                      detalles_errores:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            fila:
+                              type: integer
+                            error:
+                              type: string
+        '400':
+          description: Error en el archivo
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/movimiento/estados/import:
+    post:
+      summary: Importar movimientos por estado desde Excel
+      description: |
+        Importa movimientos de insumos por estado desde un archivo Excel (.xls o .xlsx).
+        
+        **Formato del archivo:**
+        - Columna A: CÓDIGO (requerido)
+        - Columna B: NOMBRE (requerido)
+        - Columnas siguientes: Cantidades por estado (ej: FALCÓN, LARA, etc.)
+        
+        **Funcionalidad:**
+        - Registra el total de insumos en almacén central como "ingreso" con estado "completado"
+        - Crea movimientos de "despacho" por estado con estado "pendiente"
+        - Genera lotes genéricos para los insumos (formato: ESTADOS-XXXXXX)
+        - **No actualiza** almacenes AUS hasta que se confirme la recepción
+        - **Soporte UTF-8:** Maneja correctamente acentos en nombres de estados
+      tags: [Importación Excel]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Archivo Excel (.xls o .xlsx) con cantidades de insumos por estado
+      responses:
+        '200':
+          description: Importación procesada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    example: true
+                  mensaje:
+                    type: string
+                    example: "Importación de movimientos por estado completada exitosamente."
+                  data:
+                    type: object
+                    properties:
+                      total_insumos:
+                        type: integer
+                        example: 15
+                      total_global:
+                        type: number
+                        format: float
+                        example: 1500
+                      movimientos_generados:
+                        type: integer
+                        example: 3
+                      movimientos_detalle:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            estado:
+                              type: string
+                              example: "FALCÓN"
+                            movimiento_id:
+                              type: integer
+                              example: 123
+                            codigo:
+                              type: string
+                              example: "DESP-EST-ABC123"
+                            cantidad_total:
+                              type: integer
+                              example: 500
+                            detalle_insumos:
+                              type: array
+                              items:
+                                type: object
+                                properties:
+                                  insumo_id:
+                                    type: integer
+                                    example: 42
+                                  codigo:
+                                    type: string
+                                    example: "INS-001"
+                                  nombre:
+                                    type: string
+                                    example: "Insumo de ejemplo"
+                                  cantidad:
+                                    type: integer
+                                    example: 100
+                                  lote_id:
+                                    type: integer
+                                    example: 5
+        '400':
+          description: Error en el archivo o datos inválidos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /api/insumos/import:
+    post:
+      summary: Importar insumos desde archivo Excel
+      description: |
+        Importa insumos desde un archivo Excel (.xls o .xlsx).
+        
+        **Formato del archivo:**
+        - Columna A: CODIGO (puede ser NULL)
+        - Columna B: DESCRIPCION (requerido)
+        
+        **Funcionalidad:**
+        - Busca insumos por código principal o código alterno
+        - Crea nuevos insumos si no existen (asigna codigo=id automáticamente)
+        - Actualiza información si ya existen
+        - Parseo inteligente de descripciones para extraer tipo, presentación y unidades
+        - **Soporte UTF-8:** Maneja correctamente acentos y caracteres especiales
+        - **Detección automática:** Identifica tipo de archivo (.xls o .xlsx)
+      tags: [Importación Excel]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Archivo Excel (.xls o .xlsx) con datos de insumos
+      responses:
+        '200':
+          description: Importación procesada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    example: true
+                  mensaje:
+                    type: string
+                    example: "Importación procesada."
+                  data:
+                    type: object
+                    properties:
+                      creados:
+                        type: integer
+                        example: 25
+                      actualizados:
+                        type: integer
+                        example: 10
+                      omitidos:
+                        type: integer
+                        example: 0
+                      omitidos_detalle:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            fila:
+                              type: integer
+                            motivo:
+                              type: string
+                      errores:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            row:
+                              type: integer
+                            descripcion:
+                              type: string
+                            error:
+                              type: string
+        '400':
+          description: Error en el archivo o dependencias faltantes
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/inventario/import:
+    post:
+      summary: Importar inventario desde archivo Excel
+      description: |
+        Importa inventario desde un archivo Excel (.xls o .xlsx) con el formato específico de columnas.
+        
+        **Formato del archivo:**
+        - Columna A: NOMBRE DEL INSUMO (requerido)
+        - Columna B: PRESENTACION
+        - Columna C: LOTE (requerido)
+        - Columna D: FECHA DE VENC. (opcional, NULL si es inválida)
+        - Columna E: TOTAL UNIDADES (requerido)
+        - Columna F: FECHA (fecha de ingreso, opcional, NULL si es inválida)
+        
+        **Funcionalidad:**
+        - **Búsqueda/Creación de insumos:** Por nombre exacto en `insumos` (asigna codigo=id y codigo_alterno automáticamente)
+        - **Creación/Actualización de lotes:** Por (insumo_id, numero_lote, hospital_id)
+        - **Registro/Suma de stock:** En `almacenes_centrales` por (sede_id, lote_id, hospital_id)
+        - **Parseo de fechas:** Excel serial o string (YYYY-MM-DD, DD/MM/YYYY, etc.)
+        - **Fechas inválidas:** Se detectan (00/00/0000) y se guardan como NULL en la base de datos
+        - **Detección automática:** Identifica tipo de archivo (.xls o .xlsx)
+        - **Validaciones:** Nombres y lotes no vacíos, cantidades > 0
+        
+        **Parámetros opcionales:**
+        - hospital_id: Por defecto 1 (almacén central)
+        - sede_id: Por defecto 1
+      tags: [Importación Excel]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Archivo Excel (.xls o .xlsx) con datos de inventario
+                hospital_id:
+                  type: integer
+                  description: ID del hospital destino (opcional, por defecto 1)
+                  example: 1
+                sede_id:
+                  type: integer
+                  description: ID de la sede destino (opcional, por defecto 1)
+                  example: 1
+      responses:
+        '200':
+          description: Importación procesada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    example: true
+                  mensaje:
+                    type: string
+                    example: "Importación de inventario procesada."
+                  data:
+                    type: object
+                    properties:
+                      insumos_creados:
+                        type: integer
+                        example: 3
+                      lotes_creados:
+                        type: integer
+                        example: 5
+                      registros_stock_actualizados:
+                        type: integer
+                        example: 5
+                      omitidos:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            fila:
+                              type: integer
+                            motivo:
+                              type: string
+                      errores:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            fila:
+                              type: integer
+                            error:
+                              type: string
+        '400':
+          description: Datos inválidos o archivo no válido
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+        '500':
+          description: Error interno del servidor
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/distribucion/import:
+    post:
+      summary: Importar y distribuir insumos desde Excel a todos los hospitales
+      description: |
+        Importa un archivo Excel con insumos y los distribuye automáticamente a todos los hospitales activos según porcentajes configurados por tipo de hospital.
+        
+        **Formato del archivo:**
+        - Columna A: ITEM (número de ítem)
+        - Columna B: DESCRIPCION (MATERIAL MMQ) - nombre exacto del insumo
+        - Columna C: PARA DESPACHAR - cantidad total a distribuir
+        
+        **Proceso de distribución:**
+        1. **Filtrado de hospitales:** Todos los hospitales activos (status=true)
+        2. **Consulta de porcentajes:** Obtiene configuración de `tipos_hospital_distribuciones`
+        3. **Cálculo de distribución:**
+           - Aplica porcentaje según tipo de hospital (tipo1, tipo2, tipo3, tipo4)
+           - Distribuye equitativamente entre hospitales del mismo tipo
+           - **Trunca decimales** (no redondea) en todos los cálculos
+        4. **Creación de movimientos:**
+           - Tipo: despacho
+           - Origen: almacenCent (hospital_id=1, sede_id=1)
+           - Destino: almacenPrin de cada hospital
+           - Estado: pendiente
+        5. **Validaciones:**
+           - Insumo debe existir en la base de datos
+           - Stock suficiente en almacén central
+           - Hospital destino debe tener sede principal configurada
+        
+        **Ejemplo de distribución:**
+        - Total a despachar: 10000 unidades
+        - Porcentaje Tipo I: 40% → 4000 unidades
+        - Si hay 5 hospitales Tipo I → 800 unidades c/u
+        - Decimales se truncan (no redondean)
+      tags: [Importación Excel]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Archivo Excel (.xls o .xlsx) con datos de distribución
+      responses:
+        '200':
+          description: Distribución procesada exitosamente
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: boolean
+                    example: true
+                  mensaje:
+                    type: string
+                    example: "Distribución procesada exitosamente."
+                  data:
+                    type: object
+                    properties:
+                      insumos_distribuidos:
+                        type: integer
+                        example: 24
+                        description: Número de insumos procesados exitosamente
+                      movimientos_creados:
+                        type: integer
+                        example: 120
+                        description: Total de movimientos de despacho creados
+                      hospitales_totales:
+                        type: integer
+                        example: 25
+                        description: Número total de hospitales activos
+                      omitidos:
+                        type: integer
+                        example: 0
+                        description: Filas omitidas por datos inválidos
+                      errores:
+                        type: integer
+                        example: 0
+                        description: Filas con errores
+                      detalle_insumos:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            fila:
+                              type: integer
+                              example: 2
+                            insumo:
+                              type: string
+                              example: "ACETAMINOFEN 120MG/5ML SUSPENSION"
+                            cantidad_total:
+                              type: integer
+                              example: 64504
+                            movimientos_creados:
+                              type: integer
+                              example: 8
+                      detalle_omitidos:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            fila:
+                              type: integer
+                            motivo:
+                              type: string
+                      detalle_errores:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            fila:
+                              type: integer
+                            descripcion:
+                              type: string
+                            error:
+                              type: string
+        '400':
+          description: Archivo inválido o configuración faltante
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+  /api/hospital/insumos/import:
+    post:
+      summary: Importar insumos de hospital desde Excel
+      description: |
+        Importa insumos específicos de un hospital desde un archivo Excel (.xls o .xlsx).
+        Cada fila debe indicar la sede en la columna `id_sede`, lo que permite registrar el
+        stock en el almacén que corresponda al tipo configurado para esa sede.
+        Crea registros en lotes, ingresos_directos y lotes_grupos para trazabilidad completa.
+      tags: [Importación Excel]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: Archivo Excel (.xls o .xlsx)
+              required:
+                - file
+      responses:
+        '200':
+          description: Importación procesada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+              examples:
+                success:
+                  value:
+                    status: true
+                    mensaje: "Importación de insumos de hospital procesada."
+                    data:
+                      creados: 10
+                      omitidos: 0
+                      errores: 0
+                      hospital_id: 1
+                      usuario: "usuario@hospital.com"
+        '400':
+          description: Archivo inválido o datos incorrectos
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StandardResponse'
+
+# ========================================
+# COMPONENTS
+# ========================================
 components:
   securitySchemes:
     bearerAuth:

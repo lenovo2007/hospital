@@ -599,6 +599,61 @@ curl -X PUT "https://almacen.alwaysdata.net/api/insumos/codigo/INS-001" \
 ```
 - Nota: Crea registros en `lotes`, `ingresos_directos` y `lotes_grupos` para trazabilidad completa.
 
+## Movimientos: registrar lote real (hospital)
+
+### Registrar lotes reales luego de recibir (protegido)
+- Método: POST
+- URL: `/api/movimiento/almacen/entrada/registrar-lotes-reales`
+- Headers: `Authorization: Bearer <TOKEN>`
+- Body (JSON) ejemplo:
+```json
+{
+  "movimiento_stock_id": 123,
+  "items": [
+    {
+      "lote_id_origen": 555,
+      "cantidad": 40,
+      "numero_lote": "ABC-001",
+      "fecha_vencimiento": "2026-12-31"
+    },
+    {
+      "lote_id_origen": 555,
+      "cantidad": 10,
+      "numero_lote": "ABC-002",
+      "fecha_vencimiento": "2026-11-30"
+    }
+  ]
+}
+```
+
+- Comportamiento:
+  - El movimiento debe estar en estado `recibido` y su destino debe ser `almacenPrin`.
+  - Crea (o reutiliza) el lote real en `lotes` por `(id_insumo, numero_lote, hospital_id)`.
+  - Mueve stock en `almacenes_principales` desde `lote_id_origen` al lote real.
+  - Si la cantidad solicitada es mayor a la disponible, se aplica lo disponible y se registra una discrepancia en `movimientos_discrepancias`.
+
+- Respuesta 200 (ejemplo):
+```json
+{
+  "status": true,
+  "mensaje": "Lotes reales registrados y stock actualizado.",
+  "data": {
+    "movimiento_stock_id": 123,
+    "lotes_creados": 1,
+    "items_movidos": [
+      {
+        "lote_id_origen": 555,
+        "lote_id_real": 999,
+        "numero_lote": "ABC-001",
+        "fecha_vencimiento": "2026-12-31",
+        "cantidad": 40
+      }
+    ],
+    "discrepancias": []
+  }
+}
+```
+
 ## Errores (siempre HTTP 200)
 - No autenticado: `{ "status": false, "mensaje": "No autenticado. Token inválido o ausente.", "data": null }`
 - No autorizado: `{ "status": false, "mensaje": "No autorizado para realizar esta acción.", "data": null }`

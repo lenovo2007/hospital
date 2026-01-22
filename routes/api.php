@@ -254,6 +254,9 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
     // Recepción en almacén principal de una distribución central
     Route::post('/movimiento/almacen/entrada', [RecepcionPrincipalController::class, 'recibir']);
 
+    // Registrar lotes reales en el hospital luego de recibir (AUS/Central → Principal)
+    Route::post('/movimiento/almacen/entrada/registrar-lotes-reales', [RecepcionPrincipalController::class, 'registrarLotesReales']);
+
     // Reintentar distribución automática desde AUS a hospitales por estado (a partir de un movimiento)
     Route::post('/movimiento/almacen/entrada/redistribuir', [RecepcionPrincipalController::class, 'redistribuir'])
         ->withoutMiddleware(\App\Http\Middleware\CheckCrudPermissions::class);

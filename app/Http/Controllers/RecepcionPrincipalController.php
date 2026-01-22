@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\FichaInsumo;
 use App\Models\Hospital;
+use App\Models\Lote;
 use App\Models\LoteGrupo;
 use App\Models\MovimientoStock;
 use App\Models\MovimientoDiscrepancia;
@@ -403,6 +404,229 @@ class RecepcionPrincipalController extends Controller
                 'mensaje' => 'Error inesperado al registrar la recepción: ' . $e->getMessage(),
                 'data' => null,
             ], 200);
+        }
+    }
+
+    public function registrarLotesReales(Request $request)
+    {
+        $data = $request->validate([
+            'movimiento_stock_id' => ['required', 'integer', 'min:1'],
+            'items' => ['required', 'array', 'min:1'],
+            'items.*.lote_id_origen' => ['required', 'integer', 'min:1'],
+            'items.*.cantidad' => ['required', 'integer', 'min:1'],
+            'items.*.numero_lote' => ['required', 'string', 'max:100'],
+            'items.*.fecha_vencimiento' => ['required', 'date_format:Y-m-d'],
+        ]);
+
+        $movimientoId = (int) $data['movimiento_stock_id'];
+        $userId = (int) $request->user()->id;
+
+        try {
+            $resultado = DB::transaction(function () use ($data, $movimientoId, $userId) {
+                $movimiento = MovimientoStock::query()
+                    ->where('id', $movimientoId)
+                    ->lockForUpdate()
+                    ->first();
+
+                if (!$movimiento) {
+                    throw new InvalidArgumentException('No existe un movimiento con el ID indicado.');
+                }
+
+                if ((string) $movimiento->destino_almacen_tipo !== 'almacenPrin') {
+                    throw new InvalidArgumentException('Este movimiento no tiene destino almacenPrin.');
+                }
+
+                if ((string) $movimiento->estado !== 'recibido') {
+                    throw new InvalidArgumentException('El movimiento debe estar en estado recibido para registrar lotes reales.');
+                }
+
+                $hospitalId = (int) $movimiento->destino_hospital_id;
+                $sedeId = (int) $movimiento->destino_sede_id;
+                if ($hospitalId <= 0 || $sedeId <= 0) {
+                    throw new InvalidArgumentException('El movimiento no tiene destino_hospital_id o destino_sede_id válidos.');
+                }
+
+                $agregado = [];
+                foreach ($data['items'] as $it) {
+                    $loteOrigen = (int) $it['lote_id_origen'];
+                    $key = $loteOrigen . '|' . trim((string) $it['numero_lote']) . '|' . (string) $it['fecha_vencimiento'];
+                    $agregado[$key] = [
+                        'lote_id_origen' => $loteOrigen,
+                        'numero_lote' => trim((string) $it['numero_lote']),
+                        'fecha_vencimiento' => (string) $it['fecha_vencimiento'],
+                        'cantidad' => ((int) ($agregado[$key]['cantidad'] ?? 0)) + (int) $it['cantidad'],
+                    ];
+                }
+
+                $origenIds = array_values(array_unique(array_map(fn ($r) => (int) $r['lote_id_origen'], $agregado)));
+                $lotesOrigen = Lote::query()
+                    ->whereIn('id', $origenIds)
+                    ->get(['id', 'id_insumo']);
+
+                $createdLotes = 0;
+                $movidos = [];
+                $discrepancias = [];
+
+                foreach ($agregado as $row) {
+                    $loteIdOrigen = (int) $row['lote_id_origen'];
+                    $cantidad = (int) $row['cantidad'];
+                    if ($cantidad <= 0) {
+                        continue;
+                    }
+
+                    $loteOrigenModel = $lotesOrigen->firstWhere('id', $loteIdOrigen);
+                    if (!$loteOrigenModel) {
+                        throw new InvalidArgumentException('No existe lote origen id=' . $loteIdOrigen);
+                    }
+                    $insumoId = (int) $loteOrigenModel->id_insumo;
+
+                    $loteReal = Lote::query()
+                        ->where('id_insumo', $insumoId)
+                        ->where('numero_lote', $row['numero_lote'])
+                        ->where('hospital_id', $hospitalId)
+                        ->first();
+
+                    if (!$loteReal) {
+                        $loteReal = Lote::create([
+                            'id_insumo' => $insumoId,
+                            'numero_lote' => $row['numero_lote'],
+                            'fecha_vencimiento' => $row['fecha_vencimiento'],
+                            'fecha_ingreso' => now()->toDateString(),
+                            'hospital_id' => $hospitalId,
+                        ]);
+                        $createdLotes++;
+                    }
+
+                    if ($loteReal->fecha_vencimiento && $loteReal->fecha_vencimiento->format('Y-m-d') !== (string) $row['fecha_vencimiento']) {
+                        $loteReal->fecha_vencimiento = (string) $row['fecha_vencimiento'];
+                        $loteReal->save();
+                    }
+
+                    $stockOrigen = DB::table('almacenes_principales')
+                        ->where([
+                            'hospital_id' => $hospitalId,
+                            'sede_id' => $sedeId,
+                            'lote_id' => $loteIdOrigen,
+                        ])
+                        ->lockForUpdate()
+                        ->first();
+
+                    $disp = (int) ($stockOrigen->cantidad ?? 0);
+                    $cantidadAplicada = min($cantidad, $disp);
+                    if ($cantidadAplicada < $cantidad) {
+                        $discrepancias[] = [
+                            'lote_id_origen' => $loteIdOrigen,
+                            'cantidad_esperada' => $cantidad,
+                            'cantidad_recibida' => $cantidadAplicada,
+                            'observaciones' => 'Stock insuficiente al registrar lote real. Disponible=' . $disp . ' solicitado=' . $cantidad,
+                        ];
+
+                        if ($movimiento->codigo_grupo) {
+                            MovimientoDiscrepancia::create([
+                                'movimiento_stock_id' => (int) $movimiento->id,
+                                'codigo_lote_grupo' => (string) $movimiento->codigo_grupo,
+                                'cantidad_esperada' => (int) $cantidad,
+                                'cantidad_recibida' => (int) $cantidadAplicada,
+                                'observaciones' => 'Registrar lote real: lote_id_origen=' . $loteIdOrigen . ' numero_lote=' . (string) $row['numero_lote'] . ' vence=' . (string) $row['fecha_vencimiento'] . '. Disponible=' . $disp . ' solicitado=' . $cantidad,
+                            ]);
+                        }
+                    }
+
+                    if ($cantidadAplicada <= 0) {
+                        $movidos[] = [
+                            'lote_id_origen' => $loteIdOrigen,
+                            'lote_id_real' => (int) $loteReal->id,
+                            'numero_lote' => (string) $row['numero_lote'],
+                            'fecha_vencimiento' => (string) $row['fecha_vencimiento'],
+                            'cantidad' => 0,
+                        ];
+                        continue;
+                    }
+
+                    DB::table('almacenes_principales')
+                        ->where('id', (int) $stockOrigen->id)
+                        ->update([
+                            'cantidad' => $disp - $cantidadAplicada,
+                            'status' => ($disp - $cantidadAplicada) > 0 ? 1 : 0,
+                            'updated_at' => now(),
+                        ]);
+
+                    $stockDestino = DB::table('almacenes_principales')
+                        ->where([
+                            'hospital_id' => $hospitalId,
+                            'sede_id' => $sedeId,
+                            'lote_id' => (int) $loteReal->id,
+                        ])
+                        ->lockForUpdate()
+                        ->first();
+
+                    if ($stockDestino) {
+                        $nueva = (int) $stockDestino->cantidad + $cantidadAplicada;
+                        DB::table('almacenes_principales')
+                            ->where('id', (int) $stockDestino->id)
+                            ->update([
+                                'cantidad' => $nueva,
+                                'status' => $nueva > 0 ? 1 : 0,
+                                'updated_at' => now(),
+                            ]);
+                    } else {
+                        DB::table('almacenes_principales')->insert([
+                            'hospital_id' => $hospitalId,
+                            'sede_id' => $sedeId,
+                            'lote_id' => (int) $loteReal->id,
+                            'cantidad' => $cantidadAplicada,
+                            'status' => 1,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                    }
+
+                    $movidos[] = [
+                        'lote_id_origen' => $loteIdOrigen,
+                        'lote_id_real' => (int) $loteReal->id,
+                        'numero_lote' => (string) $row['numero_lote'],
+                        'fecha_vencimiento' => (string) $row['fecha_vencimiento'],
+                        'cantidad' => $cantidadAplicada,
+                    ];
+                }
+
+                MovimientoStock::query()
+                    ->where('id', $movimientoId)
+                    ->update([
+                        'observaciones_recepcion' => 'Lotes reales registrados por user_id=' . $userId,
+                        'updated_at' => now(),
+                    ]);
+
+                return [
+                    'movimiento_stock_id' => $movimientoId,
+                    'lotes_creados' => $createdLotes,
+                    'items_movidos' => $movidos,
+                    'discrepancias' => $discrepancias,
+                ];
+            });
+
+            return response()->json([
+                'status' => true,
+                'mensaje' => 'Lotes reales registrados y stock actualizado.',
+                'data' => $resultado,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        } catch (InvalidArgumentException $e) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => $e->getMessage(),
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
+        } catch (Throwable $e) {
+            Log::error('RecepcionPrincipalController@registrarLotesReales: error', [
+                'movimiento_stock_id' => $movimientoId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Error inesperado al registrar lotes reales: ' . $e->getMessage(),
+                'data' => null,
+            ], 200, [], JSON_UNESCAPED_UNICODE);
         }
     }
 

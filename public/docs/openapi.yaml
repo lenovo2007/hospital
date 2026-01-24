@@ -2898,6 +2898,11 @@ paths:
               properties:
                 cantidad: { type: integer, minimum: 0 }
                 status: { type: boolean }
+            examples:
+              ejemplo:
+                value:
+                  cantidad: 50
+                  status: false
       responses:
         '200':
           description: Resultado de la actualización
@@ -4887,11 +4892,15 @@ paths:
                       status: true
                     - id: 980
                       cantidad: 0
-              individual:
+                      status: false
+                    - insumo_id: 999
+                      crear_si_no_existe: true
+              crear_si_no_existe:
                 value:
-                  insumo_id: 45
-                  cantidad: 120
-                  status: true
+                  insumos:
+                    - insumo_id: 120
+                      crear_si_no_existe: true
+                      cantidad: 0
       responses:
         '200':
           description: Resultado de la actualización
@@ -6265,20 +6274,44 @@ components:
 
     FichaInsumoUpdateByHospitalRequest:
       type: object
-      required: [insumo_id]
+      required: [insumos]
       properties:
-        insumo_id:
-          type: integer
-          minimum: 1
-        cantidad:
-          type: integer
-          minimum: 0
-        status:
-          type: boolean
+        insumos:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                minimum: 1
+                description: ID de la ficha; requerido si no se envía insumo_id
+              insumo_id:
+                type: integer
+                minimum: 1
+                description: ID del insumo; requerido si no se envía id
+              cantidad:
+                type: integer
+                minimum: 0
+              status:
+                type: boolean
+              crear_si_no_existe:
+                type: boolean
+                description: "Si es true y la ficha no existe, se creará con cantidad/status enviados"
 
     FichaInsumoUpdateResult:
       type: object
       properties:
+        creadas:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: integer }
+              hospital_id: { type: integer }
+              insumo_id: { type: integer }
+              cantidad: { type: integer }
+              status: { type: boolean }
         actualizadas:
           type: array
           items:
@@ -6307,6 +6340,15 @@ components:
               insumo_id:
                 type: integer
                 nullable: true
+        errores:
+          type: array
+          items:
+            type: object
+            properties:
+              mensaje: { type: string }
+              item:
+                type: object
+                additionalProperties: true
 
     DistribucionPrincipalRequest:
       type: object

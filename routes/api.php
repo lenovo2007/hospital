@@ -183,7 +183,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
     // Ficha de insumos CRUD
     Route::post('/ficha-insumos', [FichaInsumoController::class, 'store']);
     Route::get('/ficha-insumos/{ficha_insumo}', [FichaInsumoController::class, 'show']);
-    Route::put('/ficha-insumos/{ficha_insumo}', [FichaInsumoController::class, 'update']);
+    Route::put('/ficha-insumos/{ficha_insumo}', [FichaInsumoController::class, 'updateItem']);
     Route::put('/ficha-insumos/hospital/{hospital_id}', [FichaInsumoController::class, 'updateByHospital']);
     Route::delete('/ficha-insumos/{ficha_insumo}', [FichaInsumoController::class, 'destroy']);
     

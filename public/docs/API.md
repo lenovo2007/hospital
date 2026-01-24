@@ -280,25 +280,26 @@ Respuestas 200:
 {
   "insumos": [
     { "insumo_id": 45, "cantidad": 120, "status": true },
-    { "id": 980, "cantidad": 0 }
+    { "id": 980, "cantidad": 0, "status": false },
+    { "insumo_id": 120, "crear_si_no_existe": true, "cantidad": 0 }
   ]
-}
-```
-- También pueden enviar un cuerpo corto para actualizar un solo insumo:
-
-```json
-{
-  "insumo_id": 45,
-  "cantidad": 120,
-  "status": true
 }
 ```
 - Respuesta 200:
 ```json
 {
   "status": true,
-  "mensaje": "Fichas de insumos actualizadas.",
+  "mensaje": "Fichas creadas y actualizadas según disponibilidad.",
   "data": {
+    "creadas": [
+      {
+        "id": 4001,
+        "hospital_id": 1,
+        "insumo_id": 120,
+        "cantidad": 0,
+        "status": true
+      }
+    ],
     "actualizadas": [
       {
         "id": 321,
@@ -309,12 +310,16 @@ Respuestas 200:
       }
     ],
     "sin_cambios": [],
-    "no_encontradas": []
+    "no_encontradas": [],
+    "errores": []
   }
 }
 ```
 
-> Si no se envían cambios (`cantidad` / `status`) o la ficha no existe, se listará en `sin_cambios` o `no_encontradas` respectivamente. La respuesta siempre es 200 para permitir procesar lotes mixtos.
+> Reglas:
+> 1. Cada entrada requiere `id` **o** `insumo_id`.
+> 2. Enviar `crear_si_no_existe: true` permite crear la ficha si no existe (hospital + insumo).
+> 3. Las fichas sin cambios se devuelven en `sin_cambios`; las que no se encontraron y no se crearon aparecen en `no_encontradas`. La clave `errores` describe elementos mal formados.
 
 ### Actualizar ficha por ID (protegido)
 - Método: PUT
@@ -333,6 +338,7 @@ Respuestas 200:
   "status": true,
   "mensaje": "Ficha de insumo actualizada.",
   "data": {
+    "creadas": [],
     "actualizadas": [
       {
         "id": 321,
@@ -343,10 +349,13 @@ Respuestas 200:
       }
     ],
     "sin_cambios": [],
-    "no_encontradas": []
+    "no_encontradas": [],
+    "errores": []
   }
 }
 ```
+
+> Esta ruta actualiza **solo una ficha** (identificada por `{id}`). Para modificar varias, utilice `/api/ficha-insumos/hospital/{hospital_id}` con el arreglo `insumos`.
 
 ## Inventario
 

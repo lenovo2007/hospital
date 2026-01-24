@@ -67,6 +67,63 @@ class FichaInsumoController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Actualizar ficha identificándola por hospital e insumo.
+     * PUT /api/ficha-insumos/hospital/{hospital_id}
+     */
+    public function updateByHospital(Request $request, int $hospital_id)
+    {
+        $data = $request->validate([
+            'insumo_id' => ['required', 'integer', 'min:1'],
+            'cantidad' => ['sometimes', 'integer', 'min:0'],
+            'status' => ['sometimes', 'boolean'],
+        ]);
+
+        $ficha = FichaInsumo::where('hospital_id', $hospital_id)
+            ->where('insumo_id', $data['insumo_id'])
+            ->first();
+
+        if (!$ficha) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Ficha de insumo no encontrada para el hospital e insumo indicados.',
+                'data' => null,
+            ], 404);
+        }
+
+        $payload = collect($data)->except('insumo_id')->filter(function ($value) {
+            return !is_null($value);
+        })->toArray();
+
+        if (empty($payload)) {
+            return response()->json([
+                'status' => true,
+                'mensaje' => 'No se enviaron cambios. Ficha de insumo sin modificar.',
+                'data' => $ficha,
+            ], 200);
+        }
+
+        try {
+            DB::transaction(function () use ($ficha, $payload) {
+                $ficha->update($payload);
+            });
+
+            return response()->json([
+                'status' => true,
+                'mensaje' => 'Ficha de insumo actualizada.',
+                'data' => $ficha->refresh(),
+            ], 200);
+        } catch (Throwable $e) {
+            report($e);
+
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Error al actualizar la ficha de insumo por hospital: ' . $e->getMessage(),
+                'data' => null,
+            ], 500);
+        }
+    }
     public function show(FichaInsumo $ficha_insumo)
     {
         return response()->json([

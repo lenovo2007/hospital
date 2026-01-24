@@ -4829,8 +4829,8 @@ paths:
     get:
       summary: Listar fichas de insumos por hospital
       description: |
-        Devuelve un listado paginado de fichas de insumos pertenecientes a un hospital
-        específico. Esta ruta es pública y no requiere token.
+        Devuelve todas las fichas de insumos pertenecientes a un hospital específico
+        (sin paginación). Esta ruta es pública y no requiere token.
       tags: [Fichas de Insumos]
       security: []
       parameters:
@@ -4850,13 +4850,6 @@ paths:
           schema:
             type: boolean
           description: Filtrar por estado activo/inactivo de la ficha
-        - name: per_page
-          in: query
-          schema:
-            type: integer
-            default: 50
-            maximum: 100
-          description: Cantidad de registros por página
       responses:
         '200':
           description: Listado de fichas del hospital
@@ -4865,10 +4858,65 @@ paths:
               schema:
                 $ref: '#/components/schemas/StandardResponse'
 
+    put:
+      summary: Actualizar ficha de insumo por hospital e insumo
+      tags: [Ficha de Insumos]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: hospital_id
+          required: true
+          schema: { type: integer, minimum: 1 }
+          description: ID del hospital
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FichaInsumoUpdateByHospitalRequest'
+            examples:
+              ejemplo:
+                value:
+                  insumo_id: 45
+                  cantidad: 120
+                  status: true
+      responses:
+        '200':
+          description: Ficha actualizada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FichaInsumoUpdateResponse'
+              examples:
+                ok:
+                  value:
+                    status: true
+                    mensaje: "Ficha de insumo actualizada."
+                    data:
+                      id: 789
+                      hospital_id: 5
+                      insumo_id: 45
+                      cantidad: 120
+                      status: true
+        '404':
+          description: Ficha no encontrada para el hospital e insumo indicados
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+              examples:
+                no_encontrada:
+                  value:
+                    status: false
+                    mensaje: "Ficha de insumo no encontrada para el hospital e insumo indicados."
+                    data: null
+        '500': { $ref: '#/components/responses/Error500' }
+
   /api/ficha-insumos/{id}:
     get:
-      summary: Obtener detalle de una ficha
-      tags: [Fichas de Insumos]
+      summary: Obtener ficha de insumo por ID
+      tags: [Ficha de Insumos]
       security:
         - bearerAuth: []
       parameters:
@@ -4887,7 +4935,7 @@ paths:
 
     put:
       summary: Actualizar una ficha de insumo
-      tags: [Fichas de Insumos]
+      tags: [Ficha de Insumos]
       security:
         - bearerAuth: []
       parameters:
@@ -4919,7 +4967,7 @@ paths:
 
     delete:
       summary: Eliminar una ficha de insumo
-      tags: [Fichas de Insumos]
+      tags: [Ficha de Insumos]
       security:
         - bearerAuth: []
       parameters:
@@ -6196,6 +6244,41 @@ components:
           minimum: 0
         status:
           type: boolean
+
+    FichaInsumoUpdateByHospitalRequest:
+      type: object
+      required: [insumo_id]
+      properties:
+        insumo_id:
+          type: integer
+          minimum: 1
+        cantidad:
+          type: integer
+          minimum: 0
+        status:
+          type: boolean
+
+    FichaInsumoUpdateResponse:
+      type: object
+      properties:
+        status:
+          type: boolean
+        mensaje:
+          type: string
+        data:
+          type: object
+          nullable: true
+          properties:
+            id:
+              type: integer
+            hospital_id:
+              type: integer
+            insumo_id:
+              type: integer
+            cantidad:
+              type: integer
+            status:
+              type: boolean
 
     DistribucionPrincipalRequest:
       type: object

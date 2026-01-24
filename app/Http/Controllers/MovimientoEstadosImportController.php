@@ -160,6 +160,8 @@ class MovimientoEstadosImportController extends Controller
             $fecha = Carbon::now();
             $movimientosDespacho = [];
 
+            $estadosSinDestino = [];
+
             DB::transaction(function () use (
                 $totalesPorInsumo,
                 $totalesPorEstado,
@@ -169,7 +171,8 @@ class MovimientoEstadosImportController extends Controller
                 $fecha,
                 &$movimientosDespacho,
                 $insumosInfo,
-                &$lotesPorInsumo
+                &$lotesPorInsumo,
+                &$estadosSinDestino
             ) {
                 foreach ($totalesPorInsumo as $insumoId => $cantidad) {
                     $cantidadEntera = (int) round($cantidad);
@@ -231,7 +234,19 @@ class MovimientoEstadosImportController extends Controller
                         continue;
                     }
 
-                    [$destinoHospitalId, $destinoSedeId] = $this->resolverDestinoAusPorEstado($estado);
+                    try {
+                        [$destinoHospitalId, $destinoSedeId] = $this->resolverDestinoAusPorEstado($estado);
+                    } catch (\RuntimeException $resolverException) {
+                        $estadosSinDestino[] = [
+                            'estado' => $estado,
+                            'motivo' => $resolverException->getMessage(),
+                        ];
+                        Log::warning('Importación movimientos estados - AUS sin destino', [
+                            'estado' => $estado,
+                            'motivo' => $resolverException->getMessage(),
+                        ]);
+                        continue;
+                    }
 
                     $itemsLotes = [];
                     $detalleInsumos = [];
@@ -352,6 +367,7 @@ class MovimientoEstadosImportController extends Controller
                     'omitidos' => $omitidos,
                     'errores' => $errores,
                     'insumos_no_encontrados' => $insumosSinCoincidencia,
+                    'estados_sin_destino' => $estadosSinDestino,
                 ],
             ], 200, [], JSON_UNESCAPED_UNICODE);
         } catch (Throwable $e) {

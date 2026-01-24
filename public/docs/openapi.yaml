@@ -5274,6 +5274,7 @@ paths:
         - Genera lotes genéricos para los insumos (formato: ESTADOS-XXXXXX)
         - **No actualiza** almacenes AUS hasta que se confirme la recepción
         - **Soporte UTF-8:** Maneja correctamente acentos en nombres de estados
+        - Si una autoridad AUS no tiene sede configurada, omite ese estado y continúa con los demás
       tags: [Importación Excel]
       security:
         - bearerAuth: []
@@ -5306,33 +5307,37 @@ paths:
                   data:
                     type: object
                     properties:
-                      total_insumos:
+                      insumos_totalizados:
                         type: integer
+                        description: Cantidad de insumos encontrados con cantidades válidas
                         example: 15
-                      total_global:
-                        type: number
-                        format: float
-                        example: 1500
-                      movimientos_generados:
+                      cantidad_total:
                         type: integer
-                        example: 3
-                      movimientos_detalle:
+                        description: Cantidad total sumada de todos los insumos
+                        example: 1500
+                      movimiento_codigo:
+                        type: string
+                        description: Código del movimiento de ingreso creado en almacén central
+                        example: "IMP-ABC12345XY"
+                      movimientos_despacho:
                         type: array
+                        description: Movimientos de despacho generados por estado
                         items:
                           type: object
                           properties:
                             estado:
                               type: string
-                              example: "FALCÓN"
+                              example: "Falcón"
                             movimiento_id:
                               type: integer
-                              example: 123
+                              example: 1258
                             codigo:
                               type: string
-                              example: "DESP-EST-ABC123"
+                              description: Código del lote grupo asociado
+                              example: "LG-XYZ123"
                             cantidad_total:
                               type: integer
-                              example: 500
+                              example: 320
                             detalle_insumos:
                               type: array
                               items:
@@ -5340,7 +5345,6 @@ paths:
                                 properties:
                                   insumo_id:
                                     type: integer
-                                    example: 42
                                   codigo:
                                     type: string
                                     example: "INS-001"

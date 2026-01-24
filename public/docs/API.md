@@ -592,6 +592,54 @@ curl -X PUT "https://almacen.alwaysdata.net/api/insumos/codigo/INS-001" \
 - Body: `multipart/form-data` con campo `file` (archivo .xls o .xlsx)
 - Columnas Excel: A=CÓDIGO, B=DESCRIPCIÓN
 
+### Importar movimientos por estado (AUS)
+- Método: POST
+- URL: `/api/movimiento/estados/import`
+- Headers: `Authorization: Bearer <TOKEN>`
+- Body: `multipart/form-data` con campo `file` (archivo .xls o .xlsx)`
+- Formato esperado:
+  - Columna A: `codigo`
+  - Columna B: `nombre`
+  - Columnas restantes: `cantidad <ESTADO>` (ej.: `cantidad Falcón`)
+- Comportamiento:
+  1. Suma totales por insumo y crea un movimiento de **ingreso** en almacén central con estado `recibido`.
+  2. Genera movimientos de **despacho** por estado hacia el almacén AUS correspondiente (`tipo_almacen = almacenAUS`).
+  3. Si la autoridad AUS del estado no tiene sede configurada, omite ese estado y continúa con los demás (se reporta en `estados_sin_destino`).
+  4. Devuelve resumen con totales, movimientos creados, filas omitidas/errores y estados sin destino.
+- Respuesta 200 (ejemplo simplificado):
+```json
+{
+  "status": true,
+  "mensaje": "Importación de movimientos por estado procesada correctamente.",
+  "data": {
+    "insumos_totalizados": 12,
+    "cantidad_total": 845,
+    "movimiento_codigo": "IMP-AB12CD34EF",
+    "movimientos_despacho": [
+      {
+        "estado": "Falcón",
+        "movimiento_id": 1502,
+        "codigo": "LG-XYZ123",
+        "cantidad_total": 300
+      }
+    ],
+    "por_estado": {
+      "Falcón": 300,
+      "Lara": 545
+    },
+    "omitidos": [],
+    "errores": [],
+    "insumos_no_encontrados": [],
+    "estados_sin_destino": [
+      {
+        "estado": "Amazonas",
+        "motivo": "No existe un hospital/autoridad AUS configurado para el estado: Amazonas"
+      }
+    ]
+  }
+}
+```
+
 ### Importar inventario
 - Método: POST
 - URL: `/api/inventario/import`

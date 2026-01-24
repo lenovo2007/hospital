@@ -2894,14 +2894,17 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/InsumoRequest'
+              type: object
+              properties:
+                cantidad: { type: integer, minimum: 0 }
+                status: { type: boolean }
       responses:
         '200':
-          description: Insumo actualizado
+          description: Resultado de la actualización
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/StandardResponse'
+                $ref: '#/components/schemas/FichaInsumoUpdateResult'
 
   /api/insumos/sede/{sede_id}:
     get:
@@ -4859,7 +4862,7 @@ paths:
                 $ref: '#/components/schemas/StandardResponse'
 
     put:
-      summary: Actualizar ficha de insumo por hospital e insumo
+      summary: Actualizar fichas de insumos de un hospital
       tags: [Ficha de Insumos]
       security:
         - bearerAuth: []
@@ -4876,29 +4879,40 @@ paths:
             schema:
               $ref: '#/components/schemas/FichaInsumoUpdateByHospitalRequest'
             examples:
-              ejemplo:
+              masivo:
+                value:
+                  insumos:
+                    - insumo_id: 45
+                      cantidad: 120
+                      status: true
+                    - id: 980
+                      cantidad: 0
+              individual:
                 value:
                   insumo_id: 45
                   cantidad: 120
                   status: true
       responses:
         '200':
-          description: Ficha actualizada
+          description: Resultado de la actualización
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/FichaInsumoUpdateResponse'
+                $ref: '#/components/schemas/FichaInsumoUpdateResult'
               examples:
                 ok:
                   value:
                     status: true
-                    mensaje: "Ficha de insumo actualizada."
+                    mensaje: "Fichas de insumos actualizadas."
                     data:
-                      id: 789
-                      hospital_id: 5
-                      insumo_id: 45
-                      cantidad: 120
-                      status: true
+                      actualizadas:
+                        - id: 789
+                          hospital_id: 5
+                          insumo_id: 45
+                          cantidad: 120
+                          status: true
+                      sin_cambios: []
+                      no_encontradas: []
         '404':
           description: Ficha no encontrada para el hospital e insumo indicados
           content:
@@ -6262,27 +6276,37 @@ components:
         status:
           type: boolean
 
-    FichaInsumoUpdateResponse:
+    FichaInsumoUpdateResult:
       type: object
       properties:
-        status:
-          type: boolean
-        mensaje:
-          type: string
-        data:
-          type: object
-          nullable: true
-          properties:
-            id:
-              type: integer
-            hospital_id:
-              type: integer
-            insumo_id:
-              type: integer
-            cantidad:
-              type: integer
-            status:
-              type: boolean
+        actualizadas:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: integer }
+              hospital_id: { type: integer }
+              insumo_id: { type: integer }
+              cantidad: { type: integer }
+              status: { type: boolean }
+        sin_cambios:
+          type: array
+          items:
+            type: object
+            properties:
+              id: { type: integer }
+              insumo_id: { type: integer }
+        no_encontradas:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+                nullable: true
+              insumo_id:
+                type: integer
+                nullable: true
 
     DistribucionPrincipalRequest:
       type: object

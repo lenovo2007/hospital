@@ -278,6 +278,16 @@ Respuestas 200:
 - Body (JSON) ejemplo:
 ```json
 {
+  "insumos": [
+    { "insumo_id": 45, "cantidad": 120, "status": true },
+    { "id": 980, "cantidad": 0 }
+  ]
+}
+```
+- También pueden enviar un cuerpo corto para actualizar un solo insumo:
+
+```json
+{
   "insumo_id": 45,
   "cantidad": 120,
   "status": true
@@ -287,13 +297,53 @@ Respuestas 200:
 ```json
 {
   "status": true,
+  "mensaje": "Fichas de insumos actualizadas.",
+  "data": {
+    "actualizadas": [
+      {
+        "id": 321,
+        "hospital_id": 1,
+        "insumo_id": 45,
+        "cantidad": 120,
+        "status": true
+      }
+    ],
+    "sin_cambios": [],
+    "no_encontradas": []
+  }
+}
+```
+
+> Si no se envían cambios (`cantidad` / `status`) o la ficha no existe, se listará en `sin_cambios` o `no_encontradas` respectivamente. La respuesta siempre es 200 para permitir procesar lotes mixtos.
+
+### Actualizar ficha por ID (protegido)
+- Método: PUT
+- URL: `/api/ficha-insumos/{id}`
+- Headers: `Authorization: Bearer <TOKEN>`
+- Body (JSON) ejemplo:
+```json
+{
+  "cantidad": 50,
+  "status": false
+}
+```
+- Respuesta 200:
+```json
+{
+  "status": true,
   "mensaje": "Ficha de insumo actualizada.",
   "data": {
-    "id": 321,
-    "hospital_id": 1,
-    "insumo_id": 45,
-    "cantidad": 120,
-    "status": true
+    "actualizadas": [
+      {
+        "id": 321,
+        "hospital_id": 1,
+        "insumo_id": 45,
+        "cantidad": 50,
+        "status": false
+      }
+    ],
+    "sin_cambios": [],
+    "no_encontradas": []
   }
 }
 ```

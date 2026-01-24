@@ -37,16 +37,13 @@ class FichaInsumoController extends Controller
     public function indexByHospital(Request $request, $hospital_id)
     {
         try {
-            $perPage = (int) $request->query('per_page', 50);
-            $perPage = $perPage > 0 ? min($perPage, 100) : 50;
-
             $query = FichaInsumo::query()
                 ->where('hospital_id', $hospital_id)
                 ->when($request->filled('insumo_id'), fn ($q) => $q->where('insumo_id', $request->insumo_id))
                 ->when($request->filled('status'), fn ($q) => $q->where('status', filter_var($request->status, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)))
                 ->with(['hospital', 'insumo']);
 
-            $fichas = $query->orderByDesc('updated_at')->paginate($perPage);
+            $fichas = $query->orderByDesc('updated_at')->get();
 
             $hospital = Hospital::find($hospital_id);
 

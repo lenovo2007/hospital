@@ -6,7 +6,9 @@ use App\Models\FichaInsumo;
 use App\Models\Hospital;
 use App\Models\Insumo;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Throwable;
 
 class FichaInsumoController extends Controller
@@ -74,7 +76,12 @@ class FichaInsumoController extends Controller
      */
     public function updateByHospital(Request $request, int $hospital_id)
     {
-        $data = $request->validate([
+        $payload = $request->json()->all();
+        $wrapped = (is_array($payload) && !Arr::isAssoc($payload))
+            ? ['insumos' => $payload]
+            : $payload;
+
+        $validator = Validator::make($wrapped ?? [], [
             'insumos' => ['required', 'array', 'min:1'],
             'insumos.*.id' => ['sometimes', 'integer', 'min:1'],
             'insumos.*.insumo_id' => ['required_without:insumos.*.id', 'integer', 'min:1'],
@@ -82,6 +89,8 @@ class FichaInsumoController extends Controller
             'insumos.*.status' => ['sometimes', 'boolean'],
             'insumos.*.crear_si_no_existe' => ['sometimes', 'boolean'],
         ]);
+
+        $data = $validator->validate();
 
         $items = collect($data['insumos'])->map(function (array $item) {
             return [

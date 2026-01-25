@@ -275,7 +275,7 @@ Respuestas 200:
 - Método: PUT
 - URL: `/api/ficha-insumos/hospital/{hospital_id}`
 - Headers: `Authorization: Bearer <TOKEN>`
-- Body (JSON) ejemplo:
+- Body (JSON) ejemplo (envolviendo en `insumos`):
 ```json
 {
   "insumos": [
@@ -284,6 +284,12 @@ Respuestas 200:
     { "insumo_id": 120, "crear_si_no_existe": true, "cantidad": 0 }
   ]
 }
+```
+- También puede enviarse directamente el arreglo (útil para el front):
+```json
+[
+  { "id": 183545, "insumo_id": 617, "status": false, "cantidad": 0 }
+]
 ```
 - Respuesta 200:
 ```json

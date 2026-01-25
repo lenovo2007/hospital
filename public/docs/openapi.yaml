@@ -4882,7 +4882,9 @@ paths:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/FichaInsumoUpdateByHospitalRequest'
+              oneOf:
+                - $ref: '#/components/schemas/FichaInsumoUpdateByHospitalRequest'
+                - $ref: '#/components/schemas/FichaInsumoUpdateByHospitalArray'
             examples:
               masivo:
                 value:
@@ -4901,6 +4903,12 @@ paths:
                     - insumo_id: 120
                       crear_si_no_existe: true
                       cantidad: 0
+              arreglo_plano:
+                value:
+                  - id: 183545
+                    insumo_id: 617
+                    status: false
+                    cantidad: 0
       responses:
         '200':
           description: Resultado de la actualización
@@ -6272,6 +6280,26 @@ components:
         status:
           type: boolean
 
+    FichaInsumoUpdateItem:
+      type: object
+      properties:
+        id:
+          type: integer
+          minimum: 1
+          description: ID de la ficha; requerido si no se envía insumo_id
+        insumo_id:
+          type: integer
+          minimum: 1
+          description: ID del insumo; requerido si no se envía id
+        cantidad:
+          type: integer
+          minimum: 0
+        status:
+          type: boolean
+        crear_si_no_existe:
+          type: boolean
+          description: "Si es true y la ficha no existe, se creará con cantidad/status enviados"
+
     FichaInsumoUpdateByHospitalRequest:
       type: object
       required: [insumos]
@@ -6280,24 +6308,13 @@ components:
           type: array
           minItems: 1
           items:
-            type: object
-            properties:
-              id:
-                type: integer
-                minimum: 1
-                description: ID de la ficha; requerido si no se envía insumo_id
-              insumo_id:
-                type: integer
-                minimum: 1
-                description: ID del insumo; requerido si no se envía id
-              cantidad:
-                type: integer
-                minimum: 0
-              status:
-                type: boolean
-              crear_si_no_existe:
-                type: boolean
-                description: "Si es true y la ficha no existe, se creará con cantidad/status enviados"
+            $ref: '#/components/schemas/FichaInsumoUpdateItem'
+
+    FichaInsumoUpdateByHospitalArray:
+      type: array
+      minItems: 1
+      items:
+        $ref: '#/components/schemas/FichaInsumoUpdateItem'
 
     FichaInsumoUpdateResult:
       type: object

@@ -327,22 +327,29 @@ Respuestas 200:
 > 2. Enviar `crear_si_no_existe: true` permite crear la ficha si no existe (hospital + insumo).
 > 3. Las fichas sin cambios se devuelven en `sin_cambios`; las que no se encontraron y no se crearon aparecen en `no_encontradas`. La clave `errores` describe elementos mal formados.
 
-### Actualizar ficha por ID (protegido)
+### Actualizar fichas por ID (protegido)
 - Método: PUT
-- URL: `/api/ficha-insumos/{id}`
+- URL: `/api/ficha-insumos`
 - Headers: `Authorization: Bearer <TOKEN>`
-- Body (JSON) ejemplo:
+- Body (JSON) ejemplo (arreglo plano):
+```json
+[
+  { "id": 321, "insumo_id": 45, "cantidad": 50, "status": false }
+]
+```
+- También puede enviarse con wrapper `insumos`:
 ```json
 {
-  "cantidad": 50,
-  "status": false
+  "insumos": [
+    { "id": 321, "insumo_id": 45, "cantidad": 50, "status": false }
+  ]
 }
 ```
 - Respuesta 200:
 ```json
 {
   "status": true,
-  "mensaje": "Ficha de insumo actualizada.",
+  "mensaje": "Ficha(s) de insumos actualizadas.",
   "data": {
     "creadas": [],
     "actualizadas": [
@@ -361,7 +368,10 @@ Respuestas 200:
 }
 ```
 
-> Esta ruta actualiza **solo una ficha** (identificada por `{id}`). Para modificar varias, utilice `/api/ficha-insumos/hospital/{hospital_id}` con el arreglo `insumos`.
+> Reglas:
+> 1. Cada elemento debe incluir `id` de la ficha.
+> 2. Puede incluir `insumo_id` para validación adicional (debe coincidir con la ficha).
+> 3. Se aceptan cambios masivos en una sola petición.
 
 ## Inventario
 

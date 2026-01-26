@@ -162,38 +162,55 @@ class FichaInsumoController extends Controller
         }
     }
 
-    public function updateItem(Request $request, FichaInsumo $ficha_insumo)
+    public function updateMany(Request $request)
     {
-        $data = $request->validate([
-            'cantidad' => ['sometimes', 'integer', 'min:0'],
-            'status' => ['sometimes', 'boolean'],
+        $payload = $request->json()->all();
+
+        if (is_array($payload) && !Arr::isAssoc($payload)) {
+            $itemsInput = $payload;
+        } elseif (is_array($payload) && Arr::isAssoc($payload)) {
+            $itemsInput = $payload['insumos'] ?? null;
+        } else {
+            $itemsInput = null;
+        }
+
+        $validator = Validator::make(['insumos' => $itemsInput], [
+            'insumos' => ['required', 'array', 'min:1'],
+            'insumos.*.id' => ['required', 'integer', 'min:1'],
+            'insumos.*.insumo_id' => ['sometimes', 'integer', 'min:1'],
+            'insumos.*.cantidad' => ['sometimes', 'integer', 'min:0'],
+            'insumos.*.status' => ['sometimes', 'boolean'],
         ]);
 
-        $items = [[
-            'id' => $ficha_insumo->id,
-            'cantidad' => $data['cantidad'] ?? null,
-            'status' => $data['status'] ?? null,
-        ]];
+        $data = $validator->validate();
+
+        $items = collect($data['insumos'])->map(function (array $item) {
+            return [
+                'id' => $item['id'],
+                'insumo_id' => $item['insumo_id'] ?? null,
+                'cantidad' => $item['cantidad'] ?? null,
+                'status' => $item['status'] ?? null,
+            ];
+        })->all();
 
         try {
-            $resultado = $this->procesarActualizacionesFicha($ficha_insumo->hospital_id, $items, false);
+            $resultado = $this->procesarActualizacionesFichaPorId($items);
 
-            $hayCambios = count($resultado['actualizadas']) > 0;
-            $mensaje = $hayCambios
-                ? 'Ficha de insumo actualizada.'
+            $mensaje = count($resultado['actualizadas']) > 0
+                ? 'Ficha(s) de insumos actualizadas.'
                 : 'Solicitud procesada sin cambios.';
 
             return response()->json([
                 'status' => true,
                 'mensaje' => $mensaje,
                 'data' => $resultado,
-            ]);
+            ], 200);
         } catch (Throwable $e) {
             report($e);
 
             return response()->json([
                 'status' => false,
-                'mensaje' => 'Error al actualizar la ficha de insumo.',
+                'mensaje' => 'Error al actualizar fichas de insumos.',
                 'data' => null,
             ], 500);
         }
@@ -500,6 +517,73 @@ class FichaInsumoController extends Controller
                     $resultado['no_encontradas'][] = [
                         'id' => $id,
                         'insumo_id' => $insumoId,
+                    ];
+                    continue;
+                }
+
+                $payload = [];
+
+                if (array_key_exists('cantidad', $item) && $item['cantidad'] !== null) {
+                    $payload['cantidad'] = (int) $item['cantidad'];
+                }
+
+                if (array_key_exists('status', $item)) {
+                    $valor = $item['status'];
+                    $payload['status'] = is_bool($valor)
+                        ? $valor
+                        : (bool) filter_var($valor, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE);
+                }
+
+                if (empty($payload)) {
+                    $resultado['sin_cambios'][] = [
+                        'id' => $ficha->id,
+                        'insumo_id' => $ficha->insumo_id,
+                    ];
+                    continue;
+                }
+
+                $ficha->update($payload);
+                $ficha->refresh();
+
+                $resultado['actualizadas'][] = [
+                    'id' => $ficha->id,
+                    'hospital_id' => $ficha->hospital_id,
+                    'insumo_id' => $ficha->insumo_id,
+                    'cantidad' => (int) $ficha->cantidad,
+                    'status' => (bool) $ficha->status,
+                ];
+            }
+        });
+
+        return $resultado;
+    }
+
+    private function procesarActualizacionesFichaPorId(array $items): array
+    {
+        $resultado = [
+            'creadas' => [],
+            'actualizadas' => [],
+            'sin_cambios' => [],
+            'no_encontradas' => [],
+            'errores' => [],
+        ];
+
+        DB::transaction(function () use (&$resultado, $items) {
+            foreach ($items as $item) {
+                $ficha = FichaInsumo::find($item['id']);
+
+                if (!$ficha) {
+                    $resultado['no_encontradas'][] = [
+                        'id' => $item['id'],
+                        'insumo_id' => $item['insumo_id'] ?? null,
+                    ];
+                    continue;
+                }
+
+                if (isset($item['insumo_id']) && (int) $item['insumo_id'] !== (int) $ficha->insumo_id) {
+                    $resultado['errores'][] = [
+                        'mensaje' => 'El insumo_id no coincide con la ficha indicada.',
+                        'item' => $item,
                     ];
                     continue;
                 }

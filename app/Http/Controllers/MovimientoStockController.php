@@ -21,6 +21,27 @@ use Throwable;
 
 class MovimientoStockController extends Controller
 {
+    public function ingresos(Request $request)
+    {
+        $perPage = (int) $request->query('per_page', 50);
+        $perPage = $perPage > 0 ? min($perPage, 100) : 50;
+
+        $query = MovimientoStock::query()
+            ->where('tipo', 'entrada')
+            ->when($request->filled('tipo_movimiento'), fn ($q) => $q->where('tipo_movimiento', $request->tipo_movimiento))
+            ->when($request->filled('destino_hospital_id'), fn ($q) => $q->where('destino_hospital_id', $request->destino_hospital_id))
+            ->when($request->filled('destino_sede_id'), fn ($q) => $q->where('destino_sede_id', $request->destino_sede_id))
+            ->orderByDesc('created_at');
+
+        $movimientos = $query->paginate($perPage);
+
+        return response()->json([
+            'status' => true,
+            'mensaje' => 'Listado de movimientos de ingreso (tipo=entrada).',
+            'data' => $movimientos,
+        ]);
+    }
+
     public function index(Request $request)
     {
         $perPage = (int) $request->query('per_page', 50);
@@ -220,6 +241,19 @@ class MovimientoStockController extends Controller
     public function estadisticasPorHospital(int $hospitalId, Request $request)
     {
         try {
+            $movimientosIngreso = MovimientoStock::with([
+                'destinoHospital',
+                'destinoSede',
+                'origenHospital',
+                'origenSede',
+                'usuario',
+                'usuarioReceptor'
+            ])
+                ->where('tipo', 'entrada')
+                ->where('destino_hospital_id', $hospitalId)
+                ->orderByDesc('created_at')
+                ->get();
+
             // MOVIMIENTOS RECIBIDOS: Donde origen y destino tienen hospital_id diferente
             // (Movimientos que vienen de fuera del hospital, ej: desde almacén central)
             $movimientosRecibidos = MovimientoStock::with([
@@ -273,6 +307,11 @@ class MovimientoStockController extends Controller
                 'mensaje' => 'Estadísticas de movimientos por hospital.',
                 'data' => [
                     'hospital_id' => $hospitalId,
+                    'movimientos_ingreso' => [
+                        'descripcion' => 'Movimientos de ingreso (tipo=entrada) registrados en el sistema',
+                        'total' => $movimientosIngreso->count(),
+                        'movimientos' => $movimientosIngreso,
+                    ],
                     'movimientos_recibidos' => [
                         'descripcion' => 'Movimientos que vienen de fuera del hospital (desde almacén central u otros hospitales)',
                         'total' => $movimientosRecibidos->count(),

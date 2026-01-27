@@ -837,6 +837,11 @@ class RecepcionPrincipalController extends Controller
                 $sedeDestino = DB::table('sedes')
                     ->where('hospital_id', (int) $hospitalId)
                     ->where('tipo_almacen', 'almacenPrin')
+                    ->where(function ($q) {
+                        $q->where('status', 'activo')
+                            ->orWhere('status', 1)
+                            ->orWhere('status', true);
+                    })
                     ->first();
 
                 if (!$sedeDestino) {

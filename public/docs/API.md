@@ -275,6 +275,7 @@ Respuestas 200:
 - Método: PUT
 - URL: `/api/ficha-insumos/hospital/{hospital_id}`
 - Headers: `Authorization: Bearer <TOKEN>`
+- Si no envías cuerpo, **sincroniza**: crea las fichas faltantes para los insumos activos.
 - Body (JSON) ejemplo (envolviendo en `insumos`):
 ```json
 {
@@ -290,6 +291,37 @@ Respuestas 200:
 [
   { "id": 183545, "insumo_id": 617, "status": false, "cantidad": 0 }
 ]
+```
+- Respuesta 200 sin cuerpo (sincronización):
+```json
+{
+  "status": true,
+  "mensaje": "Fichas faltantes creadas para el hospital.",
+  "data": {
+    "creadas": [
+      {
+        "id": 555,
+        "hospital_id": 111,
+        "insumo_id": 200,
+        "cantidad": 0,
+        "status": true
+      }
+    ],
+    "actualizadas": [],
+    "sin_cambios": [
+      {
+        "id": 183545,
+        "insumo_id": 617,
+        "hospital_id": 111,
+        "cantidad": 50,
+        "status": true
+      }
+    ],
+    "no_encontradas": [],
+    "errores": [],
+    "total_insumos_activos": 300
+  }
+}
 ```
 - Respuesta 200:
 ```json

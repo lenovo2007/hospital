@@ -4872,20 +4872,24 @@ paths:
       security:
         - bearerAuth: []
       requestBody:
-        required: true
+        required: false
+        description: "Opcional. Si no se envía cuerpo, la ruta sincroniza todas las fichas del hospital creando las faltantes."
         content:
           application/json:
             schema:
               oneOf:
-                - $ref: '#/components/schemas/FichaInsumoUpdateManyRequest'
-                - $ref: '#/components/schemas/FichaInsumoUpdateManyArray'
+                - $ref: '#/components/schemas/FichaInsumoUpdateByHospitalRequest'
+                - $ref: '#/components/schemas/FichaInsumoUpdateByHospitalArray'
             examples:
-              arreglo_plano:
+              masivo:
                 value:
-                  - id: 183545
-                    insumo_id: 617
-                    status: false
-                    cantidad: 0
+                  insumos:
+                    - insumo_id: 45
+                      cantidad: 120
+                      status: true
+                    - id: 980
+                      cantidad: 0
+                      status: false
               con_wrapper:
                 value:
                   insumos:
@@ -4895,7 +4899,7 @@ paths:
                       cantidad: 0
       responses:
         '200':
-          description: Resultado de la actualización
+          description: Resultado de la sincronización/actualización
           content:
             application/json:
               schema:

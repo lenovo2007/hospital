@@ -174,11 +174,18 @@ class MovimientoEstadosImportController extends Controller
                 &$lotesPorInsumo,
                 &$estadosSinDestino
             ) {
+                $itemsIngreso = [];
+
                 foreach ($totalesPorInsumo as $insumoId => $cantidad) {
                     $cantidadEntera = (int) round($cantidad);
 
                     $lote = $this->obtenerLoteCentral($insumoId, $fecha);
                     $lotesPorInsumo[$insumoId] = $lote;
+
+                    $itemsIngreso[] = [
+                        'lote_id' => (int) $lote->id,
+                        'cantidad' => $cantidadEntera,
+                    ];
 
                     $registro = AlmacenCentral::query()
                         ->lockForUpdate()
@@ -204,6 +211,23 @@ class MovimientoEstadosImportController extends Controller
                             'estado' => 'completado',
                         ]);
                     }
+                }
+
+                foreach ($itemsIngreso as $item) {
+                    $cantidadItem = (int) ($item['cantidad'] ?? 0);
+                    $loteIdItem = (int) ($item['lote_id'] ?? 0);
+                    if ($loteIdItem <= 0 || $cantidadItem <= 0) {
+                        continue;
+                    }
+
+                    LoteGrupo::create([
+                        'codigo' => $codigoMovimiento,
+                        'lote_id' => $loteIdItem,
+                        'cantidad_salida' => $cantidadItem,
+                        'cantidad_entrada' => 0,
+                        'discrepancia' => false,
+                        'status' => 'activo',
+                    ]);
                 }
 
                 $movIngreso = MovimientoStock::create([

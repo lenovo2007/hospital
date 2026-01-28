@@ -149,6 +149,8 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
     Route::put('/movimientos-stock/{movimientos_stock}', [MovimientoStockController::class, 'update']);
     Route::delete('/movimientos-stock/{movimientos_stock}', [MovimientoStockController::class, 'destroy']);
     Route::get('/movimientos-stock/ingresos', [MovimientoStockController::class, 'ingresos']);
+    Route::get('/movimientos-stock/historial/origen/{origen_sede_id}', [MovimientoStockController::class, 'historialPorOrigenSede'])
+        ->where('origen_sede_id', '[0-9]+');
     Route::get('/movimientos-stock/destino_sede/{destino_sede_id}', [MovimientoStockController::class, 'porDestinoSede'])
         ->where('destino_sede_id', '[0-9]+');
     Route::get('/movimientos-stock/origen_sede/{origen_sede_id}', [MovimientoStockController::class, 'porOrigenSede'])

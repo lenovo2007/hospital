@@ -42,6 +42,93 @@ class MovimientoStockController extends Controller
         ]);
     }
 
+    public function historialPorOrigenSede(int $origenSedeId, Request $request)
+    {
+        $perPage = (int) $request->query('per_page', 50);
+        $perPage = $perPage > 0 ? min($perPage, 100) : 50;
+
+        $query = MovimientoStock::with(['destinoHospital', 'destinoSede', 'origenHospital', 'origenSede', 'usuario', 'usuarioReceptor'])
+            ->where(function ($q) use ($origenSedeId) {
+                $q->where('origen_sede_id', $origenSedeId)
+                    ->orWhere(function ($q2) use ($origenSedeId) {
+                        $q2->where('destino_sede_id', $origenSedeId)
+                            ->where('tipo', 'entrada');
+                    });
+            })
+            ->when($request->filled('estado'), fn ($q) => $q->where('estado', $request->estado))
+            ->when($request->filled('tipo_movimiento'), fn ($q) => $q->where('tipo_movimiento', $request->tipo_movimiento))
+            ->when($request->filled('codigo_grupo'), fn ($q) => $q->where('codigo_grupo', $request->codigo_grupo))
+            ->orderByDesc('created_at');
+
+        $movimientos = $query->paginate($perPage);
+
+        $codigos = $movimientos->getCollection()
+            ->pluck('codigo_grupo')
+            ->filter()
+            ->unique()
+            ->values();
+
+        $lotesPorCodigo = $codigos->isNotEmpty()
+            ? LoteGrupo::whereIn('codigo', $codigos)->where('status', 'activo')->get()->groupBy('codigo')
+            : collect();
+
+        $loteIds = $lotesPorCodigo->isNotEmpty()
+            ? $lotesPorCodigo->flatten(1)->pluck('lote_id')->filter()->unique()
+            : collect();
+
+        $lotesPorId = $loteIds->isNotEmpty()
+            ? Lote::with('insumo')->whereIn('id', $loteIds)->get()->keyBy('id')
+            : collect();
+
+        $insumoIdFiltro = $request->filled('insumo_id') ? (int) $request->query('insumo_id') : null;
+
+        $movimientos->getCollection()->transform(function (MovimientoStock $movimiento) use ($lotesPorCodigo, $lotesPorId, $insumoIdFiltro) {
+            $codigo = $movimiento->codigo_grupo;
+
+            $movimiento->lotes_grupos = $codigo
+                ? ($lotesPorCodigo->get($codigo)?->values() ?? collect())
+                : collect();
+
+            $totalesPorInsumo = [];
+            $total = 0;
+
+            $movimiento->lotes_grupos = $movimiento->lotes_grupos->map(function (LoteGrupo $grupo) use ($lotesPorId, &$totalesPorInsumo, &$total, $insumoIdFiltro) {
+                $grupo->lote = $lotesPorId->get($grupo->lote_id);
+
+                $cantidad = (int) ($grupo->cantidad_entrada > 0 ? $grupo->cantidad_entrada : $grupo->cantidad_salida);
+                $insumoId = (int) ($grupo->lote?->id_insumo ?? 0);
+                if ($cantidad > 0 && $insumoId > 0 && ($insumoIdFiltro === null || $insumoIdFiltro === $insumoId)) {
+                    $totalesPorInsumo[$insumoId] = ($totalesPorInsumo[$insumoId] ?? 0) + $cantidad;
+                    $total += $cantidad;
+                }
+
+                return $grupo;
+            });
+
+            $almacenOrigen = $this->resolveAlmacenInfo($movimiento->origen_almacen_tipo, $movimiento->origen_almacen_id);
+            $almacenDestino = $this->resolveAlmacenInfo($movimiento->destino_almacen_tipo, $movimiento->destino_almacen_id);
+
+            $movimiento->origen_almacen_nombre = $almacenOrigen['nombre'] ?? null;
+            $movimiento->destino_almacen_nombre = $almacenDestino['nombre'] ?? null;
+
+            $movimiento->destino_hospital = $movimiento->destinoHospital;
+            $movimiento->destino_sede = $movimiento->destinoSede;
+            $movimiento->origen_hospital = $movimiento->origenHospital;
+            $movimiento->origen_sede = $movimiento->origenSede;
+
+            $movimiento->totales_por_insumo = $totalesPorInsumo;
+            $movimiento->cantidad_total_items = $total;
+
+            return $movimiento;
+        });
+
+        return response()->json([
+            'status' => true,
+            'mensaje' => 'Historial de movimientos por sede (origen/ingresos).',
+            'data' => $movimientos,
+        ]);
+    }
+
     public function index(Request $request)
     {
         $perPage = (int) $request->query('per_page', 50);
@@ -241,19 +328,6 @@ class MovimientoStockController extends Controller
     public function estadisticasPorHospital(int $hospitalId, Request $request)
     {
         try {
-            $movimientosIngreso = MovimientoStock::with([
-                'destinoHospital',
-                'destinoSede',
-                'origenHospital',
-                'origenSede',
-                'usuario',
-                'usuarioReceptor'
-            ])
-                ->where('tipo', 'entrada')
-                ->where('destino_hospital_id', $hospitalId)
-                ->orderByDesc('created_at')
-                ->get();
-
             // MOVIMIENTOS RECIBIDOS: Donde origen y destino tienen hospital_id diferente
             // (Movimientos que vienen de fuera del hospital, ej: desde almacén central)
             $movimientosRecibidos = MovimientoStock::with([
@@ -307,11 +381,6 @@ class MovimientoStockController extends Controller
                 'mensaje' => 'Estadísticas de movimientos por hospital.',
                 'data' => [
                     'hospital_id' => $hospitalId,
-                    'movimientos_ingreso' => [
-                        'descripcion' => 'Movimientos de ingreso (tipo=entrada) registrados en el sistema',
-                        'total' => $movimientosIngreso->count(),
-                        'movimientos' => $movimientosIngreso,
-                    ],
                     'movimientos_recibidos' => [
                         'descripcion' => 'Movimientos que vienen de fuera del hospital (desde almacén central u otros hospitales)',
                         'total' => $movimientosRecibidos->count(),

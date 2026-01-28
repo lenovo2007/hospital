@@ -763,6 +763,49 @@ class RecepcionPrincipalController extends Controller
         }
 
         $cantidadPorInsumo = [];
+
+        // Si el movimiento AUS viene de un despacho por estado con referencia al ingreso global,
+        // usar los totales globales (sumatoria de todos los estados) para calcular porcentajes.
+        if (!empty($movimiento->id_ingreso)) {
+            $movIngresoGlobal = MovimientoStock::query()
+                ->where('id', (int) $movimiento->id_ingreso)
+                ->first();
+
+            if ($movIngresoGlobal && !empty($movIngresoGlobal->codigo_grupo)) {
+                $itemsIngreso = LoteGrupo::query()
+                    ->where('codigo', (string) $movIngresoGlobal->codigo_grupo)
+                    ->where('status', 'activo')
+                    ->get(['lote_id', 'cantidad_salida', 'cantidad_entrada']);
+
+                if ($itemsIngreso->isNotEmpty()) {
+                    $loteIdsIngreso = $itemsIngreso->pluck('lote_id')->filter()->unique()->values()->all();
+                    $lotesIngreso = DB::table('lotes')
+                        ->whereIn('id', $loteIdsIngreso)
+                        ->get(['id', 'id_insumo']);
+
+                    foreach ($itemsIngreso as $it) {
+                        $cantidad = (int) ($it->cantidad_entrada > 0 ? $it->cantidad_entrada : $it->cantidad_salida);
+                        if ($cantidad <= 0) {
+                            continue;
+                        }
+
+                        $lote = $lotesIngreso->firstWhere('id', (int) $it->lote_id);
+                        if (!$lote) {
+                            continue;
+                        }
+
+                        $insumoId = (int) $lote->id_insumo;
+                        if ($insumoId <= 0) {
+                            continue;
+                        }
+
+                        $cantidadPorInsumo[$insumoId] = ($cantidadPorInsumo[$insumoId] ?? 0) + $cantidad;
+                    }
+                }
+            }
+        }
+
+        if (empty($cantidadPorInsumo)) {
         foreach ($itemsRecibidos as $item) {
             $loteId = (int) $item['lote_id'];
             $cantidad = (int) $item['cantidad'];
@@ -775,6 +818,8 @@ class RecepcionPrincipalController extends Controller
             }
             $insumoId = (int) $lote->id_insumo;
             $cantidadPorInsumo[$insumoId] = ($cantidadPorInsumo[$insumoId] ?? 0) + $cantidad;
+        }
+
         }
 
         if (empty($cantidadPorInsumo)) {

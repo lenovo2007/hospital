@@ -414,8 +414,8 @@ class RecepcionPrincipalController extends Controller
             'items' => ['required', 'array', 'min:1'],
             'items.*.lote_id_origen' => ['required', 'integer', 'min:1'],
             'items.*.cantidad' => ['required', 'integer', 'min:1'],
-            'items.*.numero_lote' => ['required', 'string', 'max:100'],
-            'items.*.fecha_vencimiento' => ['required', 'date_format:Y-m-d'],
+            'items.*.numero_lote' => ['nullable', 'string', 'max:100'],
+            'items.*.fecha_vencimiento' => ['nullable', 'date_format:Y-m-d'],
         ]);
 
         $movimientoId = (int) $data['movimiento_stock_id'];
@@ -449,11 +449,23 @@ class RecepcionPrincipalController extends Controller
                 $agregado = [];
                 foreach ($data['items'] as $it) {
                     $loteOrigen = (int) $it['lote_id_origen'];
-                    $key = $loteOrigen . '|' . trim((string) $it['numero_lote']) . '|' . (string) $it['fecha_vencimiento'];
+                    $numeroLote = isset($it['numero_lote']) ? trim((string) $it['numero_lote']) : '';
+                    $fechaVenc = isset($it['fecha_vencimiento']) ? (string) $it['fecha_vencimiento'] : '';
+
+                    if (($numeroLote !== '' && $fechaVenc === '') || ($numeroLote === '' && $fechaVenc !== '')) {
+                        throw new InvalidArgumentException('Si envías numero_lote debes enviar fecha_vencimiento (y viceversa).');
+                    }
+
+                    $tieneDatosReales = $numeroLote !== '' && $fechaVenc !== '';
+                    $key = $tieneDatosReales
+                        ? ($loteOrigen . '|' . $numeroLote . '|' . $fechaVenc)
+                        : ($loteOrigen . '|SIN_LOTE_REAL');
+
                     $agregado[$key] = [
                         'lote_id_origen' => $loteOrigen,
-                        'numero_lote' => trim((string) $it['numero_lote']),
-                        'fecha_vencimiento' => (string) $it['fecha_vencimiento'],
+                        'numero_lote' => $tieneDatosReales ? $numeroLote : null,
+                        'fecha_vencimiento' => $tieneDatosReales ? $fechaVenc : null,
+                        'sin_lote_real' => !$tieneDatosReales,
                         'cantidad' => ((int) ($agregado[$key]['cantidad'] ?? 0)) + (int) $it['cantidad'],
                     ];
                 }
@@ -465,12 +477,22 @@ class RecepcionPrincipalController extends Controller
 
                 $createdLotes = 0;
                 $movidos = [];
+                $sinCambio = [];
                 $discrepancias = [];
 
                 foreach ($agregado as $row) {
                     $loteIdOrigen = (int) $row['lote_id_origen'];
                     $cantidad = (int) $row['cantidad'];
                     if ($cantidad <= 0) {
+                        continue;
+                    }
+
+                    if (($row['sin_lote_real'] ?? false) === true) {
+                        $sinCambio[] = [
+                            'lote_id_origen' => $loteIdOrigen,
+                            'cantidad' => $cantidad,
+                            'accion' => 'sin_cambio',
+                        ];
                         continue;
                     }
 
@@ -482,15 +504,15 @@ class RecepcionPrincipalController extends Controller
 
                     $loteReal = Lote::query()
                         ->where('id_insumo', $insumoId)
-                        ->where('numero_lote', $row['numero_lote'])
+                        ->where('numero_lote', (string) $row['numero_lote'])
                         ->where('hospital_id', $hospitalId)
                         ->first();
 
                     if (!$loteReal) {
                         $loteReal = Lote::create([
                             'id_insumo' => $insumoId,
-                            'numero_lote' => $row['numero_lote'],
-                            'fecha_vencimiento' => $row['fecha_vencimiento'],
+                            'numero_lote' => (string) $row['numero_lote'],
+                            'fecha_vencimiento' => (string) $row['fecha_vencimiento'],
                             'fecha_ingreso' => now()->toDateString(),
                             'hospital_id' => $hospitalId,
                         ]);
@@ -590,17 +612,18 @@ class RecepcionPrincipalController extends Controller
                     ];
                 }
 
-                MovimientoStock::query()
-                    ->where('id', $movimientoId)
-                    ->update([
-                        'observaciones_recepcion' => 'Lotes reales registrados por user_id=' . $userId,
-                        'updated_at' => now(),
-                    ]);
+            MovimientoStock::query()
+                ->where('id', $movimientoId)
+                ->update([
+                    'observaciones_recepcion' => 'Lotes reales registrados por user_id=' . $userId,
+                    'updated_at' => now(),
+                ]);
 
                 return [
                     'movimiento_stock_id' => $movimientoId,
-                    'lotes_creados' => $createdLotes,
-                    'items_movidos' => $movidos,
+                    'created_lotes' => $createdLotes,
+                    'movidos' => $movidos,
+                    'sin_cambio' => $sinCambio,
                     'discrepancias' => $discrepancias,
                 ];
             });

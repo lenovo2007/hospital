@@ -138,16 +138,12 @@ class RecepcionPrincipalController extends Controller
                     throw new InvalidArgumentException('No existe un movimiento con el ID indicado.');
                 }
 
-                // Validar estado según el tipo de almacén origen
-                $estadosPermitidos = $this->obtenerEstadosPermitidosParaRecepcion($movimiento->origen_almacen_tipo);
-                
-                if (!in_array($movimiento->estado, $estadosPermitidos)) {
-                    $estadosTexto = implode(', ', $estadosPermitidos);
-                    $tipoMovimiento = $movimiento->origen_almacen_tipo === 'almacenCent' 
-                        ? 'con repartidor (Central → Principal)' 
-                        : 'interno (Principal → Otros almacenes)';
-                    
-                    throw new InvalidArgumentException("El movimiento debe estar en estado: {$estadosTexto} para poder ser recibido. Tipo de movimiento: {$tipoMovimiento}. Estado actual: {$movimiento->estado}");
+                // Validar estado SOLO cuando el destino sea almacén AUS.
+                // Para el resto de destinos, no se bloquea por estado.
+                if ((string) $movimiento->destino_almacen_tipo === 'almacenAus') {
+                    if ((string) $movimiento->estado !== 'entregado') {
+                        throw new InvalidArgumentException('El movimiento debe estar en estado entregado para poder ser recibido en almacenAus. Estado actual: ' . (string) $movimiento->estado);
+                    }
                 }
 
                 // Buscar los lotes grupos asociados al movimiento

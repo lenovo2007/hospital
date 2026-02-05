@@ -161,4 +161,54 @@ class SolicitudController extends Controller
             'data' => $solicitudes,
         ], 200, [], JSON_UNESCAPED_UNICODE);
     }
+
+    public function aprobar(string $id)
+    {
+        $solicitud = Solicitud::find($id);
+        if (!$solicitud) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Solicitud no encontrada.',
+                'data' => null,
+            ], 404, [], JSON_UNESCAPED_UNICODE);
+        }
+
+        $solicitud->status = 'aprobado';
+        $solicitud->observacion_rechazo = null;
+        $solicitud->save();
+        $solicitud->load('hospital', 'sede');
+
+        return response()->json([
+            'status' => true,
+            'mensaje' => 'Solicitud aprobada.',
+            'data' => $solicitud,
+        ], 200, [], JSON_UNESCAPED_UNICODE);
+    }
+
+    public function rechazar(Request $request, string $id)
+    {
+        $solicitud = Solicitud::find($id);
+        if (!$solicitud) {
+            return response()->json([
+                'status' => false,
+                'mensaje' => 'Solicitud no encontrada.',
+                'data' => null,
+            ], 404, [], JSON_UNESCAPED_UNICODE);
+        }
+
+        $data = $request->validate([
+            'observacion' => ['required', 'string'],
+        ]);
+
+        $solicitud->status = 'rechazado';
+        $solicitud->observacion_rechazo = (string) $data['observacion'];
+        $solicitud->save();
+        $solicitud->load('hospital', 'sede');
+
+        return response()->json([
+            'status' => true,
+            'mensaje' => 'Solicitud rechazada.',
+            'data' => $solicitud,
+        ], 200, [], JSON_UNESCAPED_UNICODE);
+    }
 }

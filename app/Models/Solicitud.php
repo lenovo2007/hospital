@@ -19,6 +19,7 @@ class Solicitud extends Model
         'sede_id',
         'hospital_id',
         'status',
+        'observacion_rechazo',
     ];
 
     protected $casts = [

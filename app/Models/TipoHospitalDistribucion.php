@@ -16,9 +16,9 @@ class TipoHospitalDistribucion extends Model
     ];
 
     protected $casts = [
-        'tipo1' => 'decimal:2',
-        'tipo2' => 'decimal:2',
-        'tipo3' => 'decimal:2',
-        'tipo4' => 'decimal:2',
+        'tipo1' => 'decimal:18',
+        'tipo2' => 'decimal:18',
+        'tipo3' => 'decimal:18',
+        'tipo4' => 'decimal:18',
     ];
 }

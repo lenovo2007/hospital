@@ -47,7 +47,13 @@ class MovimientoStockController extends Controller
         $perPage = (int) $request->query('per_page', 50);
         $perPage = $perPage > 0 ? min($perPage, 100) : 50;
 
-        $query = MovimientoStock::with(['destinoHospital', 'destinoSede', 'origenHospital', 'origenSede', 'usuario', 'usuarioReceptor'])
+        $detallado = (bool) $request->query('detallado', false);
+
+        $with = $detallado
+            ? ['destinoHospital', 'destinoSede', 'origenHospital', 'origenSede', 'usuario', 'usuarioReceptor']
+            : ['destinoHospital:id,nombre', 'destinoSede:id,nombre', 'origenHospital:id,nombre', 'origenSede:id,nombre'];
+
+        $query = MovimientoStock::with($with)
             ->where(function ($q) use ($origenSedeId) {
                 $q->where('origen_sede_id', $origenSedeId)
                     ->orWhere(function ($q2) use ($origenSedeId) {
@@ -61,6 +67,14 @@ class MovimientoStockController extends Controller
             ->orderByDesc('created_at');
 
         $movimientos = $query->paginate($perPage);
+
+        if (!$detallado) {
+            return response()->json([
+                'status' => true,
+                'mensaje' => 'Historial de movimientos por sede (origen/ingresos).',
+                'data' => $movimientos,
+            ]);
+        }
 
         $codigos = $movimientos->getCollection()
             ->pluck('codigo_grupo')

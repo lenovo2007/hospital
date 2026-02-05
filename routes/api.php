@@ -248,6 +248,7 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
     // Configuración de porcentajes por tipo de hospital (único registro)
     Route::get('/tipos_hospital_distribuciones', [TipoHospitalDistribucionController::class, 'index']);
     Route::post('/tipos_hospital_distribuciones', [TipoHospitalDistribucionController::class, 'store']);
+    Route::put('/tipos_hospital_distribuciones', [TipoHospitalDistribucionController::class, 'store']);
 
     // Distribución desde almacén central hacia principal (hospital)
     Route::post('/movimiento/almacen/salida', [DistribucionCentralController::class, 'salida']);
@@ -346,6 +347,8 @@ Route::middleware(['auth:sanctum', \App\Http\Middleware\CheckCrudPermissions::cl
     Route::post('/solicitudes', [SolicitudController::class, 'store']);
     Route::get('/solicitudes/{solicitud}', [SolicitudController::class, 'show']);
     Route::put('/solicitudes/{solicitud}', [SolicitudController::class, 'update']);
+    Route::put('/solicitudes/{solicitud}/aprobar', [SolicitudController::class, 'aprobar']);
+    Route::put('/solicitudes/{solicitud}/rechazar', [SolicitudController::class, 'rechazar']);
     Route::delete('/solicitudes/{solicitud}', [SolicitudController::class, 'destroy']);
     Route::get('/solicitudes/sede/{sede_id}', [SolicitudController::class, 'bySede']);
     Route::get('/solicitudes/hospital/{hospital_id}', [SolicitudController::class, 'byHospital']);

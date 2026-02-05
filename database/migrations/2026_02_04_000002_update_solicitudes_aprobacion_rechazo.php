@@ -4,7 +4,6 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Throwable;
 
 return new class extends Migration
 {
@@ -26,7 +25,7 @@ return new class extends Migration
                 if ($driver === 'mysql') {
                     DB::statement("ALTER TABLE solicitudes MODIFY COLUMN status ENUM('pendiente','en_proceso','completada','cancelada','aprobado','rechazado') NOT NULL DEFAULT 'pendiente'");
                 }
-            } catch (Throwable $e) {
+            } catch (\Throwable $e) {
                 // Si el motor no soporta ALTER ENUM o falla, no bloquear migración.
             }
         }

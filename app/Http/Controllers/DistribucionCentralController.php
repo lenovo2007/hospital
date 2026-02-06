@@ -30,12 +30,13 @@ class DistribucionCentralController extends Controller
     public function salida(Request $request)
     {
         $data = $request->validate([
+            'tipo' => ['nullable', 'string', 'max:20'],
             'origen_hospital_id' => ['required','integer','min:1'],
             'origen_sede_id' => ['required','integer','min:1'],
             'destino_hospital_id' => ['required','integer','min:1'],
-            'destino_sede_id' => ['required','integer','min:1'],
+            'destino_sede_id' => ['required_unless:tipo,diferido','integer','min:1'],
             'origen_almacen_tipo' => ['required','string','max:100'],
-            'destino_almacen_tipo' => ['required','string','max:100'],
+            'destino_almacen_tipo' => ['required_unless:tipo,diferido','string','max:100'],
             'tipo_movimiento' => ['required','string','max:50'],
             'fecha_despacho' => ['required','date'],
             'observaciones' => ['nullable','string','max:500'],
@@ -50,6 +51,8 @@ class DistribucionCentralController extends Controller
 
         try {
             DB::transaction(function () use ($data, $userId, &$codigoGrupo) {
+                $esDiferido = ((string) ($data['tipo'] ?? '')) === 'diferido' && ((string) ($data['tipo_movimiento'] ?? '')) === 'retiro';
+
                 // Crear grupo de lote para los items del movimiento
                 [$codigoGrupo, $grupoItems] = LoteGrupo::crearGrupo($data['items']);
 
@@ -69,6 +72,16 @@ class DistribucionCentralController extends Controller
                     );
                     $totalCantidad += $cantidad;
                 }
+
+                if ($esDiferido) {
+                    foreach ($grupoItems as $grupoItem) {
+                        $grupoItem->update([
+                            'cantidad_entrada' => (int) $grupoItem->cantidad_salida,
+                            'discrepancia' => false,
+                        ]);
+                    }
+                }
+
                 // Crear el movimiento de stock
                 MovimientoStock::create([
                     'tipo' => 'transferencia',
@@ -76,17 +89,19 @@ class DistribucionCentralController extends Controller
                     'origen_hospital_id' => (int) $data['origen_hospital_id'],
                     'origen_sede_id' => (int) $data['origen_sede_id'],
                     'destino_hospital_id' => (int) $data['destino_hospital_id'],
-                    'destino_sede_id' => (int) $data['destino_sede_id'],
+                    'destino_sede_id' => $esDiferido ? null : (int) $data['destino_sede_id'],
                     'origen_almacen_tipo' => $data['origen_almacen_tipo'],
                     'origen_almacen_id' => null,
-                    'destino_almacen_tipo' => $data['destino_almacen_tipo'],
+                    'destino_almacen_tipo' => $esDiferido ? null : $data['destino_almacen_tipo'],
                     'destino_almacen_id' => null,
                     'cantidad_salida_total' => $totalCantidad,
-                    'cantidad_entrada_total' => 0,
+                    'cantidad_entrada_total' => $esDiferido ? $totalCantidad : 0,
                     'discrepancia_total' => false,
                     'fecha_despacho' => $data['fecha_despacho'],
                     'observaciones' => $data['observaciones'] ?? null,
-                    'estado' => ((int)$data['origen_hospital_id'] === (int)$data['destino_hospital_id']) ? 'despachado' : 'pendiente',
+                    'estado' => $esDiferido
+                        ? 'completado'
+                        : (((int) $data['origen_hospital_id'] === (int) $data['destino_hospital_id']) ? 'despachado' : 'pendiente'),
                     'codigo_grupo' => $codigoGrupo,
                     'user_id' => $userId,
                 ]);

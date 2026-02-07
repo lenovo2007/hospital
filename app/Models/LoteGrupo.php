@@ -42,17 +42,23 @@ class LoteGrupo extends Model
      */
     public static function generarCodigo(): string
     {
-        $ultimo = self::latest('id')->first();
+        $ultimoCodigo = self::query()
+            ->where('codigo', 'like', 'cod%')
+            ->orderByDesc('id')
+            ->value('codigo');
 
-        if (!$ultimo) {
+        if (!$ultimoCodigo) {
             return 'cod001';
         }
 
-        // Extraer número del último código
-        $ultimoNumero = (int) substr($ultimo->codigo, 3);
+        if (!preg_match('/^cod(\d+)$/', (string) $ultimoCodigo, $m)) {
+            return 'cod001';
+        }
+
+        $ultimoNumero = (int) $m[1];
         $nuevoNumero = $ultimoNumero + 1;
 
-        return 'cod' . str_pad($nuevoNumero, 3, '0', STR_PAD_LEFT);
+        return 'cod' . str_pad((string) $nuevoNumero, 3, '0', STR_PAD_LEFT);
     }
 
     /**

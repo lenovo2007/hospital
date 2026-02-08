@@ -1043,12 +1043,16 @@ class RecepcionPrincipalController extends Controller
 
         $asignacion = [];
         $hospitalIds = [];
+        $tipoNumericoPorHospital = [];
         $sumaAsignada = 0;
 
         foreach ($hospitalesElegibles as $h) {
             $hid = (int) $h->id;
             $tipoKey = $this->mapearTipoHospitalAClavePorcentaje((string) ($h->tipo ?? ''));
             $pct = (float) ($mapaPorcentaje[$tipoKey] ?? 0);
+            if (preg_match('/^tipo([1-4])$/', (string) $tipoKey, $m)) {
+                $tipoNumericoPorHospital[$hid] = (int) $m[1];
+            }
             if ($hid <= 0 || $pct <= 0) {
                 continue;
             }
@@ -1094,6 +1098,34 @@ class RecepcionPrincipalController extends Controller
             }
 
             $asignacion = $nuevo;
+        }
+
+        // Si quedó sobrante por redondeo (floor), repartirlo equitativamente entre hospitales del mayor tipo.
+        $resto = (int) $cantidadTotal - (int) array_sum($asignacion);
+        if ($resto > 0 && !empty($tipoNumericoPorHospital)) {
+            $maxTipo = max($tipoNumericoPorHospital);
+            $candidatos = array_keys(array_filter(
+                $tipoNumericoPorHospital,
+                fn ($t) => (int) $t === (int) $maxTipo
+            ));
+
+            if (!empty($candidatos)) {
+                sort($candidatos);
+                foreach ($candidatos as $hid) {
+                    if (!isset($asignacion[(int) $hid])) {
+                        $asignacion[(int) $hid] = 0;
+                    }
+                }
+
+                $i = 0;
+                $count = count($candidatos);
+                while ($resto > 0 && $count > 0) {
+                    $hid = (int) $candidatos[$i % $count];
+                    $asignacion[$hid] = ((int) ($asignacion[$hid] ?? 0)) + 1;
+                    $resto--;
+                    $i++;
+                }
+            }
         }
 
         return $asignacion;
